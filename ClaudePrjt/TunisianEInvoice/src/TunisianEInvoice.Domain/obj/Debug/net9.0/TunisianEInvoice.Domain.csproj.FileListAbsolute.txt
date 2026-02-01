@@ -1,0 +1,11 @@
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\bin\Debug\net9.0\TunisianEInvoice.Domain.deps.json
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\bin\Debug\net9.0\TunisianEInvoice.Domain.dll
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\bin\Debug\net9.0\TunisianEInvoice.Domain.pdb
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.AssemblyInfoInputs.cache
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.AssemblyInfo.cs
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.csproj.CoreCompileInputs.cache
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.dll
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\refint\TunisianEInvoice.Domain.dll
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.pdb
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\ref\TunisianEInvoice.Domain.dll

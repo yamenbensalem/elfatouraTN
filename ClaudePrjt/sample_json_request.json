@@ -1,0 +1,98 @@
+{
+  "documentIdentifier": "12016_2012",
+  "documentType": "I-11",
+  "invoiceDate": "2012-06-07T00:00:00",
+  "dueDate": "2012-07-07T00:00:00",
+  "periodFrom": "010512",
+  "periodTo": "310512",
+  "sender": {
+    "identifierType": "I-01",
+    "identifier": "0736202XAM000",
+    "name": "Tunisie TradeNet",
+    "registrationNumber": "B154702000",
+    "legalForm": "SA",
+    "address": {
+      "description": "Lotissement El Khalij Les Berges du Lac",
+      "street": "Rue du Lac Malaren",
+      "city": "Tunis",
+      "postalCode": "1053",
+      "country": "TN",
+      "language": "fr"
+    },
+    "contacts": [
+      {
+        "type": "I-101",
+        "identifier": "TTN",
+        "name": "Tunisie TradeNet",
+        "value": "71 861 712"
+      },
+      {
+        "type": "I-102",
+        "identifier": "TTN",
+        "name": "Tunisie TradeNet",
+        "value": "71 861 141"
+      },
+      {
+        "type": "I-104",
+        "identifier": "TTN",
+        "name": "Tunisie TradeNet",
+        "value": "www.tradenet.com.tn"
+      }
+    ]
+  },
+  "receiver": {
+    "identifierType": "I-01",
+    "identifier": "0914089JAM000",
+    "name": "STE FRERE ET MOSAIQUE",
+    "accountMode": "SMTP",
+    "accountRank": "P",
+    "profile": "Salle Publique",
+    "clientCode": "41115530",
+    "address": {
+      "description": "",
+      "street": "",
+      "city": "Salle publique Tunis",
+      "postalCode": "1000",
+      "country": "TN",
+      "language": "fr"
+    },
+    "contacts": []
+  },
+  "lineItems": [
+    {
+      "itemIdentifier": "1",
+      "itemCode": "DDM",
+      "itemDescription": "Dossier DDM",
+      "quantity": 1.0,
+      "measurementUnit": "UNIT",
+      "unitPriceExcludingTax": 2.000,
+      "taxRate": 12.0,
+      "taxType": "I-1602",
+      "totalExcludingTax": 2.000,
+      "language": "fr"
+    }
+  ],
+  "paymentSections": [
+    {
+      "paymentTermsTypeCode": "I-114",
+      "paymentTermsDescription": "Les banques sont priees de payer au RIB suivant: 0410 5044 4047 0138 1036."
+    },
+    {
+      "paymentTermsTypeCode": "I-115",
+      "paymentTermsDescription": "A Regler exclusivement au niveau des bureaux postaux sur presentation de la facture.",
+      "bankAccount": {
+        "accountNumber": "0120021241115530",
+        "ownerIdentifier": "1B",
+        "bankCode": "0760",
+        "branchIdentifier": "0760",
+        "institutionName": "La poste",
+        "functionCode": "I-141"
+      }
+    }
+  ],
+  "freeText": "Facture électronique conforme à la réglementation tunisienne",
+  "specialConditions": [
+    "Paiement à 30 jours",
+    "Escompte 2% si paiement comptant"
+  ]
+}

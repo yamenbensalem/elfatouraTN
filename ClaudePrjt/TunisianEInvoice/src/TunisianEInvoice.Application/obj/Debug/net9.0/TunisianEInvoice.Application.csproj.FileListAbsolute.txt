@@ -1,0 +1,15 @@
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\bin\Debug\net9.0\TunisianEInvoice.Application.deps.json
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\bin\Debug\net9.0\TunisianEInvoice.Application.dll
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\bin\Debug\net9.0\TunisianEInvoice.Application.pdb
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\bin\Debug\net9.0\TunisianEInvoice.Domain.dll
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\bin\Debug\net9.0\TunisianEInvoice.Domain.pdb
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\TunisianEInvoice.Application.csproj.AssemblyReference.cache
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\TunisianEInvoice.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\TunisianEInvoice.Application.AssemblyInfoInputs.cache
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\TunisianEInvoice.Application.AssemblyInfo.cs
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\TunisianEInvoice.Application.csproj.CoreCompileInputs.cache
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\Tunisian.3010C011.Up2Date
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\TunisianEInvoice.Application.dll
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\refint\TunisianEInvoice.Application.dll
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\TunisianEInvoice.Application.pdb
+D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Application\obj\Debug\net9.0\ref\TunisianEInvoice.Application.dll

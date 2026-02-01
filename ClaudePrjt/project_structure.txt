@@ -1,0 +1,88 @@
+# Structure du Projet - Tunisian E-Invoice API
+
+```
+TunisianEInvoice/
+│
+├── src/
+│   ├── TunisianEInvoice.Domain/
+│   │   ├── Entities/
+│   │   │   ├── Invoice.cs
+│   │   │   ├── InvoiceHeader.cs
+│   │   │   ├── InvoiceBody.cs
+│   │   │   ├── Partner.cs
+│   │   │   ├── LineItem.cs
+│   │   │   ├── TaxDetails.cs
+│   │   │   └── PaymentSection.cs
+│   │   ├── Enums/
+│   │   │   ├── DocumentType.cs
+│   │   │   ├── PartnerType.cs
+│   │   │   ├── TaxType.cs
+│   │   │   └── PaymentTermsType.cs
+│   │   └── ValueObjects/
+│   │       ├── Amount.cs
+│   │       ├── TaxRate.cs
+│   │       └── PartnerIdentifier.cs
+│   │
+│   ├── TunisianEInvoice.Application/
+│   │   ├── DTOs/
+│   │   │   ├── InvoiceRequestDto.cs
+│   │   │   ├── PartnerDto.cs
+│   │   │   ├── LineItemDto.cs
+│   │   │   └── InvoiceResponseDto.cs
+│   │   ├── Interfaces/
+│   │   │   ├── IInvoiceService.cs
+│   │   │   ├── IXmlGeneratorService.cs
+│   │   │   ├── IXmlValidationService.cs
+│   │   │   ├── ISignatureService.cs
+│   │   │   └── IPdfGeneratorService.cs
+│   │   ├── Services/
+│   │   │   └── InvoiceService.cs
+│   │   ├── Mappings/
+│   │   │   └── InvoiceMappingProfile.cs
+│   │   └── Validators/
+│   │       └── InvoiceRequestValidator.cs
+│   │
+│   ├── TunisianEInvoice.Infrastructure/
+│   │   ├── Services/
+│   │   │   ├── XmlGeneratorService.cs
+│   │   │   ├── XmlValidationService.cs
+│   │   │   ├── SignatureService.cs
+│   │   │   └── PdfGeneratorService.cs
+│   │   ├── Templates/
+│   │   │   └── InvoiceTemplate.cshtml
+│   │   └── Resources/
+│   │       ├── facture_INVOIC_V1.8.8_withoutSig.xsd
+│   │       └── facture_INVOIC_V1.8.8_withSig.xsd
+│   │
+│   └── TunisianEInvoice.API/
+│       ├── Controllers/
+│       │   └── InvoiceController.cs
+│       ├── Middleware/
+│       │   └── ExceptionMiddleware.cs
+│       ├── appsettings.json
+│       └── Program.cs
+│
+└── tests/
+    ├── TunisianEInvoice.UnitTests/
+    └── TunisianEInvoice.IntegrationTests/
+```
+
+## Packages NuGet requis
+
+### Domain
+- Aucune dépendance externe
+
+### Application
+- AutoMapper.Extensions.Microsoft.DependencyInjection
+- FluentValidation.AspNetCore
+- MediatR
+
+### Infrastructure
+- System.Security.Cryptography.Xml
+- iText7 (pour génération PDF)
+- QRCoder
+- RazorEngine.NetCore
+
+### API
+- Swashbuckle.AspNetCore
+- Microsoft.AspNetCore.Mvc.NewtonsoftJson
