@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\TunisianEInvoice.API.csproj": {}
+    "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\TunisianEInvoice.API.csproj": {}
   },
   "projects": {
-    "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\TunisianEInvoice.API.csproj": {
+    "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\TunisianEInvoice.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\TunisianEInvoice.API.csproj",
+        "projectUniqueName": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\TunisianEInvoice.API.csproj",
         "projectName": "TunisianEInvoice.API",
-        "projectPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\TunisianEInvoice.API.csproj",
-        "packagesPath": "C:\\Users\\yamen\\.nuget\\packages\\",
-        "outputPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\obj\\",
+        "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\TunisianEInvoice.API.csproj",
+        "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
+        "outputPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.API\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\yamen\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lenovo\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -26,18 +26,17 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
-                "projectPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj"
+              "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
+                "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj"
               },
-              "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj": {
-                "projectPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj"
+              "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj": {
+                "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj"
               }
             }
           }
@@ -58,17 +57,21 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Mvc.NewtonsoftJson": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
-              "version": "[9.0.9, )"
+              "version": "[9.0.0, )"
             },
             "Serilog.AspNetCore": {
               "target": "Package",
-              "version": "[10.0.0, )"
+              "version": "[9.0.0, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
-              "version": "[10.1.0, )"
+              "version": "[7.2.0, )"
             }
           },
           "imports": [
@@ -90,24 +93,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
+    "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
+        "projectUniqueName": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
         "projectName": "TunisianEInvoice.Application",
-        "projectPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
-        "packagesPath": "C:\\Users\\yamen\\.nuget\\packages\\",
-        "outputPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\obj\\",
+        "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
+        "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
+        "outputPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\yamen\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lenovo\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -116,15 +119,14 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj": {
-                "projectPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj"
+              "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj": {
+                "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj"
               }
             }
           }
@@ -147,7 +149,7 @@
           "dependencies": {
             "AutoMapper": {
               "target": "Package",
-              "version": "[16.0.0, )"
+              "version": "[12.0.1, )"
             },
             "AutoMapper.Extensions.Microsoft.DependencyInjection": {
               "target": "Package",
@@ -155,15 +157,11 @@
             },
             "FluentValidation": {
               "target": "Package",
-              "version": "[12.1.1, )"
-            },
-            "FluentValidation.AspNetCore": {
-              "target": "Package",
-              "version": "[11.3.1, )"
+              "version": "[11.9.0, )"
             },
             "Microsoft.Extensions.Configuration.Abstractions": {
               "target": "Package",
-              "version": "[10.0.2, )"
+              "version": "[9.0.0, )"
             }
           },
           "imports": [
@@ -182,24 +180,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj": {
+    "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj",
+        "projectUniqueName": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj",
         "projectName": "TunisianEInvoice.Domain",
-        "projectPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj",
-        "packagesPath": "C:\\Users\\yamen\\.nuget\\packages\\",
-        "outputPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\obj\\",
+        "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj",
+        "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
+        "outputPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\yamen\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lenovo\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -208,7 +206,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -248,24 +245,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj": {
+    "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj",
+        "projectUniqueName": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj",
         "projectName": "TunisianEInvoice.Infrastructure",
-        "projectPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj",
-        "packagesPath": "C:\\Users\\yamen\\.nuget\\packages\\",
-        "outputPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\obj\\",
+        "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj",
+        "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
+        "outputPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\yamen\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lenovo\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -274,15 +271,14 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
-                "projectPath": "D:\\Entreprise\\Projets\\GitProjects\\ElFatoura\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj"
+              "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
+                "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj"
               }
             }
           }
@@ -332,7 +328,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

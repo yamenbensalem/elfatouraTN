@@ -9,3 +9,15 @@ D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\Tuni
 D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\refint\TunisianEInvoice.Domain.dll
 D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.pdb
 D:\Entreprise\Projets\GitProjects\ElFatoura\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\ref\TunisianEInvoice.Domain.dll
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\bin\Debug\net9.0\TunisianEInvoice.Domain.deps.json
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\bin\Debug\net9.0\TunisianEInvoice.Domain.dll
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\bin\Debug\net9.0\TunisianEInvoice.Domain.pdb
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.AssemblyInfoInputs.cache
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.AssemblyInfo.cs
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.csproj.CoreCompileInputs.cache
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.sourcelink.json
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.dll
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\refint\TunisianEInvoice.Domain.dll
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\TunisianEInvoice.Domain.pdb
+C:\Projects\elfatouraTN\elfatouraTN\ClaudePrjt\TunisianEInvoice\src\TunisianEInvoice.Domain\obj\Debug\net9.0\ref\TunisianEInvoice.Domain.dll

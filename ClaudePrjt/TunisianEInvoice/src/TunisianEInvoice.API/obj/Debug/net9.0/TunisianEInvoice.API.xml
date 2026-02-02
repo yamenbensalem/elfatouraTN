@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>TunisianEInvoice.API</name>
+    </assembly>
+    <members>
+        <member name="M:TunisianEInvoice.API.Controllers.InvoiceController.GenerateInvoice(TunisianEInvoice.Application.DTOs.InvoiceRequestDto)">
+            <summary>
+            Generate Tunisian electronic invoice (XML without signature + XML with signature + PDF)
+            </summary>
+            <param name="request">Invoice data</param>
+            <returns>Generated XML files and PDF</returns>
+        </member>
+        <member name="M:TunisianEInvoice.API.Controllers.InvoiceController.GenerateXmlWithoutSignature(TunisianEInvoice.Application.DTOs.InvoiceRequestDto)">
+            <summary>
+            Generate XML without signature only
+            </summary>
+            <param name="request">Invoice data</param>
+            <returns>XML without signature</returns>
+        </member>
+        <member name="M:TunisianEInvoice.API.Controllers.InvoiceController.ValidateInvoice(TunisianEInvoice.Application.DTOs.InvoiceRequestDto)">
+            <summary>
+            Validate invoice data against XSD schema
+            </summary>
+            <param name="request">Invoice data to validate</param>
+            <returns>Validation result</returns>
+        </member>
+        <member name="M:TunisianEInvoice.API.Controllers.InvoiceController.GeneratePdf(TunisianEInvoice.Application.DTOs.InvoiceRequestDto)">
+            <summary>
+            Download PDF invoice
+            </summary>
+            <param name="request">Invoice data</param>
+            <returns>PDF file</returns>
+        </member>
+        <member name="M:TunisianEInvoice.API.Controllers.InvoiceController.HealthCheck">
+            <summary>
+            Health check endpoint
+            </summary>
+        </member>
+    </members>
+</doc>
