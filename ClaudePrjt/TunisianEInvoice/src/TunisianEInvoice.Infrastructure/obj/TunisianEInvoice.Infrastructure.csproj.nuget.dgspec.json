@@ -4,14 +4,14 @@
     "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Infrastructure\\TunisianEInvoice.Infrastructure.csproj": {}
   },
   "projects": {
-    "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
+    "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
+        "projectUniqueName": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
         "projectName": "TunisianEInvoice.Application",
-        "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
+        "projectPath": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
         "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
-        "outputPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\obj\\",
+        "outputPath": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -32,8 +32,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj": {
-                "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj"
+              "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj": {
+                "projectPath": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj"
               }
             }
           }
@@ -91,14 +91,14 @@
         }
       }
     },
-    "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj": {
+    "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj",
+        "projectUniqueName": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj",
         "projectName": "TunisianEInvoice.Domain",
-        "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj",
+        "projectPath": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\TunisianEInvoice.Domain.csproj",
         "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
-        "outputPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\obj\\",
+        "outputPath": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -184,8 +184,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
-                "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj"
+              "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
+                "projectPath": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj"
               }
             }
           }

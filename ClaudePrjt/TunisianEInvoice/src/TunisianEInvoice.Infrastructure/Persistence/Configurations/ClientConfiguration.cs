@@ -14,7 +14,7 @@ namespace TunisianEInvoice.Infrastructure.Persistence.Configurations
 
             builder.Property(c => c.MatriculeFiscal)
                 .IsRequired()
-                .HasMaxLength(13);
+                .HasMaxLength(25);
 
             builder.HasIndex(c => c.MatriculeFiscal)
                 .IsUnique();

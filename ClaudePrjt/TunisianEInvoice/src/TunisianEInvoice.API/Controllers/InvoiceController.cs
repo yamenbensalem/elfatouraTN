@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using TunisianEInvoice.Application.DTOs;
 using TunisianEInvoice.Application.Interfaces;
+using TunisianEInvoice.Domain.Entities;
 
 namespace TunisianEInvoice.API.Controllers
 {
@@ -13,10 +14,66 @@ namespace TunisianEInvoice.API.Controllers
     public class InvoiceController : ControllerBase
     {
         private readonly IInvoiceService _invoiceService;
+        private readonly IInvoiceRepository _invoiceRepository;
 
-        public InvoiceController(IInvoiceService invoiceService)
+        public InvoiceController(IInvoiceService invoiceService, IInvoiceRepository invoiceRepository)
         {
             _invoiceService = invoiceService;
+            _invoiceRepository = invoiceRepository;
+        }
+
+        /// <summary>
+        /// Get all invoices with pagination and filtering
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(typeof(PagedResult<InvoiceRecord>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PagedResult<InvoiceRecord>>> GetInvoices(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] Guid? clientId = null,
+            [FromQuery] InvoiceStatus? status = null,
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null)
+        {
+            try
+            {
+                var (items, totalCount) = await _invoiceRepository.GetPagedAsync(pageNumber, pageSize, clientId, status, fromDate, toDate);
+                var result = new PagedResult<InvoiceRecord>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"Erreur: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get invoice by ID
+        /// </summary>
+        [HttpGet("{id:guid}")]
+        [ProducesResponseType(typeof(InvoiceRecord), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<InvoiceRecord>> GetInvoice(Guid id)
+        {
+            try
+            {
+                var invoice = await _invoiceRepository.GetByIdWithDetailsAsync(id);
+                if (invoice == null)
+                {
+                    return NotFound(new { error = "Facture non trouvée" });
+                }
+                return Ok(invoice);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"Erreur: {ex.Message}" });
+            }
         }
 
         /// <summary>

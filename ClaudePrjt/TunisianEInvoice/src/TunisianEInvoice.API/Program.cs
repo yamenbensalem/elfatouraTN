@@ -86,6 +86,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Seed the database with mock data in development
+if (app.Environment.IsDevelopment())
+{
+    await DatabaseSeeder.SeedAsync(app.Services);
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {

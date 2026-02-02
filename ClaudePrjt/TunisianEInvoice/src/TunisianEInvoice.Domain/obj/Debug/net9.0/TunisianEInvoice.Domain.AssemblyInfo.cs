@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TunisianEInvoice.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7e9f03df16b024395fdb37a0b7053cb5706cc551")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1bf6807a077bccee4a6b923ada6e0325c9473ee9")]
 [assembly: System.Reflection.AssemblyProductAttribute("TunisianEInvoice.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TunisianEInvoice.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

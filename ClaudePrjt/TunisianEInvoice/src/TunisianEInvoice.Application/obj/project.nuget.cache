@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "XrKf/IsYVH8=",
+  "dgSpecHash": "PixsjykJq98=",
   "success": true,
-  "projectFilePath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
+  "projectFilePath": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\lenovo\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512",
     "C:\\Users\\lenovo\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\12.0.1\\automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512",

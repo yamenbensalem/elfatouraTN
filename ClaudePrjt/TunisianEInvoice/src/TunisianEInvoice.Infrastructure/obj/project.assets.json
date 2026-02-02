@@ -5123,8 +5123,8 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
-              "projectPath": "C:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj"
+            "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj": {
+              "projectPath": "c:\\Projects\\elfatouraTN\\elfatouraTN\\ClaudePrjt\\TunisianEInvoice\\src\\TunisianEInvoice.Application\\TunisianEInvoice.Application.csproj"
             }
           }
         }
