@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
@@ -9,6 +10,9 @@ using TunisianEInvoice.Application.Interfaces;
 using TunisianEInvoice.Application.Services;
 using TunisianEInvoice.Application.Mappings;
 using TunisianEInvoice.Infrastructure.Services;
+using TunisianEInvoice.Infrastructure.Persistence;
+using TunisianEInvoice.Infrastructure.Persistence.Repositories;
+using TunisianEInvoice.Infrastructure.ExternalServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,15 +24,29 @@ builder.Services.AddControllers()
         options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
     });
 
+// Configure Entity Framework with SQL Server
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? "Server=(localdb)\\mssqllocaldb;Database=TunisianEInvoice;Trusted_Connection=True;MultipleActiveResultSets=true";
+builder.Services.AddDbContext<EInvoiceDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
 // Configure AutoMapper
 builder.Services.AddAutoMapper(typeof(InvoiceMappingProfile));
+
+// Register repositories
+builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 
 // Register application services
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IXmlGeneratorService, XmlGeneratorService>();
 builder.Services.AddScoped<IXmlValidationService, XmlValidationService>();
+builder.Services.AddScoped<IQrCodeService, QrCodeService>();
 builder.Services.AddScoped<IPdfGeneratorService, PdfGeneratorService>();
 builder.Services.AddScoped<ISignatureService, SignatureService>();
+
+// Register TTN service with HttpClient
+builder.Services.AddHttpClient<ITtnService, TtnService>();
 
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
