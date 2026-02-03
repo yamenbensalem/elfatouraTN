@@ -31,3 +31,5 @@ _ReSharper*/
 .idea/
 #Nuget packages folder
 packages/
+ClaudePrjt/TunisianEInvoice/tests/TunisianEInvoice.IntegrationTests/obj
+ClaudePrjt/TunisianEInvoice/tests/TunisianEInvoice.UnitTests/obj
