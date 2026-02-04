@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using TunisianEInvoice.Application.DTOs;
+using TunisianEInvoice.Domain.Entities;
 
 namespace TunisianEInvoice.Application.Interfaces
 {
@@ -9,5 +10,6 @@ namespace TunisianEInvoice.Application.Interfaces
         Task<string> GenerateXmlWithoutSignatureAsync(InvoiceRequestDto request);
         Task<ValidationResultDto> ValidateInvoiceAsync(InvoiceRequestDto request);
         Task<byte[]> GeneratePdfAsync(InvoiceRequestDto request);
+        Task<byte[]> RegeneratePdfFromInvoiceAsync(InvoiceRecord invoiceRecord);
     }
 }

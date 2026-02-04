@@ -139,6 +139,123 @@ namespace TunisianEInvoice.Application.Services
             return await _pdfGenerator.GeneratePdfAsync(invoice);
         }
 
+        public async Task<byte[]> RegeneratePdfFromInvoiceAsync(InvoiceRecord invoiceRecord)
+        {
+            // Map InvoiceRecord to Invoice domain entity for PDF generation
+            var invoice = MapInvoiceRecordToInvoice(invoiceRecord);
+            return await _pdfGenerator.GeneratePdfAsync(invoice);
+        }
+
+        private Invoice MapInvoiceRecordToInvoice(InvoiceRecord record)
+        {
+            var invoice = new Invoice
+            {
+                Header = new InvoiceHeader
+                {
+                    SenderIdentifier = new PartnerIdentifier { Value = record.Sender?.MatriculeFiscal ?? "", Type = "I-01" },
+                    ReceiverIdentifier = new PartnerIdentifier { Value = record.Receiver?.MatriculeFiscal ?? "", Type = "I-01" }
+                },
+                Body = new InvoiceBody
+                {
+                    DocumentInfo = new DocumentInfo
+                    {
+                        DocumentIdentifier = record.DocumentIdentifier,
+                        DocumentTypeCode = record.DocumentTypeCode,
+                        DocumentTypeName = record.DocumentTypeName
+                    },
+                    DateInfo = new DateInfo
+                    {
+                        InvoiceDate = record.InvoiceDate,
+                        DueDate = record.DueDate,
+                        PeriodFrom = record.PeriodFrom,
+                        PeriodTo = record.PeriodTo
+                    },
+                    Partners = new List<Partner>
+                    {
+                        new Partner
+                        {
+                            FunctionCode = "I-62", // Sender
+                            Name = record.Sender?.Name ?? "",
+                            Identifier = new PartnerIdentifier { Value = record.Sender?.MatriculeFiscal ?? "", Type = "I-01" },
+                            Address = record.Sender != null ? new Address
+                            {
+                                Description = record.Sender.AddressDescription ?? "",
+                                Street = record.Sender.Street ?? "",
+                                City = record.Sender.City ?? "",
+                                PostalCode = record.Sender.PostalCode ?? "",
+                                CountryCode = record.Sender.CountryCode ?? "TN",
+                                Language = "fr"
+                            } : null,
+                            Contacts = new List<Contact>
+                            {
+                                new Contact { CommunicationType = "I-101", CommunicationAddress = record.Sender?.Phone ?? "" },
+                                new Contact { CommunicationType = "EM", CommunicationAddress = record.Sender?.Email ?? "" }
+                            }
+                        },
+                        new Partner
+                        {
+                            FunctionCode = "I-64", // Receiver
+                            Name = record.Receiver?.Name ?? "",
+                            Identifier = new PartnerIdentifier { Value = record.Receiver?.MatriculeFiscal ?? "", Type = "I-01" },
+                            Address = record.Receiver != null ? new Address
+                            {
+                                Description = record.Receiver.AddressDescription ?? "",
+                                Street = record.Receiver.Street ?? "",
+                                City = record.Receiver.City ?? "",
+                                PostalCode = record.Receiver.PostalCode ?? "",
+                                CountryCode = record.Receiver.CountryCode ?? "TN",
+                                Language = "fr"
+                            } : null
+                        }
+                    },
+                    LineItems = record.LineItems?.Select(line => new LineItem
+                    {
+                        ItemIdentifier = line.LineNumber.ToString(),
+                        ItemCode = line.ItemCode ?? "",
+                        ItemDescription = line.ItemDescription ?? "",
+                        Language = line.Language ?? "fr",
+                        Quantity = line.Quantity,
+                        MeasurementUnit = line.MeasurementUnit ?? "UNIT",
+                        Amounts = new LineAmounts
+                        {
+                            UnitPriceExcludingTax = line.UnitPriceExcludingTax,
+                            TotalExcludingTax = line.TotalExcludingTax
+                        },
+                        Tax = new TaxInfo
+                        {
+                            TaxTypeCode = line.TaxTypeCode ?? "I-1602",
+                            TaxTypeName = line.TaxTypeName ?? "TVA",
+                            TaxRate = line.TaxRate
+                        }
+                    }).ToList() ?? new List<LineItem>(),
+                    Taxes = record.Taxes?.Select(tax => new TaxDetails
+                    {
+                        TaxTypeCode = tax.TaxTypeCode ?? "I-1602",
+                        TaxTypeName = tax.TaxTypeName ?? "TVA",
+                        TaxRate = tax.TaxRate,
+                        TaxableBase = tax.TaxableBase,
+                        TaxAmount = tax.TaxAmount
+                    }).ToList() ?? new List<TaxDetails>(),
+                    Amounts = new InvoiceAmounts
+                    {
+                        TotalExcludingTax = record.TotalExcludingTax,
+                        TotalTaxAmount = record.TotalTaxAmount,
+                        StampDuty = record.StampDuty,
+                        TotalIncludingTax = record.TotalIncludingTax,
+                        AmountInWords = record.AmountInWords ?? ""
+                    }
+                },
+                TtnValidation = new RefTtnVal
+                {
+                    TtnReference = record.TtnReference ?? "",
+                    ValidationDate = record.TtnValidationDate ?? DateTime.Now,
+                    QrCodeBase64 = record.QrCodeBase64 ?? ""
+                }
+            };
+
+            return invoice;
+        }
+
         private void CalculateTotals(Invoice invoice)
         {
             // Calculate line totals

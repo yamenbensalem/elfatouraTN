@@ -77,6 +77,113 @@ namespace TunisianEInvoice.API.Controllers
         }
 
         /// <summary>
+        /// Download PDF for stored invoice
+        /// </summary>
+        /// <param name="id">Invoice ID</param>
+        /// <returns>PDF file</returns>
+        [HttpGet("{id:guid}/pdf")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DownloadPdf(Guid id)
+        {
+            try
+            {
+                var invoice = await _invoiceRepository.GetByIdWithDetailsAsync(id);
+                if (invoice == null)
+                {
+                    return NotFound(new { error = "Facture non trouvée" });
+                }
+
+                // If PDF is stored, return it directly
+                if (invoice.PdfDocument != null && invoice.PdfDocument.Length > 0)
+                {
+                    return File(invoice.PdfDocument, "application/pdf", $"Facture_{invoice.DocumentIdentifier}.pdf");
+                }
+
+                // Otherwise, regenerate PDF from stored invoice data
+                var pdfBytes = await _invoiceService.RegeneratePdfFromInvoiceAsync(invoice);
+                if (pdfBytes != null && pdfBytes.Length > 0)
+                {
+                    return File(pdfBytes, "application/pdf", $"Facture_{invoice.DocumentIdentifier}.pdf");
+                }
+
+                return NotFound(new { error = "PDF non disponible pour cette facture" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"Erreur: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Download XML (unsigned) for stored invoice
+        /// </summary>
+        /// <param name="id">Invoice ID</param>
+        /// <returns>XML file</returns>
+        [HttpGet("{id:guid}/xml")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DownloadXml(Guid id)
+        {
+            try
+            {
+                var invoice = await _invoiceRepository.GetByIdWithDetailsAsync(id);
+                if (invoice == null)
+                {
+                    return NotFound(new { error = "Facture non trouvée" });
+                }
+
+                if (string.IsNullOrEmpty(invoice.XmlWithoutSignature))
+                {
+                    return NotFound(new { error = "XML non disponible pour cette facture" });
+                }
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(invoice.XmlWithoutSignature);
+                return File(bytes, "application/xml", $"Facture_{invoice.DocumentIdentifier}.xml");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"Erreur: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Download signed XML for stored invoice
+        /// </summary>
+        /// <param name="id">Invoice ID</param>
+        /// <returns>Signed XML file</returns>
+        [HttpGet("{id:guid}/xml-signed")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DownloadSignedXml(Guid id)
+        {
+            try
+            {
+                var invoice = await _invoiceRepository.GetByIdWithDetailsAsync(id);
+                if (invoice == null)
+                {
+                    return NotFound(new { error = "Facture non trouvée" });
+                }
+
+                var xmlContent = !string.IsNullOrEmpty(invoice.XmlWithSignature) 
+                    ? invoice.XmlWithSignature 
+                    : invoice.XmlWithoutSignature;
+
+                if (string.IsNullOrEmpty(xmlContent))
+                {
+                    return NotFound(new { error = "XML non disponible pour cette facture" });
+                }
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(xmlContent);
+                return File(bytes, "application/xml", $"Facture_{invoice.DocumentIdentifier}_signed.xml");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"Erreur: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
         /// Generate Tunisian electronic invoice (XML without signature + XML with signature + PDF)
         /// </summary>
         /// <param name="request">Invoice data</param>
