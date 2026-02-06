@@ -36,6 +36,7 @@ public class CreateDevisClientCommandHandler : IRequestHandler<CreateDevisClient
         // Créer le devis
         var devis = new DevisClient
         {
+            CodeEntreprise = _currentUserService.CodeEntreprise!,
             NumeroDevis = numeroDevis,
             DateDevis = request.DateDevis,
             DateValidite = request.DateValidite ?? request.DateDevis.AddDays(30),

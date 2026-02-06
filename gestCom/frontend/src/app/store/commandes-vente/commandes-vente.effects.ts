@@ -53,8 +53,8 @@ export class CommandesVenteEffects {
   loadCommandeVente$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CommandesVentePageActions.loadCommandeVente),
-      switchMap(({ codeCommande }) =>
-        this.commandesVenteService.getById(codeCommande).pipe(
+      switchMap(({ numeroCommande }) =>
+        this.commandesVenteService.getById(numeroCommande).pipe(
           map((commande) => CommandesVenteApiActions.loadCommandeVenteSuccess({ commande })),
           catchError((error) =>
             of(CommandesVenteApiActions.loadCommandeVenteFailure({
@@ -94,7 +94,7 @@ export class CommandesVenteEffects {
         ofType(CommandesVenteApiActions.createCommandeVenteSuccess),
         tap(({ commande }) => {
           this.snackBar.open(
-            `Commande de vente "${commande.codeCommande}" créée avec succès`,
+            `Commande de vente "${commande.numeroCommande}" créée avec succès`,
             'Fermer',
             { duration: 3000, panelClass: 'snackbar-success' }
           );
@@ -109,8 +109,8 @@ export class CommandesVenteEffects {
   updateCommandeVente$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CommandesVentePageActions.updateCommandeVente),
-      exhaustMap(({ codeCommande, commande }) =>
-        this.commandesVenteService.update(codeCommande, commande).pipe(
+      exhaustMap(({ numeroCommande, commande }) =>
+        this.commandesVenteService.update(numeroCommande, commande).pipe(
           map((updatedCommande) => CommandesVenteApiActions.updateCommandeVenteSuccess({ commande: updatedCommande })),
           catchError((error) =>
             of(CommandesVenteApiActions.updateCommandeVenteFailure({
@@ -131,7 +131,7 @@ export class CommandesVenteEffects {
         ofType(CommandesVenteApiActions.updateCommandeVenteSuccess),
         tap(({ commande }) => {
           this.snackBar.open(
-            `Commande de vente "${commande.codeCommande}" mise à jour avec succès`,
+            `Commande de vente "${commande.numeroCommande}" mise à jour avec succès`,
             'Fermer',
             { duration: 3000, panelClass: 'snackbar-success' }
           );
@@ -146,9 +146,9 @@ export class CommandesVenteEffects {
   deleteCommandeVente$ = createEffect(() =>
     this.actions$.pipe(
       ofType(CommandesVentePageActions.deleteCommandeVente),
-      exhaustMap(({ codeCommande }) =>
-        this.commandesVenteService.delete(codeCommande).pipe(
-          map(() => CommandesVenteApiActions.deleteCommandeVenteSuccess({ codeCommande })),
+      exhaustMap(({ numeroCommande }) =>
+        this.commandesVenteService.delete(numeroCommande).pipe(
+          map(() => CommandesVenteApiActions.deleteCommandeVenteSuccess({ numeroCommande })),
           catchError((error) =>
             of(CommandesVenteApiActions.deleteCommandeVenteFailure({
               error: error.error?.message || 'Erreur lors de la suppression de la commande de vente'

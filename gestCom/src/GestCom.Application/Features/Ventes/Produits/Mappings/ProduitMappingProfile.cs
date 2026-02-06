@@ -1,5 +1,6 @@
 using AutoMapper;
 using GestCom.Application.Features.Ventes.Produits.DTOs;
+using GestCom.Application.Features.Ventes.Produits.Commands.CreateProduit;
 using GestCom.Domain.Entities;
 
 namespace GestCom.Application.Features.Ventes.Produits.Mappings;
@@ -30,5 +31,19 @@ public class ProduitMappingProfile : Profile
         // DTO -> Entity
         CreateMap<CreateProduitDto, Produit>();
         CreateMap<UpdateProduitDto, Produit>();
+
+        // Command → Entity
+        CreateMap<CreateProduitCommand, Produit>()
+            .AfterMap((src, dest) =>
+            {
+                if (!string.IsNullOrEmpty(src.CodeUnite) && int.TryParse(src.CodeUnite, out var u))
+                    dest.CodeUniteProduit = u;
+                if (!string.IsNullOrEmpty(src.CodeCategorie) && int.TryParse(src.CodeCategorie, out var c))
+                    dest.CodeCategorieProduit = c;
+                if (!string.IsNullOrEmpty(src.CodeMagasin) && int.TryParse(src.CodeMagasin, out var m))
+                    dest.CodeMagasinProduit = m;
+                if (!string.IsNullOrEmpty(src.CodeTVA) && int.TryParse(src.CodeTVA, out var t))
+                    dest.CodeTVAProduit = t;
+            });
     }
 }

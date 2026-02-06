@@ -17,7 +17,7 @@ import { PaginatedResponse } from '../models/client.model';
 })
 export class ProduitsService {
   private readonly apiService = inject(ApiService);
-  private readonly endpoint = '/produits';
+  private readonly endpoint = 'produits';
 
   /**
    * Get all produits with optional pagination and filtering

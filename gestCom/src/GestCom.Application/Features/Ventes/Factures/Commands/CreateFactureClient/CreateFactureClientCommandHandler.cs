@@ -45,6 +45,7 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
         // Créer la facture
         var facture = new FactureClient
         {
+            CodeEntreprise = _currentUserService.CodeEntreprise!,
             NumeroFacture = numeroFacture,
             DateFacture = request.DateFacture,
             DateEcheance = request.DateEcheance ?? request.DateFacture.AddDays(30),

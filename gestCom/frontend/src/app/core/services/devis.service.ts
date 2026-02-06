@@ -16,7 +16,7 @@ import { PaginatedResponse } from '../models/client.model';
 })
 export class DevisService {
   private readonly apiService = inject(ApiService);
-  private readonly endpoint = '/devis';
+  private readonly endpoint = 'devis';
 
   /**
    * Get all devis with optional pagination and filtering

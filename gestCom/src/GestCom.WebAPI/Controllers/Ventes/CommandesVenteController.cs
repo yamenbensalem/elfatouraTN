@@ -1,5 +1,6 @@
 using GestCom.Application.Features.Ventes.Commandes.Commands.CreateCommandeVente;
 using GestCom.Application.Features.Ventes.Commandes.DTOs;
+using GestCom.Shared.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,15 +16,17 @@ public class CommandesVenteController : BaseApiController
     /// Récupère la liste des commandes de vente
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<CommandeVenteListDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<CommandeVenteListDto>>> GetAll(
+    [ProducesResponseType(typeof(PagedResult<CommandeVenteListDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<CommandeVenteListDto>>> GetAll(
         [FromQuery] string? codeClient,
         [FromQuery] string? statut,
         [FromQuery] DateTime? dateDebut,
-        [FromQuery] DateTime? dateFin)
+        [FromQuery] DateTime? dateFin,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
-        // Pour l'instant, retourner une liste vide - à implémenter avec une Query dédiée
-        return Ok(Array.Empty<CommandeVenteListDto>());
+        // Pour l'instant, retourner une liste vide paginée - à implémenter avec une Query dédiée
+        return Ok(new PagedResult<CommandeVenteListDto>(new List<CommandeVenteListDto>(), 0, pageNumber, pageSize));
     }
 
     /// <summary>

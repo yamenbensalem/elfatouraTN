@@ -31,7 +31,7 @@ export interface FournisseursState extends EntityState<Fournisseur> {
  */
 export const fournisseursAdapter: EntityAdapter<Fournisseur> = createEntityAdapter<Fournisseur>({
   selectId: (fournisseur: Fournisseur) => fournisseur.codeFournisseur,
-  sortComparer: (a, b) => a.raisonSociale.localeCompare(b.raisonSociale),
+  sortComparer: (a, b) => (a.raisonSociale || '').localeCompare(b.raisonSociale || ''),
 });
 
 /**

@@ -27,10 +27,10 @@ export interface DevisState extends EntityState<Devis> {
 }
 
 /**
- * Entity adapter for Devis using codeDevis as ID, sorted by dateDevis desc
+ * Entity adapter for Devis using numeroDevis as ID, sorted by dateDevis desc
  */
 export const devisAdapter: EntityAdapter<Devis> = createEntityAdapter<Devis>({
-  selectId: (devis: Devis) => devis.codeDevis,
+  selectId: (devis: Devis) => devis.numeroDevis,
   sortComparer: (a, b) => {
     const dateA = new Date(a.dateDevis).getTime();
     const dateB = new Date(b.dateDevis).getTime();
@@ -110,7 +110,7 @@ export const devisFeature = createFeature({
         ...state,
         loading: false,
         error: null,
-        selectedDevisId: devis.codeDevis,
+        selectedDevisId: devis.numeroDevis,
       })
     ),
 
@@ -154,7 +154,7 @@ export const devisFeature = createFeature({
 
     on(DevisApiActions.updateDevisSuccess, (state, { devis }): DevisState =>
       devisAdapter.updateOne(
-        { id: devis.codeDevis, changes: devis },
+        { id: devis.numeroDevis, changes: devis },
         {
           ...state,
           loading: false,
@@ -176,13 +176,13 @@ export const devisFeature = createFeature({
       error: null,
     })),
 
-    on(DevisApiActions.deleteDevisSuccess, (state, { codeDevis }): DevisState =>
-      devisAdapter.removeOne(codeDevis, {
+    on(DevisApiActions.deleteDevisSuccess, (state, { numeroDevis }): DevisState =>
+      devisAdapter.removeOne(numeroDevis, {
         ...state,
         loading: false,
         error: null,
         selectedDevisId:
-          state.selectedDevisId === codeDevis ? null : state.selectedDevisId,
+          state.selectedDevisId === numeroDevis ? null : state.selectedDevisId,
         pagination: {
           ...state.pagination,
           totalCount: Math.max(0, state.pagination.totalCount - 1),
@@ -197,9 +197,9 @@ export const devisFeature = createFeature({
     })),
 
     // Select Devis
-    on(DevisPageActions.selectDevis, (state, { codeDevis }): DevisState => ({
+    on(DevisPageActions.selectDevis, (state, { numeroDevis }): DevisState => ({
       ...state,
-      selectedDevisId: codeDevis,
+      selectedDevisId: numeroDevis,
     })),
 
     on(DevisPageActions.clearSelection, (state): DevisState => ({

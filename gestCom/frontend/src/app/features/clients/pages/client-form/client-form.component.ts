@@ -51,7 +51,7 @@ export class ClientFormComponent implements OnInit, OnDestroy {
   private initForm(): void {
     this.clientForm = this.fb.group({
       codeClient: ['', [Validators.required, Validators.maxLength(50)]],
-      raisonSociale: ['', [Validators.required, Validators.maxLength(200)]],
+      nom: ['', [Validators.required, Validators.maxLength(200)]],
       adresse: ['', [Validators.maxLength(500)]],
       codePostal: ['', [Validators.maxLength(10)]],
       ville: ['', [Validators.maxLength(100)]],
@@ -93,7 +93,7 @@ export class ClientFormComponent implements OnInit, OnDestroy {
         if (client) {
           this.clientForm.patchValue({
             codeClient: client.codeClient,
-            raisonSociale: client.raisonSociale,
+            nom: client.nom,
             adresse: client.adresse || '',
             codePostal: client.codePostal || '',
             ville: client.ville || '',
@@ -151,7 +151,7 @@ export class ClientFormComponent implements OnInit, OnDestroy {
 
     if (this.isEditMode && this.clientCode) {
       const updateRequest: UpdateClientRequest = {
-        raisonSociale: formValue.raisonSociale,
+        nom: formValue.nom,
         adresse: formValue.adresse || undefined,
         codePostal: formValue.codePostal || undefined,
         ville: formValue.ville || undefined,
@@ -170,7 +170,7 @@ export class ClientFormComponent implements OnInit, OnDestroy {
     } else {
       const createRequest: CreateClientRequest = {
         codeClient: formValue.codeClient,
-        raisonSociale: formValue.raisonSociale,
+        nom: formValue.nom,
         adresse: formValue.adresse || undefined,
         codePostal: formValue.codePostal || undefined,
         ville: formValue.ville || undefined,

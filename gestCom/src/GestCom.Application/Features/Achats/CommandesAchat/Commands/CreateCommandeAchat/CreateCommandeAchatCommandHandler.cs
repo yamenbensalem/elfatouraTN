@@ -1,4 +1,5 @@
 using AutoMapper;
+using GestCom.Application.Common.Interfaces;
 using GestCom.Application.Features.Achats.CommandesAchat.DTOs;
 using GestCom.Domain.Entities;
 using GestCom.Domain.Interfaces;
@@ -11,27 +12,31 @@ public class CreateCommandeAchatCommandHandler : IRequestHandler<CreateCommandeA
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ICurrentUserService _currentUserService;
 
-    public CreateCommandeAchatCommandHandler(IUnitOfWork unitOfWork, IMapper mapper)
+    public CreateCommandeAchatCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _currentUserService = currentUserService;
     }
 
     public async Task<CommandeAchatDto> Handle(CreateCommandeAchatCommand request, CancellationToken cancellationToken)
     {
-        var fournisseur = await _unitOfWork.Fournisseurs.GetByCodeAsync(request.CodeFournisseur, request.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise ?? request.CodeEntreprise;
+
+        var fournisseur = await _unitOfWork.Fournisseurs.GetByCodeAsync(request.CodeFournisseur, codeEntreprise);
         if (fournisseur == null)
         {
             throw new NotFoundException("Fournisseur", request.CodeFournisseur);
         }
 
-        var numeroCommande = await GenerateNumeroCommandeAsync(request.CodeEntreprise);
+        var numeroCommande = await GenerateNumeroCommandeAsync(codeEntreprise);
 
         var commande = new CommandeAchat
         {
             NumeroCommande = numeroCommande,
-            CodeEntreprise = request.CodeEntreprise,
+            CodeEntreprise = codeEntreprise,
             DateCommande = request.DateCommande,
             DateLivraison = request.DateLivraison,
             CodeFournisseur = request.CodeFournisseur,
@@ -46,7 +51,7 @@ public class CreateCommandeAchatCommandHandler : IRequestHandler<CreateCommandeA
 
         foreach (var ligneDto in request.Lignes)
         {
-            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, request.CodeEntreprise);
+            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, codeEntreprise);
             if (produit == null)
             {
                 throw new NotFoundException("Produit", ligneDto.CodeProduit);
@@ -90,7 +95,7 @@ public class CreateCommandeAchatCommandHandler : IRequestHandler<CreateCommandeA
         await _unitOfWork.CommandesAchat.AddAsync(commande);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var createdCommande = await _unitOfWork.CommandesAchat.GetByNumeroAsync(numeroCommande, request.CodeEntreprise);
+        var createdCommande = await _unitOfWork.CommandesAchat.GetByNumeroAsync(numeroCommande, codeEntreprise);
         return _mapper.Map<CommandeAchatDto>(createdCommande);
     }
 

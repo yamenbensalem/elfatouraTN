@@ -48,9 +48,9 @@
     <mat-card *ngIf="!vm.isEmpty && !vm.loading && !vm.error" class="table-card">
       <table mat-table [dataSource]="filteredDevis" class="devis-table">
         <!-- Code Devis Column -->
-        <ng-container matColumnDef="codeDevis">
-          <th mat-header-cell *matHeaderCellDef>Code Devis</th>
-          <td mat-cell *matCellDef="let devis">{{ devis.codeDevis }}</td>
+        <ng-container matColumnDef="numeroDevis">
+          <th mat-header-cell *matHeaderCellDef>Numéro Devis</th>
+          <td mat-cell *matCellDef="let devis">{{ devis.numeroDevis }}</td>
         </ng-container>
 
         <!-- Date Devis Column -->
@@ -60,9 +60,9 @@
         </ng-container>
 
         <!-- Client Column -->
-        <ng-container matColumnDef="raisonSocialeClient">
+        <ng-container matColumnDef="nomClient">
           <th mat-header-cell *matHeaderCellDef>Client</th>
-          <td mat-cell *matCellDef="let devis">{{ devis.raisonSocialeClient || devis.codeClient }}</td>
+          <td mat-cell *matCellDef="let devis">{{ devis.nomClient || devis.codeClient }}</td>
         </ng-container>
 
         <!-- Montant TTC Column -->

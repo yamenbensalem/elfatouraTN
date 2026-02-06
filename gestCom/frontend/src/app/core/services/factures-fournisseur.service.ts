@@ -17,7 +17,7 @@ import { PaginatedResponse } from '../models/client.model';
 })
 export class FacturesFournisseurService {
   private readonly apiService = inject(ApiService);
-  private readonly endpoint = '/factures-fournisseur';
+  private readonly endpoint = 'factures/fournisseurs';
 
   /**
    * Get all factures fournisseur with optional pagination and filtering

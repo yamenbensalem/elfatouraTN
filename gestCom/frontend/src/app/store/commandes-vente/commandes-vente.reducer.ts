@@ -30,7 +30,7 @@ export interface CommandesVenteState extends EntityState<CommandeVente> {
  * Entity adapter for CommandeVente using codeCommande as ID
  */
 export const commandesVenteAdapter: EntityAdapter<CommandeVente> = createEntityAdapter<CommandeVente>({
-  selectId: (commande: CommandeVente) => commande.codeCommande,
+  selectId: (commande: CommandeVente) => commande.numeroCommande,
   sortComparer: (a, b) => new Date(b.dateCommande).getTime() - new Date(a.dateCommande).getTime(),
 });
 
@@ -106,7 +106,7 @@ export const commandesVenteFeature = createFeature({
         ...state,
         loading: false,
         error: null,
-        selectedCommandeVenteId: commande.codeCommande,
+        selectedCommandeVenteId: commande.numeroCommande,
       })
     ),
 
@@ -150,7 +150,7 @@ export const commandesVenteFeature = createFeature({
 
     on(CommandesVenteApiActions.updateCommandeVenteSuccess, (state, { commande }): CommandesVenteState =>
       commandesVenteAdapter.updateOne(
-        { id: commande.codeCommande, changes: commande },
+        { id: commande.numeroCommande, changes: commande },
         {
           ...state,
           loading: false,
@@ -172,13 +172,13 @@ export const commandesVenteFeature = createFeature({
       error: null,
     })),
 
-    on(CommandesVenteApiActions.deleteCommandeVenteSuccess, (state, { codeCommande }): CommandesVenteState =>
-      commandesVenteAdapter.removeOne(codeCommande, {
+    on(CommandesVenteApiActions.deleteCommandeVenteSuccess, (state, { numeroCommande }): CommandesVenteState =>
+      commandesVenteAdapter.removeOne(numeroCommande, {
         ...state,
         loading: false,
         error: null,
         selectedCommandeVenteId:
-          state.selectedCommandeVenteId === codeCommande ? null : state.selectedCommandeVenteId,
+          state.selectedCommandeVenteId === numeroCommande ? null : state.selectedCommandeVenteId,
         pagination: {
           ...state.pagination,
           totalCount: Math.max(0, state.pagination.totalCount - 1),
@@ -193,9 +193,9 @@ export const commandesVenteFeature = createFeature({
     })),
 
     // Select Commande Vente
-    on(CommandesVentePageActions.selectCommandeVente, (state, { codeCommande }): CommandesVenteState => ({
+    on(CommandesVentePageActions.selectCommandeVente, (state, { numeroCommande }): CommandesVenteState => ({
       ...state,
-      selectedCommandeVenteId: codeCommande,
+      selectedCommandeVenteId: numeroCommande,
     })),
 
     on(CommandesVentePageActions.clearSelection, (state): CommandesVenteState => ({

@@ -94,7 +94,7 @@ export class ClientsEffects {
         ofType(ClientsApiActions.createClientSuccess),
         tap(({ client }) => {
           this.snackBar.open(
-            `Client "${client.raisonSociale}" créé avec succès`,
+            `Client "${client.nom}" créé avec succès`,
             'Fermer',
             { duration: 3000, panelClass: 'snackbar-success' }
           );
@@ -131,7 +131,7 @@ export class ClientsEffects {
         ofType(ClientsApiActions.updateClientSuccess),
         tap(({ client }) => {
           this.snackBar.open(
-            `Client "${client.raisonSociale}" mis à jour avec succès`,
+            `Client "${client.nom}" mis à jour avec succès`,
             'Fermer',
             { duration: 3000, panelClass: 'snackbar-success' }
           );

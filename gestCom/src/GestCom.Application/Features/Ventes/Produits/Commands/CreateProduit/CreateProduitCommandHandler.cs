@@ -52,6 +52,9 @@ public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand,
 
         // Créer l'entité
         var produit = _mapper.Map<Produit>(request);
+        produit.CodeEntreprise = _currentUserService.CodeEntreprise!;
+        produit.DateCreation = DateTime.Now;
+        if (produit.CodeDevise == 0) produit.CodeDevise = 5; // Défaut TND
 
         // Calculer les prix si nécessaire
         if (request.TauxMarge > 0 && request.PrixAchatTTC > 0)

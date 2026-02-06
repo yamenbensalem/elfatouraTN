@@ -48,6 +48,7 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
 
         var commande = new CommandeVente
         {
+            CodeEntreprise = _currentUserService.CodeEntreprise!,
             NumeroCommande = numeroCommande,
             DateCommande = request.DateCommande,
             DateLivraisonPrevue = request.DateLivraisonPrevue,

@@ -13,10 +13,10 @@ export interface LigneDevis {
 }
 
 export interface Devis {
-  codeDevis: string;
+  numeroDevis: string;
   dateDevis: Date;
   codeClient: string;
-  raisonSocialeClient?: string;
+  nomClient?: string;
   objet?: string;
   montantHT: number;
   montantTVA: number;
@@ -32,7 +32,7 @@ export interface Devis {
 }
 
 export interface CreateDevisRequest {
-  codeDevis: string;
+  numeroDevis: string;
   dateDevis: Date;
   codeClient: string;
   objet?: string;

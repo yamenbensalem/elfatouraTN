@@ -29,7 +29,7 @@ export class DevisListComponent implements OnInit, OnDestroy {
   devisList$ = this.store.select(selectAllDevis);
 
   // Table configuration
-  displayedColumns: string[] = ['codeDevis', 'dateDevis', 'raisonSocialeClient', 'montantTTC', 'statut', 'actions'];
+  displayedColumns: string[] = ['numeroDevis', 'dateDevis', 'nomClient', 'montantTTC', 'statut', 'actions'];
 
   // Local state
   filteredDevis: Devis[] = [];
@@ -65,8 +65,8 @@ export class DevisListComponent implements OnInit, OnDestroy {
       this.filteredDevis = [...this.allDevis];
     } else {
       this.filteredDevis = this.allDevis.filter(devis =>
-        devis.codeDevis.toLowerCase().includes(this.searchTerm) ||
-        (devis.raisonSocialeClient && devis.raisonSocialeClient.toLowerCase().includes(this.searchTerm)) ||
+        devis.numeroDevis.toLowerCase().includes(this.searchTerm) ||
+        (devis.nomClient && devis.nomClient.toLowerCase().includes(this.searchTerm)) ||
         devis.codeClient.toLowerCase().includes(this.searchTerm) ||
         (devis.objet && devis.objet.toLowerCase().includes(this.searchTerm)) ||
         devis.statut.toLowerCase().includes(this.searchTerm)
@@ -87,17 +87,17 @@ export class DevisListComponent implements OnInit, OnDestroy {
   }
 
   viewDevis(devis: Devis): void {
-    this.router.navigate(['/devis', devis.codeDevis]);
+    this.router.navigate(['/devis', devis.numeroDevis]);
   }
 
   editDevis(devis: Devis): void {
-    this.router.navigate(['/devis', devis.codeDevis, 'edit']);
+    this.router.navigate(['/devis', devis.numeroDevis, 'edit']);
   }
 
   deleteDevis(devis: Devis): void {
     const dialogData: ConfirmDialogData = {
       title: 'Supprimer le devis',
-      message: `Êtes-vous sûr de vouloir supprimer le devis "${devis.codeDevis}" ?`,
+      message: `Êtes-vous sûr de vouloir supprimer le devis "${devis.numeroDevis}" ?`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler'
     };
@@ -109,7 +109,7 @@ export class DevisListComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.store.dispatch(DevisPageActions.deleteDevis({ codeDevis: devis.codeDevis }));
+        this.store.dispatch(DevisPageActions.deleteDevis({ numeroDevis: devis.numeroDevis }));
       }
     });
   }

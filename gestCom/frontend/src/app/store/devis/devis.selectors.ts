@@ -51,10 +51,10 @@ export const selectDevisCount = createSelector(
 /**
  * Select a single devis by code
  */
-export const selectDevisByCode = (codeDevis: string) =>
+export const selectDevisByCode = (numeroDevis: string) =>
   createSelector(
     selectDevisDictionary,
-    (entities) => entities[codeDevis] ?? null
+    (entities) => entities[numeroDevis] ?? null
   );
 
 /**
@@ -108,8 +108,8 @@ export const selectDevisForDropdown = createSelector(
   selectAllDevis,
   (devisList) =>
     devisList.map((devis) => ({
-      value: devis.codeDevis,
-      label: `${devis.codeDevis} - ${devis.raisonSocialeClient || devis.codeClient}`,
+      value: devis.numeroDevis,
+      label: `${devis.numeroDevis} - ${devis.nomClient || devis.codeClient}`,
     }))
 );
 

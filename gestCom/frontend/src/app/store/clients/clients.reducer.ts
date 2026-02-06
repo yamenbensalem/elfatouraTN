@@ -31,7 +31,7 @@ export interface ClientsState extends EntityState<Client> {
  */
 export const clientsAdapter: EntityAdapter<Client> = createEntityAdapter<Client>({
   selectId: (client: Client) => client.codeClient,
-  sortComparer: (a, b) => a.raisonSociale.localeCompare(b.raisonSociale),
+  sortComparer: (a, b) => (a.nom || '').localeCompare(b.nom || ''),
 });
 
 /**

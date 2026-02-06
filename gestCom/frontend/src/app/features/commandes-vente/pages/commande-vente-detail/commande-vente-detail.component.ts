@@ -50,7 +50,7 @@ export class CommandeVenteDetailComponent implements OnInit, OnDestroy {
   }
 
   private loadCommande(code: string): void {
-    this.store.dispatch(CommandesVentePageActions.loadCommandeVente({ codeCommande: code }));
+    this.store.dispatch(CommandesVentePageActions.loadCommandeVente({ numeroCommande: code }));
   }
 
   private subscribeToCommande(code: string): void {
@@ -88,7 +88,7 @@ export class CommandeVenteDetailComponent implements OnInit, OnDestroy {
 
     const dialogData: ConfirmDialogData = {
       title: 'Supprimer la commande de vente',
-      message: `Êtes-vous sûr de vouloir supprimer la commande "${this.commande.codeCommande}" ?`,
+      message: `Êtes-vous sûr de vouloir supprimer la commande "${this.commande.numeroCommande}" ?`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler'
     };
@@ -100,7 +100,7 @@ export class CommandeVenteDetailComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result && this.commandeCode) {
-        this.store.dispatch(CommandesVentePageActions.deleteCommandeVente({ codeCommande: this.commandeCode }));
+        this.store.dispatch(CommandesVentePageActions.deleteCommandeVente({ numeroCommande: this.commandeCode }));
       }
     });
   }

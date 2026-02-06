@@ -1,6 +1,7 @@
 using AutoMapper;
 using GestCom.Domain.Entities;
 using GestCom.Application.Features.Ventes.Clients.DTOs;
+using GestCom.Application.Features.Ventes.Clients.Commands.CreateClient;
 
 namespace GestCom.Application.Features.Ventes.Clients.Mappings;
 
@@ -22,5 +23,8 @@ public class ClientMappingProfile : Profile
         // DTO → Entity
         CreateMap<CreateClientDto, Client>();
         CreateMap<UpdateClientDto, Client>();
+
+        // Command → Entity
+        CreateMap<CreateClientCommand, Client>();
     }
 }

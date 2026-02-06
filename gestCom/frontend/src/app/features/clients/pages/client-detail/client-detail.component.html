@@ -22,7 +22,7 @@
   <!-- Client Details -->
   <ng-container *ngIf="client && !(loading$ | async) && !(error$ | async)">
     <!-- Page Header -->
-    <app-page-header [title]="client.raisonSociale" [subtitle]="'Code: ' + client.codeClient">
+    <app-page-header [title]="client.nom" [subtitle]="'Code: ' + client.codeClient">
       <div actions>
         <button mat-stroked-button (click)="goBack()">
           <mat-icon>arrow_back</mat-icon>
@@ -58,7 +58,7 @@
             
             <div class="detail-item">
               <span class="label">Raison Sociale</span>
-              <span class="value">{{ client.raisonSociale }}</span>
+              <span class="value">{{ client.nom }}</span>
             </div>
             
             <div class="detail-item">

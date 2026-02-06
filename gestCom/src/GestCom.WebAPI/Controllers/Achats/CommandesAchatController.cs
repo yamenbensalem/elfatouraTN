@@ -1,6 +1,7 @@
 using GestCom.Application.Features.Achats.CommandesAchat.Commands.CreateCommandeAchat;
 using GestCom.Application.Features.Achats.CommandesAchat.DTOs;
 using GestCom.Application.Common.Interfaces;
+using GestCom.Shared.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,15 +25,17 @@ public class CommandesAchatController : BaseApiController
     /// Récupère la liste des commandes d'achat
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<CommandeAchatListDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<CommandeAchatListDto>>> GetAll(
+    [ProducesResponseType(typeof(PagedResult<CommandeAchatListDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<CommandeAchatListDto>>> GetAll(
         [FromQuery] string? codeFournisseur,
         [FromQuery] string? statut,
         [FromQuery] DateTime? dateDebut,
-        [FromQuery] DateTime? dateFin)
+        [FromQuery] DateTime? dateFin,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
         // À implémenter avec une Query dédiée
-        return Ok(Array.Empty<CommandeAchatListDto>());
+        return Ok(new PagedResult<CommandeAchatListDto>(new List<CommandeAchatListDto>(), 0, pageNumber, pageSize));
     }
 
     /// <summary>

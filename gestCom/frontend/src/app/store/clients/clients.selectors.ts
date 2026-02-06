@@ -109,8 +109,8 @@ export const selectClientsForDropdown = createSelector(
   (clients) =>
     clients.map((client) => ({
       value: client.codeClient,
-      label: `${client.codeClient} - ${client.raisonSociale}`,
-      raisonSociale: client.raisonSociale,
+      label: `${client.codeClient} - ${client.nom}`,
+      raisonSociale: client.nom,
     }))
 );
 

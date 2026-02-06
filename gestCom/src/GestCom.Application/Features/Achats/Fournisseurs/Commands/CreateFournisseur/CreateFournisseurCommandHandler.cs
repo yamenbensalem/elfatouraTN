@@ -41,6 +41,8 @@ public class CreateFournisseurCommandHandler : IRequestHandler<CreateFournisseur
         }
 
         var fournisseur = _mapper.Map<Fournisseur>(request);
+        fournisseur.CodeEntreprise = _currentUserService.CodeEntreprise!;
+        fournisseur.DateCreation = DateTime.Now;
 
         await _unitOfWork.Fournisseurs.AddAsync(fournisseur);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

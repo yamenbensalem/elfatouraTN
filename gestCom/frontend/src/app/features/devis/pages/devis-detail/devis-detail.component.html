@@ -22,7 +22,7 @@
   <!-- Devis Details -->
   <ng-container *ngIf="devis && !(loading$ | async) && !(error$ | async)">
     <!-- Page Header -->
-    <app-page-header [title]="'Devis ' + devis.codeDevis" [subtitle]="'Client: ' + (devis.raisonSocialeClient || devis.codeClient)">
+    <app-page-header [title]="'Devis ' + devis.numeroDevis" [subtitle]="'Client: ' + (devis.nomClient || devis.codeClient)">
       <div actions>
         <button mat-stroked-button (click)="goBack()">
           <mat-icon>arrow_back</mat-icon>
@@ -53,7 +53,7 @@
           <div class="detail-grid">
             <div class="detail-item">
               <span class="label">Code Devis</span>
-              <span class="value">{{ devis.codeDevis }}</span>
+              <span class="value">{{ devis.numeroDevis }}</span>
             </div>
 
             <div class="detail-item">
@@ -63,7 +63,7 @@
 
             <div class="detail-item">
               <span class="label">Client</span>
-              <span class="value">{{ devis.raisonSocialeClient || devis.codeClient }}</span>
+              <span class="value">{{ devis.nomClient || devis.codeClient }}</span>
             </div>
 
             <div class="detail-item">

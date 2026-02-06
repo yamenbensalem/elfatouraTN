@@ -22,7 +22,7 @@
   <!-- Commande Details -->
   <ng-container *ngIf="commande && !(loading$ | async) && !(error$ | async)">
     <!-- Page Header -->
-    <app-page-header [title]="'Commande ' + commande.codeCommande" [subtitle]="'Client: ' + (commande.raisonSocialeClient || commande.codeClient)">
+    <app-page-header [title]="'Commande ' + commande.numeroCommande" [subtitle]="'Client: ' + (commande.nomClient || commande.codeClient)">
       <div actions>
         <button mat-stroked-button (click)="goBack()">
           <mat-icon>arrow_back</mat-icon>
@@ -53,7 +53,7 @@
           <div class="detail-grid">
             <div class="detail-item">
               <span class="label">Code Commande</span>
-              <span class="value">{{ commande.codeCommande }}</span>
+              <span class="value">{{ commande.numeroCommande }}</span>
             </div>
 
             <div class="detail-item">
@@ -63,7 +63,7 @@
 
             <div class="detail-item">
               <span class="label">Client</span>
-              <span class="value">{{ commande.raisonSocialeClient || commande.codeClient }}</span>
+              <span class="value">{{ commande.nomClient || commande.codeClient }}</span>
             </div>
 
             <div class="detail-item">

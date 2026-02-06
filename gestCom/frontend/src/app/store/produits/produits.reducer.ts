@@ -32,7 +32,7 @@ export interface ProduitsState extends EntityState<Produit> {
  */
 export const produitsAdapter: EntityAdapter<Produit> = createEntityAdapter<Produit>({
   selectId: (produit: Produit) => produit.codeProduit,
-  sortComparer: (a, b) => a.designation.localeCompare(b.designation),
+  sortComparer: (a, b) => (a.designation || '').localeCompare(b.designation || ''),
 });
 
 /**

@@ -14,11 +14,11 @@ export const CommandesVentePageActions = createActionGroup({
   source: 'Commandes Vente Page',
   events: {
     'Load Commandes Vente': props<{ params?: PaginationParams }>(),
-    'Load Commande Vente': props<{ codeCommande: string }>(),
+    'Load Commande Vente': props<{ numeroCommande: string }>(),
     'Create Commande Vente': props<{ commande: CreateCommandeVenteRequest }>(),
-    'Update Commande Vente': props<{ codeCommande: string; commande: UpdateCommandeVenteRequest }>(),
-    'Delete Commande Vente': props<{ codeCommande: string }>(),
-    'Select Commande Vente': props<{ codeCommande: string | null }>(),
+    'Update Commande Vente': props<{ numeroCommande: string; commande: UpdateCommandeVenteRequest }>(),
+    'Delete Commande Vente': props<{ numeroCommande: string }>(),
+    'Select Commande Vente': props<{ numeroCommande: string | null }>(),
     'Set Filter': props<{ filter: CommandesVenteFilter }>(),
     'Clear Filter': emptyProps(),
     'Set Page': props<{ pageNumber: number; pageSize: number }>(),
@@ -40,7 +40,7 @@ export const CommandesVenteApiActions = createActionGroup({
     'Create Commande Vente Failure': props<{ error: string }>(),
     'Update Commande Vente Success': props<{ commande: CommandeVente }>(),
     'Update Commande Vente Failure': props<{ error: string }>(),
-    'Delete Commande Vente Success': props<{ codeCommande: string }>(),
+    'Delete Commande Vente Success': props<{ numeroCommande: string }>(),
     'Delete Commande Vente Failure': props<{ error: string }>(),
   }
 });

@@ -21,13 +21,13 @@
           <div class="form-grid">
             <!-- Code Devis -->
             <mat-form-field appearance="outline">
-              <mat-label>Code Devis</mat-label>
-              <input matInput formControlName="codeDevis" placeholder="Ex: DEV001">
-              <mat-error *ngIf="hasError('codeDevis', 'required')">
-                Le code devis est obligatoire
+              <mat-label>Numéro Devis</mat-label>
+              <input matInput formControlName="numeroDevis" placeholder="Ex: DEV001">
+              <mat-error *ngIf="hasError('numeroDevis', 'required')">
+                Le numéro devis est obligatoire
               </mat-error>
-              <mat-error *ngIf="hasError('codeDevis', 'maxlength')">
-                Le code ne peut pas dépasser 50 caractères
+              <mat-error *ngIf="hasError('numeroDevis', 'maxlength')">
+                Le numéro ne peut pas dépasser 50 caractères
               </mat-error>
             </mat-form-field>
 

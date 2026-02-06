@@ -65,8 +65,8 @@ export class DevisEffects {
   loadDevis$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DevisPageActions.loadDevis),
-      switchMap(({ codeDevis }) =>
-        this.devisService.getById(codeDevis).pipe(
+      switchMap(({ numeroDevis }) =>
+        this.devisService.getById(numeroDevis).pipe(
           map((devis) => DevisApiActions.loadDevisSuccess({ devis })),
           catchError((error) =>
             of(DevisApiActions.loadDevisFailure({
@@ -106,7 +106,7 @@ export class DevisEffects {
         ofType(DevisApiActions.createDevisSuccess),
         tap(({ devis }) => {
           this.snackBar.open(
-            `Devis "${devis.codeDevis}" créé avec succès`,
+            `Devis "${devis.numeroDevis}" créé avec succès`,
             'Fermer',
             { duration: 3000, panelClass: 'snackbar-success' }
           );
@@ -121,8 +121,8 @@ export class DevisEffects {
   updateDevis$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DevisPageActions.updateDevis),
-      exhaustMap(({ codeDevis, devis }) =>
-        this.devisService.update(codeDevis, devis).pipe(
+      exhaustMap(({ numeroDevis, devis }) =>
+        this.devisService.update(numeroDevis, devis).pipe(
           map((updatedDevis) => DevisApiActions.updateDevisSuccess({ devis: updatedDevis })),
           catchError((error) =>
             of(DevisApiActions.updateDevisFailure({
@@ -143,7 +143,7 @@ export class DevisEffects {
         ofType(DevisApiActions.updateDevisSuccess),
         tap(({ devis }) => {
           this.snackBar.open(
-            `Devis "${devis.codeDevis}" mis à jour avec succès`,
+            `Devis "${devis.numeroDevis}" mis à jour avec succès`,
             'Fermer',
             { duration: 3000, panelClass: 'snackbar-success' }
           );
@@ -158,9 +158,9 @@ export class DevisEffects {
   deleteDevis$ = createEffect(() =>
     this.actions$.pipe(
       ofType(DevisPageActions.deleteDevis),
-      exhaustMap(({ codeDevis }) =>
-        this.devisService.delete(codeDevis).pipe(
-          map(() => DevisApiActions.deleteDevisSuccess({ codeDevis })),
+      exhaustMap(({ numeroDevis }) =>
+        this.devisService.delete(numeroDevis).pipe(
+          map(() => DevisApiActions.deleteDevisSuccess({ numeroDevis })),
           catchError((error) =>
             of(DevisApiActions.deleteDevisFailure({
               error: error.error?.message || 'Erreur lors de la suppression du devis'

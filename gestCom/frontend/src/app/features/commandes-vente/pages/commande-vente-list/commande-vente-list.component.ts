@@ -29,7 +29,7 @@ export class CommandeVenteListComponent implements OnInit, OnDestroy {
   commandes$ = this.store.select(selectAllCommandesVente);
 
   // Table configuration
-  displayedColumns: string[] = ['codeCommande', 'dateCommande', 'raisonSocialeClient', 'montantTTC', 'statut', 'actions'];
+  displayedColumns: string[] = ['numeroCommande', 'dateCommande', 'nomClient', 'montantTTC', 'statut', 'actions'];
 
   // Local state
   filteredCommandes: CommandeVente[] = [];
@@ -64,8 +64,8 @@ export class CommandeVenteListComponent implements OnInit, OnDestroy {
       this.filteredCommandes = [...this.allCommandes];
     } else {
       this.filteredCommandes = this.allCommandes.filter(commande =>
-        commande.codeCommande.toLowerCase().includes(this.searchTerm) ||
-        (commande.raisonSocialeClient && commande.raisonSocialeClient.toLowerCase().includes(this.searchTerm)) ||
+        commande.numeroCommande.toLowerCase().includes(this.searchTerm) ||
+        (commande.nomClient && commande.nomClient.toLowerCase().includes(this.searchTerm)) ||
         commande.codeClient.toLowerCase().includes(this.searchTerm) ||
         commande.statut.toLowerCase().includes(this.searchTerm)
       );
@@ -85,17 +85,17 @@ export class CommandeVenteListComponent implements OnInit, OnDestroy {
   }
 
   viewCommande(commande: CommandeVente): void {
-    this.router.navigate(['/commandes-vente', commande.codeCommande]);
+    this.router.navigate(['/commandes-vente', commande.numeroCommande]);
   }
 
   editCommande(commande: CommandeVente): void {
-    this.router.navigate(['/commandes-vente', commande.codeCommande, 'edit']);
+    this.router.navigate(['/commandes-vente', commande.numeroCommande, 'edit']);
   }
 
   deleteCommande(commande: CommandeVente): void {
     const dialogData: ConfirmDialogData = {
       title: 'Supprimer la commande de vente',
-      message: `Êtes-vous sûr de vouloir supprimer la commande "${commande.codeCommande}" ?`,
+      message: `Êtes-vous sûr de vouloir supprimer la commande "${commande.numeroCommande}" ?`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler'
     };
@@ -107,7 +107,7 @@ export class CommandeVenteListComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.store.dispatch(CommandesVentePageActions.deleteCommandeVente({ codeCommande: commande.codeCommande }));
+        this.store.dispatch(CommandesVentePageActions.deleteCommandeVente({ numeroCommande: commande.numeroCommande }));
       }
     });
   }

@@ -33,6 +33,7 @@ public class CreateBonLivraisonCommandHandler : IRequestHandler<CreateBonLivrais
 
         var bonLivraison = new BonLivraison
         {
+            CodeEntreprise = _currentUserService.CodeEntreprise!,
             NumeroBonLivraison = numeroBL,
             DateBonLivraison = request.DateBonLivraison,
             CodeClient = request.CodeClient,

@@ -36,9 +36,11 @@ public class CreateCategorieCommandHandler : IRequestHandler<CreateCategorieComm
 
         var categorie = new CategorieProduit
         {
+            CodeEntreprise = _currentUserService.CodeEntreprise!,
             CodeCategorie = codeCategorie,
             Designation = request.LibelleCategorie ?? string.Empty,
-            Description = request.Description
+            Description = request.Description,
+            DateCreation = DateTime.Now
         };
 
         await _unitOfWork.CategoriesProduit.AddAsync(categorie);

@@ -17,7 +17,7 @@ import {
 })
 export class ClientsService {
   private readonly apiService = inject(ApiService);
-  private readonly endpoint = '/clients';
+  private readonly endpoint = 'clients';
 
   /**
    * Get all clients with optional pagination and filtering

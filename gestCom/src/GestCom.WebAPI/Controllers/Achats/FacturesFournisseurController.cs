@@ -1,5 +1,6 @@
 using GestCom.Application.Features.Achats.FacturesFournisseur.Commands.CreateFactureFournisseur;
 using GestCom.Application.Features.Achats.FacturesFournisseur.DTOs;
+using GestCom.Shared.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,15 +17,17 @@ public class FacturesFournisseurController : BaseApiController
     /// Récupère la liste des factures fournisseurs
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<FactureFournisseurListDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<FactureFournisseurListDto>>> GetAll(
+    [ProducesResponseType(typeof(PagedResult<FactureFournisseurListDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResult<FactureFournisseurListDto>>> GetAll(
         [FromQuery] string? codeFournisseur,
         [FromQuery] string? statut,
         [FromQuery] DateTime? dateDebut,
-        [FromQuery] DateTime? dateFin)
+        [FromQuery] DateTime? dateFin,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
     {
         // À implémenter avec une Query dédiée
-        return Ok(Array.Empty<FactureFournisseurListDto>());
+        return Ok(new PagedResult<FactureFournisseurListDto>(new List<FactureFournisseurListDto>(), 0, pageNumber, pageSize));
     }
 
     /// <summary>

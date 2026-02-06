@@ -50,7 +50,7 @@ export class DevisFormComponent implements OnInit, OnDestroy {
 
   private initForm(): void {
     this.devisForm = this.fb.group({
-      codeDevis: ['', [Validators.required, Validators.maxLength(50)]],
+      numeroDevis: ['', [Validators.required, Validators.maxLength(50)]],
       dateDevis: [new Date(), [Validators.required]],
       codeClient: ['', [Validators.required, Validators.maxLength(50)]],
       objet: ['', [Validators.maxLength(500)]],
@@ -70,12 +70,12 @@ export class DevisFormComponent implements OnInit, OnDestroy {
       this.loadDevis(code);
 
       // Disable code field in edit mode
-      this.devisForm.get('codeDevis')?.disable();
+      this.devisForm.get('numeroDevis')?.disable();
     }
   }
 
   private loadDevis(code: string): void {
-    this.store.dispatch(DevisPageActions.loadDevis({ codeDevis: code }));
+    this.store.dispatch(DevisPageActions.loadDevis({ numeroDevis: code }));
 
     // Wait for devis to load and populate form
     this.store.select(selectDevisByCode(code))
@@ -87,7 +87,7 @@ export class DevisFormComponent implements OnInit, OnDestroy {
       .subscribe(devis => {
         if (devis) {
           this.devisForm.patchValue({
-            codeDevis: devis.codeDevis,
+            numeroDevis: devis.numeroDevis,
             dateDevis: devis.dateDevis ? new Date(devis.dateDevis) : new Date(),
             codeClient: devis.codeClient,
             objet: devis.objet || '',
@@ -150,12 +150,12 @@ export class DevisFormComponent implements OnInit, OnDestroy {
       };
 
       this.store.dispatch(DevisPageActions.updateDevis({
-        codeDevis: this.devisCode,
+        numeroDevis: this.devisCode,
         devis: updateRequest
       }));
     } else {
       const createRequest: CreateDevisRequest = {
-        codeDevis: formValue.codeDevis,
+        numeroDevis: formValue.numeroDevis,
         dateDevis: formValue.dateDevis,
         codeClient: formValue.codeClient,
         objet: formValue.objet || undefined,

@@ -10,10 +10,10 @@ export interface LigneCommandeVente {
 }
 
 export interface CommandeVente {
-  codeCommande: string;
+  numeroCommande: string;
   dateCommande: Date;
   codeClient: string;
-  raisonSocialeClient?: string;
+  nomClient?: string;
   montantHT: number;
   montantTVA: number;
   montantTTC: number;
@@ -25,7 +25,7 @@ export interface CommandeVente {
 }
 
 export interface CreateCommandeVenteRequest {
-  codeCommande: string;
+  numeroCommande: string;
   dateCommande: Date;
   codeClient: string;
   dateLivraisonPrevue?: Date;

@@ -17,7 +17,7 @@ import { PaginatedResponse } from '../models/client.model';
 })
 export class CommandesAchatService {
   private readonly apiService = inject(ApiService);
-  private readonly endpoint = '/commandes-achat';
+  private readonly endpoint = 'commandes-achat';
 
   /**
    * Get all commandes d'achat with optional pagination and filtering

@@ -3,7 +3,7 @@
  */
 export interface Client {
   codeClient: string;
-  raisonSociale: string;
+  nom: string;
   adresse?: string;
   ville?: string;
   codePostal?: string;
@@ -27,7 +27,7 @@ export interface Client {
  */
 export interface CreateClientRequest {
   codeClient: string;
-  raisonSociale: string;
+  nom: string;
   adresse?: string;
   ville?: string;
   codePostal?: string;
@@ -47,7 +47,7 @@ export interface CreateClientRequest {
  * Update client request DTO
  */
 export interface UpdateClientRequest {
-  raisonSociale?: string;
+  nom?: string;
   adresse?: string;
   ville?: string;
   codePostal?: string;

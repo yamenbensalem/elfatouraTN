@@ -21,13 +21,13 @@
           <div class="form-grid">
             <!-- Code Commande -->
             <mat-form-field appearance="outline">
-              <mat-label>Code Commande</mat-label>
-              <input matInput formControlName="codeCommande" placeholder="Ex: CV001">
-              <mat-error *ngIf="hasError('codeCommande', 'required')">
-                Le code commande est obligatoire
+              <mat-label>Numéro Commande</mat-label>
+              <input matInput formControlName="numeroCommande" placeholder="Ex: CV001">
+              <mat-error *ngIf="hasError('numeroCommande', 'required')">
+                Le numéro commande est obligatoire
               </mat-error>
-              <mat-error *ngIf="hasError('codeCommande', 'maxlength')">
-                Le code ne peut pas dépasser 50 caractères
+              <mat-error *ngIf="hasError('numeroCommande', 'maxlength')">
+                Le numéro ne peut pas dépasser 50 caractères
               </mat-error>
             </mat-form-field>
 

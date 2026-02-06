@@ -50,7 +50,7 @@ export class CommandeVenteFormComponent implements OnInit, OnDestroy {
 
   private initForm(): void {
     this.commandeForm = this.fb.group({
-      codeCommande: ['', [Validators.required, Validators.maxLength(50)]],
+      numeroCommande: ['', [Validators.required, Validators.maxLength(50)]],
       dateCommande: [new Date(), [Validators.required]],
       codeClient: ['', [Validators.required, Validators.maxLength(50)]],
       dateLivraisonPrevue: [null],
@@ -68,12 +68,12 @@ export class CommandeVenteFormComponent implements OnInit, OnDestroy {
       this.loadCommande(code);
 
       // Disable code field in edit mode
-      this.commandeForm.get('codeCommande')?.disable();
+      this.commandeForm.get('numeroCommande')?.disable();
     }
   }
 
   private loadCommande(code: string): void {
-    this.store.dispatch(CommandesVentePageActions.loadCommandeVente({ codeCommande: code }));
+    this.store.dispatch(CommandesVentePageActions.loadCommandeVente({ numeroCommande: code }));
 
     this.store.select(selectCommandeVenteByCode(code))
       .pipe(
@@ -84,7 +84,7 @@ export class CommandeVenteFormComponent implements OnInit, OnDestroy {
       .subscribe(commande => {
         if (commande) {
           this.commandeForm.patchValue({
-            codeCommande: commande.codeCommande,
+            numeroCommande: commande.numeroCommande,
             dateCommande: commande.dateCommande ? new Date(commande.dateCommande) : null,
             codeClient: commande.codeClient,
             dateLivraisonPrevue: commande.dateLivraisonPrevue ? new Date(commande.dateLivraisonPrevue) : null,
@@ -140,12 +140,12 @@ export class CommandeVenteFormComponent implements OnInit, OnDestroy {
       };
 
       this.store.dispatch(CommandesVentePageActions.updateCommandeVente({
-        codeCommande: this.commandeCode,
+        numeroCommande: this.commandeCode,
         commande: updateRequest
       }));
     } else {
       const createRequest: CreateCommandeVenteRequest = {
-        codeCommande: formValue.codeCommande,
+        numeroCommande: formValue.numeroCommande,
         dateCommande: formValue.dateCommande,
         codeClient: formValue.codeClient,
         dateLivraisonPrevue: formValue.dateLivraisonPrevue || undefined,

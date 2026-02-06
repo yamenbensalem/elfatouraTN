@@ -50,7 +50,7 @@ export class DevisDetailComponent implements OnInit, OnDestroy {
   }
 
   private loadDevis(code: string): void {
-    this.store.dispatch(DevisPageActions.loadDevis({ codeDevis: code }));
+    this.store.dispatch(DevisPageActions.loadDevis({ numeroDevis: code }));
   }
 
   private subscribeToDevis(code: string): void {
@@ -99,7 +99,7 @@ export class DevisDetailComponent implements OnInit, OnDestroy {
 
     const dialogData: ConfirmDialogData = {
       title: 'Supprimer le devis',
-      message: `Êtes-vous sûr de vouloir supprimer le devis "${this.devis.codeDevis}" ?`,
+      message: `Êtes-vous sûr de vouloir supprimer le devis "${this.devis.numeroDevis}" ?`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler'
     };
@@ -111,7 +111,7 @@ export class DevisDetailComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result && this.devisCode) {
-        this.store.dispatch(DevisPageActions.deleteDevis({ codeDevis: this.devisCode }));
+        this.store.dispatch(DevisPageActions.deleteDevis({ numeroDevis: this.devisCode }));
       }
     });
   }

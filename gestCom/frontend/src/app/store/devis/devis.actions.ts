@@ -17,19 +17,19 @@ export const DevisPageActions = createActionGroup({
     'Load Devis List': props<{ params?: PaginationParams }>(),
 
     // Load single devis
-    'Load Devis': props<{ codeDevis: string }>(),
+    'Load Devis': props<{ numeroDevis: string }>(),
 
     // Create devis
     'Create Devis': props<{ devis: CreateDevisRequest }>(),
 
     // Update devis
-    'Update Devis': props<{ codeDevis: string; devis: UpdateDevisRequest }>(),
+    'Update Devis': props<{ numeroDevis: string; devis: UpdateDevisRequest }>(),
 
     // Delete devis
-    'Delete Devis': props<{ codeDevis: string }>(),
+    'Delete Devis': props<{ numeroDevis: string }>(),
 
     // Select devis
-    'Select Devis': props<{ codeDevis: string | null }>(),
+    'Select Devis': props<{ numeroDevis: string | null }>(),
 
     // Filter and pagination
     'Set Filter': props<{ filter: DevisFilter }>(),
@@ -64,7 +64,7 @@ export const DevisApiActions = createActionGroup({
     'Update Devis Failure': props<{ error: string }>(),
 
     // Delete devis results
-    'Delete Devis Success': props<{ codeDevis: string }>(),
+    'Delete Devis Success': props<{ numeroDevis: string }>(),
     'Delete Devis Failure': props<{ error: string }>(),
   }
 });

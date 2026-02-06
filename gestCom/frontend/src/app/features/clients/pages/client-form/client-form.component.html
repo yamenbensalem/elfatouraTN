@@ -34,11 +34,11 @@
             <!-- Raison Sociale -->
             <mat-form-field appearance="outline">
               <mat-label>Raison Sociale</mat-label>
-              <input matInput formControlName="raisonSociale" placeholder="Nom de l'entreprise">
-              <mat-error *ngIf="hasError('raisonSociale', 'required')">
-                La raison sociale est obligatoire
+              <input matInput formControlName="nom" placeholder="Nom de l'entreprise">
+              <mat-error *ngIf="hasError('nom', 'required')">
+                La raison sociale est requise
               </mat-error>
-              <mat-error *ngIf="hasError('raisonSociale', 'maxlength')">
+              <mat-error *ngIf="hasError('nom', 'maxlength')">
                 La raison sociale ne peut pas dépasser 200 caractères
               </mat-error>
             </mat-form-field>

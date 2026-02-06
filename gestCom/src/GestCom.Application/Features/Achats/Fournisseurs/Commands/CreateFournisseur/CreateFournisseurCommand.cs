@@ -20,4 +20,5 @@ public class CreateFournisseurCommand : IRequest<FournisseurDto>
     public string? Observations { get; set; }
     public decimal DelaiPaiement { get; set; }
     public decimal TauxRemise { get; set; }
+    public int CodeDevise { get; set; } = 5; // Défaut = TND
 }

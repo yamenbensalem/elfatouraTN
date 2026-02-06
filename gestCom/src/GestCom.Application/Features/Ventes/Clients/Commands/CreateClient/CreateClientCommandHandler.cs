@@ -35,6 +35,7 @@ public class CreateClientCommandHandler : IRequestHandler<CreateClientCommand, C
 
         // Créer l'entité
         var client = _mapper.Map<Client>(request);
+        client.CodeEntreprise = _currentUserService.CodeEntreprise!;
         client.Etat = "Actif";
         client.NombreTransactions = 0;
         client.DateCreation = DateTime.Now;

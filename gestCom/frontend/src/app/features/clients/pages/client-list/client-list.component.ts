@@ -32,13 +32,13 @@ export class ClientListComponent implements OnInit, OnDestroy {
   // Table configuration
   columns: TableColumn[] = [
     { key: 'codeClient', header: 'Code Client', sortable: true },
-    { key: 'raisonSociale', header: 'Raison Sociale', sortable: true },
+    { key: 'nom', header: 'Raison Sociale', sortable: true },
     { key: 'ville', header: 'Ville', sortable: true },
     { key: 'telephone', header: 'Téléphone', sortable: false },
     { key: 'email', header: 'Email', sortable: false }
   ];
 
-  displayedColumns: string[] = ['codeClient', 'raisonSociale', 'ville', 'telephone', 'email', 'actions'];
+  displayedColumns: string[] = ['codeClient', 'nom', 'ville', 'telephone', 'email', 'actions'];
 
   // Local state
   filteredClients: Client[] = [];
@@ -75,7 +75,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
     } else {
       this.filteredClients = this.allClients.filter(client =>
         client.codeClient.toLowerCase().includes(this.searchTerm) ||
-        client.raisonSociale.toLowerCase().includes(this.searchTerm) ||
+        client.nom.toLowerCase().includes(this.searchTerm) ||
         (client.ville && client.ville.toLowerCase().includes(this.searchTerm)) ||
         (client.email && client.email.toLowerCase().includes(this.searchTerm)) ||
         (client.telephone && client.telephone.includes(this.searchTerm))
@@ -117,7 +117,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
   deleteClient(client: Client): void {
     const dialogData: ConfirmDialogData = {
       title: 'Supprimer le client',
-      message: `Êtes-vous sûr de vouloir supprimer le client "${client.raisonSociale}" ?`,
+      message: `Êtes-vous sûr de vouloir supprimer le client "${client.nom}" ?`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler'
     };

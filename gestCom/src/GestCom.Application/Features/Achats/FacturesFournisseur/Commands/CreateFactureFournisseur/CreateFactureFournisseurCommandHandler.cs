@@ -53,6 +53,7 @@ public class CreateFactureFournisseurCommandHandler : IRequestHandler<CreateFact
         // Créer la facture
         var facture = new FactureFournisseur
         {
+            CodeEntreprise = _currentUserService.CodeEntreprise!,
             NumeroFacture = numeroFacture,
             DateFacture = request.DateFacture,
             DateEcheance = request.DateEcheance,

@@ -17,7 +17,7 @@ import {
 })
 export class FournisseursService {
   private readonly apiService = inject(ApiService);
-  private readonly endpoint = '/fournisseurs';
+  private readonly endpoint = 'fournisseurs';
 
   /**
    * Get all fournisseurs with optional pagination and filtering

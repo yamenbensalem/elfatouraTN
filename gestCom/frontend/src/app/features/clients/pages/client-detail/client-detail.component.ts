@@ -85,7 +85,7 @@ export class ClientDetailComponent implements OnInit, OnDestroy {
 
     const dialogData: ConfirmDialogData = {
       title: 'Supprimer le client',
-      message: `Êtes-vous sûr de vouloir supprimer le client "${this.client.raisonSociale}" ?`,
+      message: `Êtes-vous sûr de vouloir supprimer le client "${this.client.nom}" ?`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler'
     };
