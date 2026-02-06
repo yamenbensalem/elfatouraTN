@@ -1,0 +1,128 @@
+<mat-sidenav-container class="sidenav-container">
+  <!-- Sidenav -->
+  <mat-sidenav
+    #sidenav
+    class="sidenav"
+    [mode]="(isHandset$ | async) ? 'over' : 'side'"
+    [opened]="!(isHandset$ | async)"
+    [fixedInViewport]="true"
+    [fixedTopGap]="64"
+  >
+    <!-- Logo Section -->
+    <div class="sidenav-header">
+      <img src="assets/logo.png" alt="GestCom Logo" class="logo" onerror="this.style.display='none'">
+      <span class="logo-text">GestCom</span>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <!-- Navigation Links -->
+    <mat-nav-list>
+      @for (item of navItems; track item.label) {
+        @if (!item.children) {
+          <!-- Simple nav item -->
+          <a
+            mat-list-item
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            (click)="closeSidenavOnMobile()"
+          >
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        } @else {
+          <!-- Expandable nav item -->
+          <mat-list-item (click)="toggleNavItem(item)" class="expandable-item">
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+            <mat-icon class="expand-icon" [class.expanded]="item.expanded">
+              expand_more
+            </mat-icon>
+          </mat-list-item>
+
+          <!-- Children -->
+          @if (item.expanded) {
+            <div class="nav-children">
+              @for (child of item.children; track child.label) {
+                <a
+                  mat-list-item
+                  [routerLink]="child.route"
+                  routerLinkActive="active"
+                  class="child-item"
+                  (click)="closeSidenavOnMobile()"
+                >
+                  <mat-icon matListItemIcon>{{ child.icon }}</mat-icon>
+                  <span matListItemTitle>{{ child.label }}</span>
+                </a>
+              }
+            </div>
+          }
+        }
+      }
+    </mat-nav-list>
+
+    <!-- Footer -->
+    <div class="sidenav-footer">
+      <mat-divider></mat-divider>
+      <div class="version-info">
+        <span>GestCom v1.0.0</span>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <!-- Main Content -->
+  <mat-sidenav-content class="main-content">
+    <!-- Toolbar Header -->
+    <mat-toolbar color="primary" class="header-toolbar">
+      <button
+        mat-icon-button
+        (click)="toggleSidenav()"
+        aria-label="Toggle navigation"
+      >
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <span class="app-title">GestCom</span>
+
+      <span class="toolbar-spacer"></span>
+
+      <!-- Notifications -->
+      <button mat-icon-button aria-label="Notifications">
+        <mat-icon>notifications</mat-icon>
+      </button>
+
+      <!-- User Menu -->
+      <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="User menu">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+
+      <mat-menu #userMenu="matMenu" xPosition="before">
+        <div class="user-menu-header" mat-menu-item disabled>
+          <div class="user-info">
+            <span class="user-name">{{ userFullName$ | async }}</span>
+            <span class="user-email">{{ (user$ | async)?.email }}</span>
+          </div>
+        </div>
+        <mat-divider></mat-divider>
+        <button mat-menu-item routerLink="/profil">
+          <mat-icon>person</mat-icon>
+          <span>Mon Profil</span>
+        </button>
+        <button mat-menu-item routerLink="/parametres">
+          <mat-icon>settings</mat-icon>
+          <span>Paramètres</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="onLogout()">
+          <mat-icon>logout</mat-icon>
+          <span>Déconnexion</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+
+    <!-- Page Content -->
+    <main class="page-content">
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

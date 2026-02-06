@@ -1,0 +1,176 @@
+<div class="register-container">
+  <mat-card class="register-card">
+    <!-- Logo/Title Section -->
+    <div class="logo-section">
+      <div class="logo-icon">
+        <mat-icon>business</mat-icon>
+      </div>
+      <h1 class="app-title">GestCom</h1>
+      <p class="app-subtitle">Gestion Commerciale</p>
+    </div>
+
+    <mat-card-header>
+      <mat-card-title>Inscription</mat-card-title>
+      <mat-card-subtitle>Créez votre compte pour commencer</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Error Alert -->
+      <div class="alert alert-error" *ngIf="errorMessage">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage }}</span>
+        <button mat-icon-button (click)="dismissError()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        <!-- Name Fields Row -->
+        <div class="name-row">
+          <!-- Nom Field -->
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Nom</mat-label>
+            <input 
+              matInput 
+              type="text" 
+              formControlName="nom" 
+              placeholder="Votre nom"
+              autocomplete="family-name">
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-error *ngIf="nomControl?.touched && nomControl?.invalid">
+              {{ getNomError() }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Prénom Field -->
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Prénom</mat-label>
+            <input 
+              matInput 
+              type="text" 
+              formControlName="prenom" 
+              placeholder="Votre prénom"
+              autocomplete="given-name">
+            <mat-icon matPrefix>person_outline</mat-icon>
+            <mat-error *ngIf="prenomControl?.touched && prenomControl?.invalid">
+              {{ getPrenomError() }}
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Email Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input 
+            matInput 
+            type="email" 
+            formControlName="email" 
+            placeholder="votre@email.com"
+            autocomplete="email">
+          <mat-icon matPrefix>email</mat-icon>
+          <mat-error *ngIf="emailControl?.touched && emailControl?.invalid">
+            {{ getEmailError() }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Password Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Mot de passe</mat-label>
+          <input 
+            matInput 
+            [type]="hidePassword ? 'password' : 'text'" 
+            formControlName="password"
+            placeholder="Créez un mot de passe sécurisé"
+            autocomplete="new-password">
+          <mat-icon matPrefix>lock</mat-icon>
+          <button 
+            mat-icon-button 
+            matSuffix 
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="hidePassword ? 'Afficher le mot de passe' : 'Masquer le mot de passe'">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="passwordControl?.touched && passwordControl?.invalid">
+            {{ getPasswordError() }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Password Strength Indicator -->
+        <div class="password-strength" *ngIf="passwordControl?.value">
+          <div class="strength-bar">
+            <mat-progress-bar 
+              [value]="passwordStrength" 
+              [color]="getStrengthColor()">
+            </mat-progress-bar>
+          </div>
+          <span class="strength-label" [class]="'strength-' + getStrengthColor()">
+            Force: {{ passwordStrengthLabel }}
+          </span>
+        </div>
+
+        <!-- Confirm Password Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Confirmer le mot de passe</mat-label>
+          <input 
+            matInput 
+            [type]="hideConfirmPassword ? 'password' : 'text'" 
+            formControlName="confirmPassword"
+            placeholder="Confirmez votre mot de passe"
+            autocomplete="new-password">
+          <mat-icon matPrefix>lock_outline</mat-icon>
+          <button 
+            mat-icon-button 
+            matSuffix 
+            type="button"
+            (click)="toggleConfirmPasswordVisibility()"
+            [attr.aria-label]="hideConfirmPassword ? 'Afficher le mot de passe' : 'Masquer le mot de passe'">
+            <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="confirmPasswordControl?.touched && confirmPasswordControl?.invalid">
+            {{ getConfirmPasswordError() }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Terms Checkbox -->
+        <div class="terms-section">
+          <mat-checkbox formControlName="acceptTerms" color="primary">
+            J'accepte les <a href="javascript:void(0)" class="terms-link">conditions d'utilisation</a> 
+            et la <a href="javascript:void(0)" class="terms-link">politique de confidentialité</a>
+          </mat-checkbox>
+          <mat-error *ngIf="acceptTermsControl?.touched && acceptTermsControl?.invalid" class="terms-error">
+            Vous devez accepter les conditions d'utilisation
+          </mat-error>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          mat-raised-button 
+          color="primary" 
+          type="submit" 
+          class="submit-button"
+          [disabled]="isLoading">
+          <mat-spinner 
+            *ngIf="isLoading" 
+            diameter="20" 
+            class="button-spinner">
+          </mat-spinner>
+          <span *ngIf="!isLoading">Créer mon compte</span>
+          <span *ngIf="isLoading">Inscription en cours...</span>
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions>
+      <div class="login-link">
+        <span>Vous avez déjà un compte ?</span>
+        <a routerLink="/auth/login">Se connecter</a>
+      </div>
+    </mat-card-actions>
+  </mat-card>
+
+  <!-- Footer -->
+  <div class="register-footer">
+    <p>&copy; 2026 GestCom - Tous droits réservés</p>
+  </div>
+</div>

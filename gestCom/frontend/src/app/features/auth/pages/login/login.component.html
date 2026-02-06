@@ -1,0 +1,115 @@
+<div class="login-container">
+  <mat-card class="login-card">
+    <!-- Logo/Title Section -->
+    <div class="logo-section">
+      <div class="logo-icon">
+        <mat-icon>business</mat-icon>
+      </div>
+      <h1 class="app-title">GestCom</h1>
+      <p class="app-subtitle">Gestion Commerciale</p>
+    </div>
+
+    <mat-card-header>
+      <mat-card-title>Connexion</mat-card-title>
+      <mat-card-subtitle>Accédez à votre espace de gestion</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Success Alert -->
+      <div class="alert alert-success" *ngIf="successMessage">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ successMessage }}</span>
+        <button mat-icon-button (click)="dismissSuccess()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Error Alert -->
+      <div class="alert alert-error" *ngIf="errorMessage">
+        <mat-icon>error</mat-icon>
+        <span>{{ errorMessage }}</span>
+        <button mat-icon-button (click)="dismissError()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <!-- Email Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input 
+            matInput 
+            type="email" 
+            formControlName="email" 
+            placeholder="votre@email.com"
+            autocomplete="email">
+          <mat-icon matPrefix>email</mat-icon>
+          <mat-error *ngIf="emailControl?.touched && emailControl?.invalid">
+            {{ getEmailError() }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Password Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Mot de passe</mat-label>
+          <input 
+            matInput 
+            [type]="hidePassword ? 'password' : 'text'" 
+            formControlName="password"
+            placeholder="Votre mot de passe"
+            autocomplete="current-password">
+          <mat-icon matPrefix>lock</mat-icon>
+          <button 
+            mat-icon-button 
+            matSuffix 
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="hidePassword ? 'Afficher le mot de passe' : 'Masquer le mot de passe'">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="passwordControl?.touched && passwordControl?.invalid">
+            {{ getPasswordError() }}
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Remember Me & Forgot Password -->
+        <div class="form-options">
+          <mat-checkbox formControlName="rememberMe" color="primary">
+            Se souvenir de moi
+          </mat-checkbox>
+          <a href="javascript:void(0)" class="forgot-password-link">
+            Mot de passe oublié ?
+          </a>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          mat-raised-button 
+          color="primary" 
+          type="submit" 
+          class="submit-button"
+          [disabled]="isLoading">
+          <mat-spinner 
+            *ngIf="isLoading" 
+            diameter="20" 
+            class="button-spinner">
+          </mat-spinner>
+          <span *ngIf="!isLoading">Se connecter</span>
+          <span *ngIf="isLoading">Connexion en cours...</span>
+        </button>
+      </form>
+    </mat-card-content>
+
+    <mat-card-actions>
+      <div class="register-link">
+        <span>Vous n'avez pas de compte ?</span>
+        <a routerLink="/auth/register">Créer un compte</a>
+      </div>
+    </mat-card-actions>
+  </mat-card>
+
+  <!-- Footer -->
+  <div class="login-footer">
+    <p>&copy; 2026 GestCom - Tous droits réservés</p>
+  </div>
+</div>

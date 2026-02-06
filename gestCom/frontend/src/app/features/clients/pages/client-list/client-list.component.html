@@ -1,0 +1,133 @@
+<div class="client-list-container">
+  <!-- Page Header -->
+  <app-page-header title="Clients" subtitle="Gestion des clients">
+    <div actions>
+      <button mat-stroked-button color="primary" (click)="exportToExcel()" matTooltip="Exporter en Excel">
+        <mat-icon>file_download</mat-icon>
+        Exporter
+      </button>
+      <button mat-raised-button color="primary" (click)="navigateToNew()">
+        <mat-icon>add</mat-icon>
+        Nouveau Client
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- Search and Filters -->
+  <div class="filters-section">
+    <app-search-input 
+      placeholder="Rechercher par code, raison sociale, ville..."
+      (search)="onSearch($event)">
+    </app-search-input>
+  </div>
+
+  <!-- Content -->
+  <ng-container *ngIf="vm$ | async as vm">
+    <!-- Loading State -->
+    <div class="loading-container" *ngIf="vm.loading">
+      <app-loading-spinner message="Chargement des clients..."></app-loading-spinner>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-container" *ngIf="vm.error && !vm.loading">
+      <mat-icon color="warn">error</mat-icon>
+      <p>{{ vm.error }}</p>
+      <button mat-raised-button color="primary" (click)="loadClients()">
+        Réessayer
+      </button>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="vm.isEmpty && !vm.loading && !vm.error">
+      <mat-icon>people_outline</mat-icon>
+      <h3>Aucun client trouvé</h3>
+      <p>Commencez par ajouter votre premier client</p>
+      <button mat-raised-button color="primary" (click)="navigateToNew()">
+        <mat-icon>add</mat-icon>
+        Ajouter un client
+      </button>
+    </div>
+
+    <!-- Data Table -->
+    <mat-card *ngIf="!vm.isEmpty && !vm.loading && !vm.error" class="table-card">
+      <table mat-table [dataSource]="filteredClients" class="clients-table">
+        <!-- Code Client Column -->
+        <ng-container matColumnDef="codeClient">
+          <th mat-header-cell *matHeaderCellDef>Code Client</th>
+          <td mat-cell *matCellDef="let client">{{ client.codeClient }}</td>
+        </ng-container>
+
+        <!-- Raison Sociale Column -->
+        <ng-container matColumnDef="raisonSociale">
+          <th mat-header-cell *matHeaderCellDef>Raison Sociale</th>
+          <td mat-cell *matCellDef="let client">{{ client.raisonSociale }}</td>
+        </ng-container>
+
+        <!-- Ville Column -->
+        <ng-container matColumnDef="ville">
+          <th mat-header-cell *matHeaderCellDef>Ville</th>
+          <td mat-cell *matCellDef="let client">{{ client.ville || '-' }}</td>
+        </ng-container>
+
+        <!-- Téléphone Column -->
+        <ng-container matColumnDef="telephone">
+          <th mat-header-cell *matHeaderCellDef>Téléphone</th>
+          <td mat-cell *matCellDef="let client">{{ client.telephone || '-' }}</td>
+        </ng-container>
+
+        <!-- Email Column -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let client">{{ client.email || '-' }}</td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let client">
+            <div class="action-buttons">
+              <button mat-icon-button color="primary" 
+                      (click)="viewClient(client); $event.stopPropagation()"
+                      matTooltip="Voir les détails">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button mat-icon-button color="accent" 
+                      (click)="editClient(client); $event.stopPropagation()"
+                      matTooltip="Modifier">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" 
+                      (click)="deleteClient(client); $event.stopPropagation()"
+                      matTooltip="Supprimer">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+            class="table-row"
+            (click)="viewClient(row)">
+        </tr>
+
+        <!-- No data row -->
+        <tr class="mat-row no-data-row" *matNoDataRow>
+          <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+            <div class="no-data-message">
+              <mat-icon>search_off</mat-icon>
+              <span>Aucun résultat pour "{{ searchTerm }}"</span>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <mat-paginator 
+        [length]="filteredClients.length"
+        [pageSize]="10"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        showFirstLastButtons>
+      </mat-paginator>
+    </mat-card>
+  </ng-container>
+</div>

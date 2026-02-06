@@ -1,0 +1,10 @@
+// App Component Styles
+:host {
+  display: block;
+  height: 100%;
+}
+
+// Root router outlet
+router-outlet {
+  display: none;
+}

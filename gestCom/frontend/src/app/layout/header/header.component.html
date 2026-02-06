@@ -1,0 +1,46 @@
+<mat-toolbar color="primary" class="header-toolbar">
+  <button
+    mat-icon-button
+    (click)="onToggleSidenav()"
+    aria-label="Toggle navigation"
+  >
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <span class="app-title">{{ title }}</span>
+
+  <span class="toolbar-spacer"></span>
+
+  <!-- Notifications -->
+  <button mat-icon-button aria-label="Notifications">
+    <mat-icon>notifications</mat-icon>
+  </button>
+
+  <!-- User Menu -->
+  <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Menu utilisateur">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+
+  <mat-menu #userMenu="matMenu" xPosition="before">
+    <div class="user-menu-header" mat-menu-item disabled>
+      <div class="user-info">
+        <span class="user-name">{{ userFullName$ | async }}</span>
+        <span class="user-email">{{ (user$ | async)?.email }}</span>
+      </div>
+    </div>
+    <mat-divider></mat-divider>
+    <button mat-menu-item routerLink="/profil">
+      <mat-icon>person</mat-icon>
+      <span>Mon Profil</span>
+    </button>
+    <button mat-menu-item routerLink="/parametres">
+      <mat-icon>settings</mat-icon>
+      <span>Paramètres</span>
+    </button>
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="onLogout()">
+      <mat-icon>logout</mat-icon>
+      <span>Déconnexion</span>
+    </button>
+  </mat-menu>
+</mat-toolbar>

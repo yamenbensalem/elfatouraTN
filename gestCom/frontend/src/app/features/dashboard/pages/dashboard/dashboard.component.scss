@@ -1,0 +1,284 @@
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// Welcome Section
+.welcome-section {
+  margin-bottom: 32px;
+
+  .welcome-title {
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.87);
+    margin: 0 0 8px 0;
+
+    .user-name {
+      color: #1976d2;
+    }
+  }
+
+  .welcome-subtitle {
+    font-size: 1rem;
+    color: rgba(0, 0, 0, 0.6);
+    margin: 0;
+  }
+}
+
+// Loading State
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+
+  p {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 14px;
+  }
+}
+
+// Stats Grid
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+
+  @media (max-width: 1199px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 599px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.stat-card {
+  border-radius: 12px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .stat-card-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 8px 0;
+  }
+
+  .stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    flex-shrink: 0;
+
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.87);
+    line-height: 1.2;
+  }
+
+  .stat-title {
+    font-size: 0.875rem;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    margin-top: 4px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &.positive {
+      color: #388e3c;
+    }
+
+    &.negative {
+      color: #d32f2f;
+    }
+  }
+}
+
+// Section Styles
+.section {
+  margin-bottom: 32px;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.87);
+    margin: 0 0 16px 0;
+
+    mat-icon {
+      color: #1976d2;
+    }
+  }
+}
+
+// Quick Actions
+.quick-actions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.quick-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-weight: 500;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Content Grid
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+
+  @media (max-width: 959px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Activity Section
+.activity-section {
+  mat-card {
+    border-radius: 12px !important;
+  }
+
+  .activity-item {
+    padding: 12px 0;
+
+    .activity-icon {
+      margin-right: 16px;
+
+      &.facture {
+        color: #388e3c;
+      }
+
+      &.client {
+        color: #1976d2;
+      }
+
+      &.commande {
+        color: #7b1fa2;
+      }
+
+      &.produit {
+        color: #f57c00;
+      }
+    }
+
+    .activity-time {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.54);
+      white-space: nowrap;
+    }
+  }
+}
+
+// Charts Section
+.charts-section {
+  .chart-card {
+    border-radius: 12px !important;
+    height: 100%;
+    min-height: 300px;
+  }
+
+  .chart-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 250px;
+    color: rgba(0, 0, 0, 0.38);
+
+    mat-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 16px;
+      margin: 0 0 8px 0;
+      color: rgba(0, 0, 0, 0.6);
+    }
+
+    .hint {
+      font-size: 14px;
+    }
+  }
+}
+
+// Empty State
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: rgba(0, 0, 0, 0.38);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 14px;
+    margin: 0;
+  }
+}
