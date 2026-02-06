@@ -1,0 +1,188 @@
+<div class="produit-form-container">
+  <!-- Page Header -->
+  <app-page-header [title]="pageTitle">
+    <div actions>
+      <button mat-stroked-button (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="produitForm" (ngSubmit)="onSubmit()">
+        
+        <!-- Section: Informations Générales -->
+        <div class="form-section">
+          <h3 class="section-title">Informations Générales</h3>
+          
+          <div class="form-grid">
+            <!-- Code Produit -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Produit</mat-label>
+              <input matInput formControlName="codeProduit" placeholder="Ex: PRD001">
+              <mat-error *ngIf="hasError('codeProduit', 'required')">
+                Le code produit est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('codeProduit', 'maxlength')">
+                Le code ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Désignation -->
+            <mat-form-field appearance="outline">
+              <mat-label>Désignation</mat-label>
+              <input matInput formControlName="designation" placeholder="Nom du produit">
+              <mat-error *ngIf="hasError('designation', 'required')">
+                La désignation est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('designation', 'maxlength')">
+                La désignation ne peut pas dépasser 200 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Code Catégorie -->
+            <mat-form-field appearance="outline">
+              <mat-label>Catégorie</mat-label>
+              <input matInput formControlName="codeCategorie" placeholder="Code catégorie">
+              <mat-error *ngIf="hasError('codeCategorie', 'maxlength')">
+                Le code catégorie ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Code Barres -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Barres</mat-label>
+              <input matInput formControlName="codeBarres" placeholder="Ex: 6191234567890">
+              <mat-error *ngIf="hasError('codeBarres', 'maxlength')">
+                Le code barres ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Unité -->
+            <mat-form-field appearance="outline">
+              <mat-label>Unité</mat-label>
+              <input matInput formControlName="unite" placeholder="Ex: Pièce, Kg, L">
+              <mat-error *ngIf="hasError('unite', 'maxlength')">
+                L'unité ne peut pas dépasser 20 caractères
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Prix -->
+        <div class="form-section">
+          <h3 class="section-title">Prix</h3>
+          
+          <div class="form-grid">
+            <!-- Prix Achat HT -->
+            <mat-form-field appearance="outline">
+              <mat-label>Prix Achat HT</mat-label>
+              <input matInput formControlName="prixAchatHT" type="number" step="0.001" placeholder="0.000">
+              <mat-error *ngIf="hasError('prixAchatHT', 'min')">
+                Le prix d'achat ne peut pas être négatif
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Prix Vente HT -->
+            <mat-form-field appearance="outline">
+              <mat-label>Prix Vente HT</mat-label>
+              <input matInput formControlName="prixVenteHT" type="number" step="0.001" placeholder="0.000">
+              <mat-error *ngIf="hasError('prixVenteHT', 'min')">
+                Le prix de vente ne peut pas être négatif
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Taux TVA -->
+            <mat-form-field appearance="outline">
+              <mat-label>Taux TVA (%)</mat-label>
+              <input matInput formControlName="tauxTVA" type="number" step="0.01" placeholder="19">
+              <mat-error *ngIf="hasError('tauxTVA', 'min')">
+                Le taux TVA ne peut pas être négatif
+              </mat-error>
+              <mat-error *ngIf="hasError('tauxTVA', 'max')">
+                Le taux TVA ne peut pas dépasser 100%
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Taux FODEC -->
+            <mat-form-field appearance="outline">
+              <mat-label>Taux FODEC (%)</mat-label>
+              <input matInput formControlName="tauxFODEC" type="number" step="0.01" placeholder="0">
+              <mat-error *ngIf="hasError('tauxFODEC', 'min')">
+                Le taux FODEC ne peut pas être négatif
+              </mat-error>
+              <mat-error *ngIf="hasError('tauxFODEC', 'max')">
+                Le taux FODEC ne peut pas dépasser 100%
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Stock -->
+        <div class="form-section">
+          <h3 class="section-title">Stock</h3>
+          
+          <div class="form-grid">
+            <!-- Stock Minimum -->
+            <mat-form-field appearance="outline">
+              <mat-label>Stock Minimum</mat-label>
+              <input matInput formControlName="stockMinimum" type="number" step="1" placeholder="0">
+              <mat-error *ngIf="hasError('stockMinimum', 'min')">
+                Le stock minimum ne peut pas être négatif
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Stock Maximum -->
+            <mat-form-field appearance="outline">
+              <mat-label>Stock Maximum</mat-label>
+              <input matInput formControlName="stockMaximum" type="number" step="1" placeholder="0">
+              <mat-error *ngIf="hasError('stockMaximum', 'min')">
+                Le stock maximum ne peut pas être négatif
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Emplacement -->
+            <mat-form-field appearance="outline">
+              <mat-label>Emplacement</mat-label>
+              <input matInput formControlName="emplacement" placeholder="Ex: Rayon A, Étagère 3">
+              <mat-error *ngIf="hasError('emplacement', 'maxlength')">
+                L'emplacement ne peut pas dépasser 100 caractères
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="form-section">
+          <h3 class="section-title">Notes</h3>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Notes supplémentaires..."></textarea>
+            <mat-error *ngIf="hasError('notes', 'maxlength')">
+              Les notes ne peuvent pas dépasser 1000 caractères
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()">
+            Annuler
+          </button>
+          <button mat-raised-button color="primary" type="submit" 
+                  [disabled]="submitting || produitForm.invalid">
+            <mat-icon *ngIf="submitting">
+              <mat-spinner diameter="20"></mat-spinner>
+            </mat-icon>
+            <mat-icon *ngIf="!submitting">save</mat-icon>
+            {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

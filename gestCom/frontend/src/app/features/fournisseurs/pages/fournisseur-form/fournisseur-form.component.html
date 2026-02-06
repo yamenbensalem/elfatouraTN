@@ -1,0 +1,162 @@
+<div class="fournisseur-form-container">
+  <!-- Page Header -->
+  <app-page-header [title]="pageTitle">
+    <div actions>
+      <button mat-stroked-button (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="fournisseurForm" (ngSubmit)="onSubmit()">
+        
+        <!-- Section: Informations Générales -->
+        <div class="form-section">
+          <h3 class="section-title">Informations Générales</h3>
+          
+          <div class="form-grid">
+            <!-- Code Fournisseur -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Fournisseur</mat-label>
+              <input matInput formControlName="codeFournisseur" placeholder="Ex: FRN001">
+              <mat-error *ngIf="hasError('codeFournisseur', 'required')">
+                Le code fournisseur est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('codeFournisseur', 'maxlength')">
+                Le code ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Raison Sociale -->
+            <mat-form-field appearance="outline">
+              <mat-label>Raison Sociale</mat-label>
+              <input matInput formControlName="raisonSociale" placeholder="Nom de l'entreprise">
+              <mat-error *ngIf="hasError('raisonSociale', 'required')">
+                La raison sociale est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('raisonSociale', 'maxlength')">
+                La raison sociale ne peut pas dépasser 200 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Matricule Fiscale -->
+            <mat-form-field appearance="outline">
+              <mat-label>Matricule Fiscale</mat-label>
+              <input matInput formControlName="matriculeFiscale" placeholder="XXXXXXX/X/X/XXX">
+              <mat-error *ngIf="hasError('matriculeFiscale', 'maxlength')">
+                Le matricule fiscale ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Coordonnées -->
+        <div class="form-section">
+          <h3 class="section-title">Coordonnées</h3>
+          
+          <div class="form-grid">
+            <!-- Adresse -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Adresse</mat-label>
+              <textarea matInput formControlName="adresse" rows="2" placeholder="Adresse complète"></textarea>
+              <mat-error *ngIf="hasError('adresse', 'maxlength')">
+                L'adresse ne peut pas dépasser 500 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Code Postal -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Postal</mat-label>
+              <input matInput formControlName="codePostal" placeholder="Ex: 1000">
+              <mat-error *ngIf="hasError('codePostal', 'maxlength')">
+                Le code postal ne peut pas dépasser 10 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Ville -->
+            <mat-form-field appearance="outline">
+              <mat-label>Ville</mat-label>
+              <input matInput formControlName="ville" placeholder="Ex: Tunis">
+              <mat-error *ngIf="hasError('ville', 'maxlength')">
+                La ville ne peut pas dépasser 100 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Téléphone -->
+            <mat-form-field appearance="outline">
+              <mat-label>Téléphone</mat-label>
+              <input matInput formControlName="telephone" placeholder="Ex: +216 71 XXX XXX">
+              <mat-error *ngIf="hasError('telephone', 'maxlength')">
+                Le téléphone ne peut pas dépasser 20 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Fax -->
+            <mat-form-field appearance="outline">
+              <mat-label>Fax</mat-label>
+              <input matInput formControlName="fax" placeholder="Ex: +216 71 XXX XXX">
+              <mat-error *ngIf="hasError('fax', 'maxlength')">
+                Le fax ne peut pas dépasser 20 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Email -->
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="email" type="email" placeholder="contact@entreprise.tn">
+              <mat-error *ngIf="hasError('email', 'email')">
+                Veuillez entrer une adresse email valide
+              </mat-error>
+              <mat-error *ngIf="hasError('email', 'maxlength')">
+                L'email ne peut pas dépasser 100 caractères
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Options Fiscales -->
+        <div class="form-section">
+          <h3 class="section-title">Options Fiscales</h3>
+          
+          <div class="checkbox-group">
+            <mat-checkbox formControlName="exonere" color="primary">
+              Exonéré de TVA
+            </mat-checkbox>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="form-section">
+          <h3 class="section-title">Notes</h3>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Notes supplémentaires..."></textarea>
+            <mat-error *ngIf="hasError('notes', 'maxlength')">
+              Les notes ne peuvent pas dépasser 1000 caractères
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()">
+            Annuler
+          </button>
+          <button mat-raised-button color="primary" type="submit" 
+                  [disabled]="submitting || fournisseurForm.invalid">
+            <mat-icon *ngIf="submitting">
+              <mat-spinner diameter="20"></mat-spinner>
+            </mat-icon>
+            <mat-icon *ngIf="!submitting">save</mat-icon>
+            {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

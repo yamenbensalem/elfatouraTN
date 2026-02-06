@@ -1,0 +1,214 @@
+<div class="facture-fournisseur-detail-container">
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading$ | async">
+    <app-loading-spinner message="Chargement de la facture fournisseur..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="(error$ | async) as error">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+    <div class="error-actions">
+      <button mat-stroked-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour à la liste
+      </button>
+      <button mat-raised-button color="primary" (click)="retry()">
+        Réessayer
+      </button>
+    </div>
+  </div>
+
+  <!-- Facture Details -->
+  <ng-container *ngIf="facture && !(loading$ | async) && !(error$ | async)">
+    <!-- Page Header -->
+    <app-page-header [title]="'Facture ' + facture.codeFacture" [subtitle]="'Fournisseur: ' + (facture.raisonSocialeFournisseur || facture.codeFournisseur)">
+      <div actions>
+        <button mat-stroked-button (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon>
+          Retour
+        </button>
+        <button mat-stroked-button color="accent" (click)="editFacture()">
+          <mat-icon>edit</mat-icon>
+          Modifier
+        </button>
+        <button mat-stroked-button color="warn" (click)="deleteFacture()">
+          <mat-icon>delete</mat-icon>
+          Supprimer
+        </button>
+      </div>
+    </app-page-header>
+
+    <!-- Details Card -->
+    <mat-card class="detail-card">
+      <mat-card-content>
+
+        <!-- Section: Informations Générales -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>receipt</mat-icon>
+            Informations Générales
+          </h3>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Code Facture</span>
+              <span class="value">{{ facture.codeFacture }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Date Facture</span>
+              <span class="value">{{ facture.dateFacture | dateFr }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Fournisseur</span>
+              <span class="value">{{ facture.raisonSocialeFournisseur || facture.codeFournisseur }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">N° Facture Fournisseur</span>
+              <span class="value">{{ facture.numeroFactureFournisseur || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Statut</span>
+              <span class="value">
+                <span class="statut-chip" [ngClass]="getStatutClass(facture.statut)">
+                  {{ facture.statut }}
+                </span>
+              </span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Date Création</span>
+              <span class="value">{{ facture.dateCreation | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Montants -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>account_balance</mat-icon>
+            Montants
+          </h3>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Montant HT</span>
+              <span class="value currency">{{ facture.montantHT | currencyTn }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Montant TVA</span>
+              <span class="value currency">{{ facture.montantTVA | currencyTn }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Remise Globale</span>
+              <span class="value">{{ facture.tauxRemiseGlobale || 0 }}%</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Montant TTC</span>
+              <span class="value currency">{{ facture.montantTTC | currencyTn }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Montant Timbre</span>
+              <span class="value currency">{{ facture.montantTimbre | currencyTn }}</span>
+            </div>
+
+            <div class="detail-item highlight">
+              <span class="label">Net à Payer</span>
+              <span class="value currency total">{{ facture.netAPayer | currencyTn }}</span>
+            </div>
+          </div>
+
+          <!-- Payment summary -->
+          <div class="payment-summary">
+            <div class="payment-item">
+              <span class="label">Montant Payé</span>
+              <span class="value paid">{{ facture.montantPaye | currencyTn }}</span>
+            </div>
+            <div class="payment-item">
+              <span class="label">Reste à Payer</span>
+              <span class="value reste" [class.zero]="facture.resteAPayer === 0">
+                {{ facture.resteAPayer | currencyTn }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Lignes de la Facture -->
+        <div class="detail-section" *ngIf="facture.lignes && facture.lignes.length > 0">
+          <h3 class="section-title">
+            <mat-icon>list</mat-icon>
+            Lignes de la Facture
+          </h3>
+
+          <div class="table-responsive">
+            <table mat-table [dataSource]="facture.lignes" class="lignes-table">
+              <ng-container matColumnDef="codeProduit">
+                <th mat-header-cell *matHeaderCellDef>Code Produit</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.codeProduit }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="designation">
+                <th mat-header-cell *matHeaderCellDef>Désignation</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.designation }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="quantite">
+                <th mat-header-cell *matHeaderCellDef>Quantité</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.quantite }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="prixUnitaireHT">
+                <th mat-header-cell *matHeaderCellDef>Prix Unitaire HT</th>
+                <td mat-cell *matCellDef="let ligne" class="currency-cell">{{ ligne.prixUnitaireHT | currencyTn }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="tauxRemise">
+                <th mat-header-cell *matHeaderCellDef>Remise (%)</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.tauxRemise }}%</td>
+              </ng-container>
+
+              <ng-container matColumnDef="tauxTVA">
+                <th mat-header-cell *matHeaderCellDef>TVA (%)</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.tauxTVA }}%</td>
+              </ng-container>
+
+              <ng-container matColumnDef="montantHT">
+                <th mat-header-cell *matHeaderCellDef>Montant HT</th>
+                <td mat-cell *matCellDef="let ligne" class="currency-cell">{{ ligne.montantHT | currencyTn }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="montantTTC">
+                <th mat-header-cell *matHeaderCellDef>Montant TTC</th>
+                <td mat-cell *matCellDef="let ligne" class="currency-cell">{{ ligne.montantTTC | currencyTn }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="lignesColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: lignesColumns;"></tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="detail-section" *ngIf="facture.notes">
+          <h3 class="section-title">
+            <mat-icon>note</mat-icon>
+            Notes
+          </h3>
+
+          <div class="notes-content">
+            {{ facture.notes }}
+          </div>
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>

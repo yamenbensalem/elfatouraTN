@@ -1,0 +1,97 @@
+<div class="commande-achat-form-container">
+  <!-- Page Header -->
+  <app-page-header [title]="pageTitle">
+    <div actions>
+      <button mat-stroked-button (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="commandeForm" (ngSubmit)="onSubmit()">
+
+        <!-- Section: Informations Générales -->
+        <div class="form-section">
+          <h3 class="section-title">Informations Générales</h3>
+
+          <div class="form-grid">
+            <!-- Code Commande -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Commande</mat-label>
+              <input matInput formControlName="codeCommande" placeholder="Ex: CA001">
+              <mat-error *ngIf="hasError('codeCommande', 'required')">
+                Le code commande est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('codeCommande', 'maxlength')">
+                Le code ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Date Commande -->
+            <mat-form-field appearance="outline">
+              <mat-label>Date Commande</mat-label>
+              <input matInput [matDatepicker]="pickerCommande" formControlName="dateCommande">
+              <mat-datepicker-toggle matIconSuffix [for]="pickerCommande"></mat-datepicker-toggle>
+              <mat-datepicker #pickerCommande></mat-datepicker>
+              <mat-error *ngIf="hasError('dateCommande', 'required')">
+                La date de commande est obligatoire
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Code Fournisseur -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Fournisseur</mat-label>
+              <input matInput formControlName="codeFournisseur" placeholder="Ex: FRN001">
+              <mat-error *ngIf="hasError('codeFournisseur', 'required')">
+                Le code fournisseur est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('codeFournisseur', 'maxlength')">
+                Le code fournisseur ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Date Réception Prévue -->
+            <mat-form-field appearance="outline">
+              <mat-label>Date de Réception Prévue</mat-label>
+              <input matInput [matDatepicker]="pickerReception" formControlName="dateReceptionPrevue">
+              <mat-datepicker-toggle matIconSuffix [for]="pickerReception"></mat-datepicker-toggle>
+              <mat-datepicker #pickerReception></mat-datepicker>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="form-section">
+          <h3 class="section-title">Notes</h3>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Notes supplémentaires..."></textarea>
+            <mat-error *ngIf="hasError('notes', 'maxlength')">
+              Les notes ne peuvent pas dépasser 1000 caractères
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()">
+            Annuler
+          </button>
+          <button mat-raised-button color="primary" type="submit"
+                  [disabled]="submitting || commandeForm.invalid">
+            <mat-icon *ngIf="submitting">
+              <mat-spinner diameter="20"></mat-spinner>
+            </mat-icon>
+            <mat-icon *ngIf="!submitting">save</mat-icon>
+            {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,0 +1,253 @@
+.facture-fournisseur-detail-container {
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  color: #666;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 12px;
+  }
+}
+
+.detail-card {
+  margin-top: 16px;
+}
+
+.detail-section {
+  margin-bottom: 32px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: #1976d2;
+  }
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+
+  &.highlight {
+    background: #e3f2fd;
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .value {
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &.currency {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 500;
+    }
+
+    &.total {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1976d2;
+    }
+  }
+}
+
+.payment-summary {
+  display: flex;
+  justify-content: flex-end;
+  gap: 40px;
+  margin-top: 24px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+
+  .payment-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+
+    .label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .value {
+      font-size: 16px;
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 600;
+
+      &.paid {
+        color: #2e7d32;
+      }
+
+      &.reste {
+        color: #c62828;
+
+        &.zero {
+          color: #2e7d32;
+        }
+      }
+    }
+  }
+}
+
+.statut-chip {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.statut-brouillon {
+    background-color: #e0e0e0;
+    color: #616161;
+  }
+
+  &.statut-validee {
+    background-color: #bbdefb;
+    color: #1565c0;
+  }
+
+  &.statut-payee {
+    background-color: #c8e6c9;
+    color: #2e7d32;
+  }
+
+  &.statut-partielle {
+    background-color: #fff3e0;
+    color: #e65100;
+  }
+
+  &.statut-annulee {
+    background-color: #ffcdd2;
+    color: #c62828;
+  }
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.lignes-table {
+  width: 100%;
+  margin-top: 8px;
+
+  .mat-mdc-header-cell {
+    font-weight: 600;
+    color: #333;
+    background-color: #fafafa;
+  }
+}
+
+.currency-cell {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 500;
+}
+
+.notes-content {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+  .facture-fournisseur-detail-container {
+    padding: 16px;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-summary {
+    flex-direction: column;
+    gap: 16px;
+
+    .payment-item {
+      align-items: flex-start;
+    }
+  }
+
+  .error-actions {
+    flex-direction: column;
+    width: 100%;
+
+    button {
+      width: 100%;
+    }
+  }
+}

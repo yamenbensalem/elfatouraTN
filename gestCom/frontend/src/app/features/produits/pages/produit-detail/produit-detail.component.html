@@ -1,0 +1,189 @@
+<div class="produit-detail-container">
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading$ | async">
+    <app-loading-spinner message="Chargement du produit..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="(error$ | async) as error">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+    <div class="error-actions">
+      <button mat-stroked-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour à la liste
+      </button>
+      <button mat-raised-button color="primary" (click)="retry()">
+        Réessayer
+      </button>
+    </div>
+  </div>
+
+  <!-- Produit Details -->
+  <ng-container *ngIf="produit && !(loading$ | async) && !(error$ | async)">
+    <!-- Page Header -->
+    <app-page-header [title]="produit.designation" [subtitle]="'Code: ' + produit.codeProduit">
+      <div actions>
+        <button mat-stroked-button (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon>
+          Retour
+        </button>
+        <button mat-stroked-button color="accent" (click)="editProduit()">
+          <mat-icon>edit</mat-icon>
+          Modifier
+        </button>
+        <button mat-stroked-button color="warn" (click)="deleteProduit()">
+          <mat-icon>delete</mat-icon>
+          Supprimer
+        </button>
+      </div>
+    </app-page-header>
+
+    <!-- Details Card -->
+    <mat-card class="detail-card">
+      <mat-card-content>
+        
+        <!-- Section: Informations Générales -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>inventory_2</mat-icon>
+            Informations Générales
+          </h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Code Produit</span>
+              <span class="value">{{ produit.codeProduit }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Désignation</span>
+              <span class="value">{{ produit.designation }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Catégorie</span>
+              <span class="value">{{ produit.nomCategorie || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Code Barres</span>
+              <span class="value">{{ produit.codeBarres || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Unité</span>
+              <span class="value">{{ produit.unite || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Prix -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>payments</mat-icon>
+            Prix
+          </h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Prix Achat HT</span>
+              <span class="value currency">{{ produit.prixAchatHT | currencyTn }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Prix Vente HT</span>
+              <span class="value currency">{{ produit.prixVenteHT | currencyTn }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Taux TVA</span>
+              <span class="value">{{ produit.tauxTVA }} %</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Taux FODEC</span>
+              <span class="value">{{ produit.tauxFODEC }} %</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Stock -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>warehouse</mat-icon>
+            Stock
+          </h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Stock Actuel</span>
+              <span class="value" [class.stock-low]="isLowStock">
+                {{ produit.stockActuel }}
+              </span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Stock Minimum</span>
+              <span class="value">{{ produit.stockMinimum }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Stock Maximum</span>
+              <span class="value">{{ produit.stockMaximum }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Emplacement</span>
+              <span class="value">{{ produit.emplacement || '-' }}</span>
+            </div>
+          </div>
+
+          <!-- Low stock warning -->
+          <div class="stock-warning" *ngIf="isLowStock">
+            <mat-icon color="warn">warning</mat-icon>
+            <span>Attention : le stock actuel ({{ produit.stockActuel }}) est inférieur au stock minimum ({{ produit.stockMinimum }})</span>
+          </div>
+        </div>
+
+        <!-- Section: Options -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>settings</mat-icon>
+            Options
+          </h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Actif</span>
+              <span class="value">
+                <mat-icon [color]="produit.actif ? 'primary' : 'warn'">
+                  {{ produit.actif ? 'check_circle' : 'cancel' }}
+                </mat-icon>
+                {{ produit.actif ? 'Oui' : 'Non' }}
+              </span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Date Création</span>
+              <span class="value">{{ produit.dateCreation | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="detail-section" *ngIf="produit.notes">
+          <h3 class="section-title">
+            <mat-icon>note</mat-icon>
+            Notes
+          </h3>
+          
+          <div class="notes-content">
+            {{ produit.notes }}
+          </div>
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>

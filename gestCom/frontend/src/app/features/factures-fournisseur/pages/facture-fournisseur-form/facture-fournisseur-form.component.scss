@@ -1,0 +1,83 @@
+.facture-fournisseur-form-container {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.form-card {
+  margin-top: 16px;
+}
+
+.form-section {
+  margin-bottom: 32px;
+
+  &:last-of-type {
+    margin-bottom: 24px;
+  }
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  .full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+
+  button {
+    min-width: 120px;
+
+    mat-icon {
+      margin-right: 8px;
+    }
+
+    mat-spinner {
+      display: inline-block;
+      margin-right: 8px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .facture-fournisseur-form-container {
+    padding: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+    }
+  }
+}

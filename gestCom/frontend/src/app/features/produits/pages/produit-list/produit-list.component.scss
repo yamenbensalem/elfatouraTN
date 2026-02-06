@@ -1,0 +1,180 @@
+.produit-list-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.filters-section {
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  color: #666;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  color: #666;
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 48px;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #bdbdbd;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    margin: 0 0 8px 0;
+    font-weight: 500;
+    color: #333;
+  }
+
+  p {
+    margin: 0 0 24px 0;
+    font-size: 14px;
+  }
+}
+
+.table-card {
+  overflow: hidden;
+}
+
+.produits-table {
+  width: 100%;
+
+  .mat-mdc-header-cell {
+    font-weight: 600;
+    color: #333;
+    background-color: #fafafa;
+  }
+
+  .mat-mdc-cell {
+    font-size: 14px;
+  }
+}
+
+.table-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+
+  button {
+    width: 36px;
+    height: 36px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+.stock-low {
+  color: #d32f2f;
+  font-weight: 500;
+}
+
+.no-data-row {
+  .mat-cell {
+    padding: 48px 16px;
+  }
+}
+
+.no-data-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+  }
+
+  span {
+    font-size: 14px;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .produit-list-container {
+    padding: 16px;
+  }
+
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .produits-table {
+    // Hide some columns on mobile
+    .mat-column-nomCategorie,
+    .mat-column-prixVenteHT {
+      display: none;
+    }
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .produits-table {
+    .mat-column-stockActuel {
+      display: none;
+    }
+  }
+}

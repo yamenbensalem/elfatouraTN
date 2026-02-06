@@ -1,0 +1,213 @@
+<div class="devis-detail-container">
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading$ | async">
+    <app-loading-spinner message="Chargement du devis..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="(error$ | async) as error">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+    <div class="error-actions">
+      <button mat-stroked-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour à la liste
+      </button>
+      <button mat-raised-button color="primary" (click)="retry()">
+        Réessayer
+      </button>
+    </div>
+  </div>
+
+  <!-- Devis Details -->
+  <ng-container *ngIf="devis && !(loading$ | async) && !(error$ | async)">
+    <!-- Page Header -->
+    <app-page-header [title]="'Devis ' + devis.codeDevis" [subtitle]="'Client: ' + (devis.raisonSocialeClient || devis.codeClient)">
+      <div actions>
+        <button mat-stroked-button (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon>
+          Retour
+        </button>
+        <button mat-stroked-button color="accent" (click)="editDevis()">
+          <mat-icon>edit</mat-icon>
+          Modifier
+        </button>
+        <button mat-stroked-button color="warn" (click)="deleteDevis()">
+          <mat-icon>delete</mat-icon>
+          Supprimer
+        </button>
+      </div>
+    </app-page-header>
+
+    <!-- Details Card -->
+    <mat-card class="detail-card">
+      <mat-card-content>
+
+        <!-- Section: Informations -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>description</mat-icon>
+            Informations
+          </h3>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Code Devis</span>
+              <span class="value">{{ devis.codeDevis }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Date Devis</span>
+              <span class="value">{{ devis.dateDevis | date:'dd/MM/yyyy' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Client</span>
+              <span class="value">{{ devis.raisonSocialeClient || devis.codeClient }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Objet</span>
+              <span class="value">{{ devis.objet || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Statut</span>
+              <span class="value">
+                <span class="status-chip" [ngClass]="getStatutClass(devis.statut)">
+                  {{ devis.statut }}
+                </span>
+              </span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Validité</span>
+              <span class="value">{{ devis.validite ? devis.validite + ' jours' : '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Date Création</span>
+              <span class="value">{{ devis.dateCreation | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Montants -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>account_balance</mat-icon>
+            Montants
+          </h3>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Montant HT</span>
+              <span class="value currency">{{ devis.montantHT | currencyTn }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Montant TVA</span>
+              <span class="value currency">{{ devis.montantTVA | currencyTn }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Montant TTC</span>
+              <span class="value currency">{{ devis.montantTTC | currencyTn }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Remise Globale</span>
+              <span class="value">{{ devis.tauxRemiseGlobale }}%</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Timbre Fiscal</span>
+              <span class="value currency">{{ devis.montantTimbre | currencyTn }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Net à Payer</span>
+              <span class="value currency net-a-payer">{{ devis.netAPayer | currencyTn }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Lignes -->
+        <div class="detail-section" *ngIf="devis.lignes && devis.lignes.length > 0">
+          <h3 class="section-title">
+            <mat-icon>list</mat-icon>
+            Lignes du Devis
+          </h3>
+
+          <div class="lignes-table-container">
+            <table mat-table [dataSource]="devis.lignes" class="lignes-table">
+              <!-- Code Produit -->
+              <ng-container matColumnDef="codeProduit">
+                <th mat-header-cell *matHeaderCellDef>Code Produit</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.codeProduit }}</td>
+              </ng-container>
+
+              <!-- Désignation -->
+              <ng-container matColumnDef="designation">
+                <th mat-header-cell *matHeaderCellDef>Désignation</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.designation }}</td>
+              </ng-container>
+
+              <!-- Quantité -->
+              <ng-container matColumnDef="quantite">
+                <th mat-header-cell *matHeaderCellDef>Quantité</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.quantite }}</td>
+              </ng-container>
+
+              <!-- Prix Unitaire HT -->
+              <ng-container matColumnDef="prixUnitaireHT">
+                <th mat-header-cell *matHeaderCellDef>P.U. HT</th>
+                <td mat-cell *matCellDef="let ligne" class="currency-cell">{{ ligne.prixUnitaireHT | currencyTn }}</td>
+              </ng-container>
+
+              <!-- Taux Remise -->
+              <ng-container matColumnDef="tauxRemise">
+                <th mat-header-cell *matHeaderCellDef>Remise (%)</th>
+                <td mat-cell *matCellDef="let ligne">{{ ligne.tauxRemise }}%</td>
+              </ng-container>
+
+              <!-- Montant HT -->
+              <ng-container matColumnDef="montantHT">
+                <th mat-header-cell *matHeaderCellDef>Montant HT</th>
+                <td mat-cell *matCellDef="let ligne" class="currency-cell">{{ ligne.montantHT | currencyTn }}</td>
+              </ng-container>
+
+              <!-- Montant TVA -->
+              <ng-container matColumnDef="montantTVA">
+                <th mat-header-cell *matHeaderCellDef>TVA</th>
+                <td mat-cell *matCellDef="let ligne" class="currency-cell">{{ ligne.montantTVA | currencyTn }}</td>
+              </ng-container>
+
+              <!-- Montant TTC -->
+              <ng-container matColumnDef="montantTTC">
+                <th mat-header-cell *matHeaderCellDef>Montant TTC</th>
+                <td mat-cell *matCellDef="let ligne" class="currency-cell">{{ ligne.montantTTC | currencyTn }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="lignesColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: lignesColumns;"></tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="detail-section" *ngIf="devis.notes">
+          <h3 class="section-title">
+            <mat-icon>note</mat-icon>
+            Notes
+          </h3>
+
+          <div class="notes-content">
+            {{ devis.notes }}
+          </div>
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>

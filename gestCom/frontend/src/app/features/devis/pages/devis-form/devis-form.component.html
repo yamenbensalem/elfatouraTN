@@ -1,0 +1,127 @@
+<div class="devis-form-container">
+  <!-- Page Header -->
+  <app-page-header [title]="pageTitle">
+    <div actions>
+      <button mat-stroked-button (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="devisForm" (ngSubmit)="onSubmit()">
+
+        <!-- Section: Informations Générales -->
+        <div class="form-section">
+          <h3 class="section-title">Informations Générales</h3>
+
+          <div class="form-grid">
+            <!-- Code Devis -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Devis</mat-label>
+              <input matInput formControlName="codeDevis" placeholder="Ex: DEV001">
+              <mat-error *ngIf="hasError('codeDevis', 'required')">
+                Le code devis est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('codeDevis', 'maxlength')">
+                Le code ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Date Devis -->
+            <mat-form-field appearance="outline">
+              <mat-label>Date Devis</mat-label>
+              <input matInput [matDatepicker]="dateDevisPicker" formControlName="dateDevis" placeholder="JJ/MM/AAAA">
+              <mat-datepicker-toggle matIconSuffix [for]="dateDevisPicker"></mat-datepicker-toggle>
+              <mat-datepicker #dateDevisPicker></mat-datepicker>
+              <mat-error *ngIf="hasError('dateDevis', 'required')">
+                La date du devis est obligatoire
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Code Client -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Client</mat-label>
+              <input matInput formControlName="codeClient" placeholder="Ex: CLI001">
+              <mat-error *ngIf="hasError('codeClient', 'required')">
+                Le code client est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('codeClient', 'maxlength')">
+                Le code client ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Objet -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Objet</mat-label>
+              <textarea matInput formControlName="objet" rows="2" placeholder="Objet du devis"></textarea>
+              <mat-error *ngIf="hasError('objet', 'maxlength')">
+                L'objet ne peut pas dépasser 500 caractères
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Conditions -->
+        <div class="form-section">
+          <h3 class="section-title">Conditions</h3>
+
+          <div class="form-grid">
+            <!-- Taux Remise Globale -->
+            <mat-form-field appearance="outline">
+              <mat-label>Remise Globale (%)</mat-label>
+              <input matInput type="number" formControlName="tauxRemiseGlobale" placeholder="0">
+              <mat-icon matSuffix>percent</mat-icon>
+              <mat-error *ngIf="hasError('tauxRemiseGlobale', 'min')">
+                Le taux de remise ne peut pas être négatif
+              </mat-error>
+              <mat-error *ngIf="hasError('tauxRemiseGlobale', 'max')">
+                Le taux de remise ne peut pas dépasser 100%
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Validité -->
+            <mat-form-field appearance="outline">
+              <mat-label>Validité (jours)</mat-label>
+              <input matInput type="number" formControlName="validite" placeholder="30">
+              <mat-error *ngIf="hasError('validite', 'min')">
+                La validité doit être d'au moins 1 jour
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="form-section">
+          <h3 class="section-title">Notes</h3>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Notes supplémentaires..."></textarea>
+            <mat-error *ngIf="hasError('notes', 'maxlength')">
+              Les notes ne peuvent pas dépasser 1000 caractères
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()">
+            Annuler
+          </button>
+          <button mat-raised-button color="primary" type="submit"
+                  [disabled]="submitting || devisForm.invalid">
+            <mat-icon *ngIf="submitting">
+              <mat-spinner diameter="20"></mat-spinner>
+            </mat-icon>
+            <mat-icon *ngIf="!submitting">save</mat-icon>
+            {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

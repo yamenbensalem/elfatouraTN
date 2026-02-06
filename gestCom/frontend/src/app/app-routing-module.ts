@@ -37,14 +37,38 @@ const routes: Routes = [
         loadChildren: () => import('./features/clients/clients.module').then(m => m.ClientsModule)
       },
       
-      // Placeholder routes for future modules - redirect to dashboard for now
-      { path: 'devis', redirectTo: 'dashboard' },
-      { path: 'commandes-vente', redirectTo: 'dashboard' },
-      { path: 'factures-client', redirectTo: 'dashboard' },
-      { path: 'fournisseurs', redirectTo: 'dashboard' },
-      { path: 'commandes-achat', redirectTo: 'dashboard' },
-      { path: 'factures-fournisseur', redirectTo: 'dashboard' },
-      { path: 'produits', redirectTo: 'dashboard' },
+      // Devis
+      {
+        path: 'devis',
+        loadChildren: () => import('./features/devis/devis.module').then(m => m.DevisModule)
+      },
+      {
+        path: 'commandes-vente',
+        loadChildren: () => import('./features/commandes-vente/commandes-vente.module').then(m => m.CommandesVenteModule)
+      },
+      // Factures Client
+      {
+        path: 'factures-client',
+        loadChildren: () => import('./features/factures-client/factures-client.module').then(m => m.FacturesClientModule)
+      },
+      // Fournisseurs
+      {
+        path: 'fournisseurs',
+        loadChildren: () => import('./features/fournisseurs/fournisseurs.module').then(m => m.FournisseursModule)
+      },
+      {
+        path: 'commandes-achat',
+        loadChildren: () => import('./features/commandes-achat/commandes-achat.module').then(m => m.CommandesAchatModule)
+      },
+      {
+        path: 'factures-fournisseur',
+        loadChildren: () => import('./features/factures-fournisseur/factures-fournisseur.module').then(m => m.FacturesFournisseurModule)
+      },
+      // Produits
+      {
+        path: 'produits',
+        loadChildren: () => import('./features/produits/produits.module').then(m => m.ProduitsModule)
+      },
       { path: 'categories', redirectTo: 'dashboard' },
       { path: 'entreprise', redirectTo: 'dashboard' },
       { path: 'parametres', redirectTo: 'dashboard' },

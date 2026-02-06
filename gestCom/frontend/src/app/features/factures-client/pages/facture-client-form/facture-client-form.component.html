@@ -1,0 +1,122 @@
+<div class="facture-form-container">
+  <!-- Page Header -->
+  <app-page-header [title]="pageTitle">
+    <div actions>
+      <button mat-stroked-button (click)="onCancel()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour
+      </button>
+    </div>
+  </app-page-header>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="factureForm" (ngSubmit)="onSubmit()">
+
+        <!-- Section: Informations -->
+        <div class="form-section">
+          <h3 class="section-title">Informations</h3>
+
+          <div class="form-grid">
+            <!-- Code Facture -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Facture</mat-label>
+              <input matInput formControlName="codeFacture" placeholder="Ex: FAC001">
+              <mat-error *ngIf="hasError('codeFacture', 'required')">
+                Le code facture est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('codeFacture', 'maxlength')">
+                Le code ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Date Facture -->
+            <mat-form-field appearance="outline">
+              <mat-label>Date Facture</mat-label>
+              <input matInput [matDatepicker]="dateFacturePicker" formControlName="dateFacture" placeholder="JJ/MM/AAAA">
+              <mat-datepicker-toggle matIconSuffix [for]="dateFacturePicker"></mat-datepicker-toggle>
+              <mat-datepicker #dateFacturePicker></mat-datepicker>
+              <mat-error *ngIf="hasError('dateFacture', 'required')">
+                La date de la facture est obligatoire
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Code Client -->
+            <mat-form-field appearance="outline">
+              <mat-label>Code Client</mat-label>
+              <input matInput formControlName="codeClient" placeholder="Ex: CLI001">
+              <mat-error *ngIf="hasError('codeClient', 'required')">
+                Le code client est obligatoire
+              </mat-error>
+              <mat-error *ngIf="hasError('codeClient', 'maxlength')">
+                Le code client ne peut pas dépasser 50 caractères
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Remises et Retenues -->
+        <div class="form-section">
+          <h3 class="section-title">Remises et Retenues</h3>
+
+          <div class="form-grid">
+            <!-- Taux Remise Globale -->
+            <mat-form-field appearance="outline">
+              <mat-label>Remise Globale (%)</mat-label>
+              <input matInput type="number" formControlName="tauxRemiseGlobale" placeholder="0">
+              <mat-icon matSuffix>percent</mat-icon>
+              <mat-error *ngIf="hasError('tauxRemiseGlobale', 'min')">
+                Le taux de remise ne peut pas être négatif
+              </mat-error>
+              <mat-error *ngIf="hasError('tauxRemiseGlobale', 'max')">
+                Le taux de remise ne peut pas dépasser 100%
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Taux RAS -->
+            <mat-form-field appearance="outline">
+              <mat-label>Retenue à la Source (%)</mat-label>
+              <input matInput type="number" formControlName="tauxRAS" placeholder="0">
+              <mat-icon matSuffix>percent</mat-icon>
+              <mat-error *ngIf="hasError('tauxRAS', 'min')">
+                Le taux RAS ne peut pas être négatif
+              </mat-error>
+              <mat-error *ngIf="hasError('tauxRAS', 'max')">
+                Le taux RAS ne peut pas dépasser 100%
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="form-section">
+          <h3 class="section-title">Notes</h3>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Notes supplémentaires..."></textarea>
+            <mat-error *ngIf="hasError('notes', 'maxlength')">
+              Les notes ne peuvent pas dépasser 1000 caractères
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" (click)="onCancel()">
+            Annuler
+          </button>
+          <button mat-raised-button color="primary" type="submit"
+                  [disabled]="submitting || factureForm.invalid">
+            <mat-icon *ngIf="submitting">
+              <mat-spinner diameter="20"></mat-spinner>
+            </mat-icon>
+            <mat-icon *ngIf="!submitting">save</mat-icon>
+            {{ isEditMode ? 'Modifier' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

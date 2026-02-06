@@ -1,0 +1,203 @@
+<div class="fournisseur-detail-container">
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading$ | async">
+    <app-loading-spinner message="Chargement du fournisseur..."></app-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="(error$ | async) as error">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error }}</p>
+    <div class="error-actions">
+      <button mat-stroked-button (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+        Retour à la liste
+      </button>
+      <button mat-raised-button color="primary" (click)="retry()">
+        Réessayer
+      </button>
+    </div>
+  </div>
+
+  <!-- Fournisseur Details -->
+  <ng-container *ngIf="fournisseur && !(loading$ | async) && !(error$ | async)">
+    <!-- Page Header -->
+    <app-page-header [title]="fournisseur.raisonSociale" [subtitle]="'Code: ' + fournisseur.codeFournisseur">
+      <div actions>
+        <button mat-stroked-button (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon>
+          Retour
+        </button>
+        <button mat-stroked-button color="accent" (click)="editFournisseur()">
+          <mat-icon>edit</mat-icon>
+          Modifier
+        </button>
+        <button mat-stroked-button color="warn" (click)="deleteFournisseur()">
+          <mat-icon>delete</mat-icon>
+          Supprimer
+        </button>
+      </div>
+    </app-page-header>
+
+    <!-- Details Card -->
+    <mat-card class="detail-card">
+      <mat-card-content>
+        
+        <!-- Section: Informations Générales -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>business</mat-icon>
+            Informations Générales
+          </h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Code Fournisseur</span>
+              <span class="value">{{ fournisseur.codeFournisseur }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Raison Sociale</span>
+              <span class="value">{{ fournisseur.raisonSociale }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Matricule Fiscale</span>
+              <span class="value">{{ fournisseur.matriculeFiscale || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Registre Commerce</span>
+              <span class="value">{{ fournisseur.registreCommerce || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Coordonnées -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>location_on</mat-icon>
+            Coordonnées
+          </h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="label">Adresse</span>
+              <span class="value">{{ fournisseur.adresse || '-' }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Code Postal</span>
+              <span class="value">{{ fournisseur.codePostal || '-' }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Ville</span>
+              <span class="value">{{ fournisseur.ville || '-' }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Téléphone</span>
+              <span class="value">
+                <a *ngIf="fournisseur.telephone" [href]="'tel:' + fournisseur.telephone">
+                  {{ fournisseur.telephone }}
+                </a>
+                <span *ngIf="!fournisseur.telephone">-</span>
+              </span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Fax</span>
+              <span class="value">{{ fournisseur.fax || '-' }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Email</span>
+              <span class="value">
+                <a *ngIf="fournisseur.email" [href]="'mailto:' + fournisseur.email">
+                  {{ fournisseur.email }}
+                </a>
+                <span *ngIf="!fournisseur.email">-</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Informations Financières -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>account_balance</mat-icon>
+            Informations Financières
+          </h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Solde Initial</span>
+              <span class="value currency">{{ fournisseur.soldeInitial | currencyTn }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Solde Actuel</span>
+              <span class="value currency" [class.negative]="fournisseur.soldeActuel < 0">
+                {{ fournisseur.soldeActuel | currencyTn }}
+              </span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Délai Paiement</span>
+              <span class="value">{{ fournisseur.delaiPaiement }} jours</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Options -->
+        <div class="detail-section">
+          <h3 class="section-title">
+            <mat-icon>settings</mat-icon>
+            Options
+          </h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Exonéré de TVA</span>
+              <span class="value">
+                <mat-icon [color]="fournisseur.exonere ? 'primary' : 'warn'">
+                  {{ fournisseur.exonere ? 'check_circle' : 'cancel' }}
+                </mat-icon>
+                {{ fournisseur.exonere ? 'Oui' : 'Non' }}
+              </span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="label">Bloqué</span>
+              <span class="value">
+                <mat-icon [color]="fournisseur.bloque ? 'warn' : 'primary'">
+                  {{ fournisseur.bloque ? 'block' : 'check_circle' }}
+                </mat-icon>
+                {{ fournisseur.bloque ? 'Oui' : 'Non' }}
+              </span>
+            </div>
+
+            <div class="detail-item">
+              <span class="label">Date Création</span>
+              <span class="value">{{ fournisseur.dateCreation | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Notes -->
+        <div class="detail-section" *ngIf="fournisseur.notes">
+          <h3 class="section-title">
+            <mat-icon>note</mat-icon>
+            Notes
+          </h3>
+          
+          <div class="notes-content">
+            {{ fournisseur.notes }}
+          </div>
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>
