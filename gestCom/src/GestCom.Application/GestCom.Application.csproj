@@ -19,4 +19,8 @@
     <ProjectReference Include="..\GestCom.Shared\GestCom.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\NewFolder\" />
+  </ItemGroup>
+
 </Project>

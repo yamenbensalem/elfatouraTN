@@ -1,3 +1,4 @@
+using GestCom.Application.Features.Reporting.DTOs;
 using System;
 using System.Collections.Generic;
 
@@ -190,14 +191,3 @@ public class ChiffreAffairesDto
     public List<ChiffreAffairesParMoisDto> ParMois { get; set; } = new();
 }
 
-/// <summary>
-/// DTO pour le CA par mois
-/// </summary>
-public class ChiffreAffairesParMoisDto
-{
-    public int Annee { get; set; }
-    public int Mois { get; set; }
-    public decimal MontantHT { get; set; }
-    public decimal MontantTTC { get; set; }
-    public int NombreFactures { get; set; }
-}

@@ -43,28 +43,36 @@ public class DashboardDto
     // Graphiques
     public List<ChiffreAffairesParMoisDto> CAParMois { get; set; } = new();
     public List<VentesParCategorieDto> VentesParCategorie { get; set; } = new();
-}
-
-/// <summary>
-/// DTO pour les meilleurs clients
-/// </summary>
-public class TopClientDto
-{
-    public string CodeClient { get; set; } = string.Empty;
-    public string? NomClient { get; set; }
-    public decimal ChiffreAffaires { get; set; }
-    public int NombreFactures { get; set; }
-}
+} 
+ 
 
 /// <summary>
 /// DTO pour les meilleurs produits
 /// </summary>
 public class TopProduitDto
 {
-    public string CodeProduit { get; set; } = string.Empty;
-    public string? Designation { get; set; }
-    public decimal QuantiteVendue { get; set; }
-    public decimal ChiffreAffaires { get; set; }
+	public string CodeProduit { get; set; } = string.Empty;
+	public string LibelleProduit { get; set; } = string.Empty;
+	public string? Designation
+	{
+		get; set;
+	}
+	public string? CodeCategorie
+	{
+		get; set;
+	}
+	public decimal QuantiteVendue
+	{
+		get; set;
+	}
+	public decimal ChiffreAffaires
+	{
+		get; set;
+	}
+	public decimal Marge
+	{
+		get; set;
+	} 
 }
 
 /// <summary>
@@ -145,15 +153,267 @@ public class RapportCreancesDto
     public List<CreanceClientDto> ParClient { get; set; } = new();
 }
 
-/// <summary>
-/// DTO pour les créances par client
-/// </summary>
+ 
+#region Report DTOs
+
+public class ChiffreAffairesReportDto
+{
+	public DateTime DateDebut
+	{
+		get; set;
+	}
+	public DateTime DateFin
+	{
+		get; set;
+	}
+	public decimal TotalHT
+	{
+		get; set;
+	}
+	public decimal TotalTTC
+	{
+		get; set;
+	}
+	public List<ChiffreAffairesMensuelDto> ChiffreAffairesParMois { get; set; } = new();
+}
+
+public class ChiffreAffairesMensuelDto
+{
+	public int Annee
+	{
+		get; set;
+	}
+	public int Mois
+	{
+		get; set;
+	}
+	public string NomMois { get; set; } = string.Empty;
+	public decimal MontantHT
+	{
+		get; set;
+	}
+	public decimal MontantTTC
+	{
+		get; set;
+	}
+	public int NombreFactures
+	{
+		get; set;
+	}
+}
+
+public class CreancesReportDto
+{
+	public decimal TotalCreances
+	{
+		get; set;
+	}
+	public decimal CreancesNonEchues
+	{
+		get; set;
+	}
+	public decimal CreancesEchues
+	{
+		get; set;
+	}
+	public decimal Creances0_30Jours
+	{
+		get; set;
+	}
+	public decimal Creances30_60Jours
+	{
+		get; set;
+	}
+	public decimal Creances60_90Jours
+	{
+		get; set;
+	}
+	public decimal CreancesPlus90Jours
+	{
+		get; set;
+	}
+	public List<CreanceClientDto> DetailParClient { get; set; } = new();
+}
+
 public class CreanceClientDto
 {
-    public string CodeClient { get; set; } = string.Empty;
-    public string? NomClient { get; set; }
-    public decimal TotalCreances { get; set; }
-    public int NombreFacturesImpayees { get; set; }
-    public DateTime? DatePlusAncienneFacture { get; set; }
-    public int JoursRetard { get; set; }
+	public string CodeClient { get; set; } = string.Empty;
+	public string NomClient { get; set; } = string.Empty;
+	public decimal MontantTotal
+	{
+		get; set;
+	}
+	public decimal MontantEchu
+	{
+		get; set;
+	}
+	public int NombreFacturesImpayees
+	{
+		get; set;
+	}
+	public DateTime? DateDerniereFacture
+	{
+		get; set;
+	} 
+	public decimal TotalCreances
+	{
+		get; set;
+	}
+	public DateTime? DatePlusAncienneFacture
+	{
+		get; set;
+	}
+	public int JoursRetard
+	{
+		get; set;
+	}
 }
+
+public class DettesReportDto
+{
+	public decimal TotalDettes
+	{
+		get; set;
+	}
+	public decimal DettesNonEchues
+	{
+		get; set;
+	}
+	public decimal DettesEchues
+	{
+		get; set;
+	}
+	public List<DetteFournisseurDto> DetailParFournisseur { get; set; } = new();
+}
+
+public class DetteFournisseurDto
+{
+	public string CodeFournisseur { get; set; } = string.Empty;
+	public string NomFournisseur { get; set; } = string.Empty;
+	public decimal MontantTotal
+	{
+		get; set;
+	}
+	public decimal MontantEchu
+	{
+		get; set;
+	}
+	public int NombreFacturesImpayees
+	{
+		get; set;
+	}
+}
+
+public class StockReportDto
+{
+	public decimal ValeurTotaleStock
+	{
+		get; set;
+	}
+	public int NombreProduits
+	{
+		get; set;
+	}
+	public int ProduitsEnStock
+	{
+		get; set;
+	}
+	public int ProduitsEnRupture
+	{
+		get; set;
+	}
+	public int ProduitsStockFaible
+	{
+		get; set;
+	}
+	public List<StockCategorieDto> DetailParCategorie { get; set; } = new();
+}
+
+public class StockCategorieDto
+{
+	public string CodeCategorie { get; set; } = string.Empty;
+	public string NomCategorie { get; set; } = string.Empty;
+	public int NombreProduits
+	{
+		get; set;
+	}
+	public decimal ValeurStock
+	{
+		get; set;
+	}
+	public int ProduitsEnRupture
+	{
+		get; set;
+	}
+}
+
+ 
+
+public class TopClientDto
+{
+	public string CodeClient { get; set; } = string.Empty;
+	public string? NomClient
+	{
+		get; set;
+	}
+	public decimal ChiffreAffaires
+	{
+		get; set;
+	}
+	public int NombreFactures
+	{
+		get; set;
+	}
+	public decimal MontantMoyenFacture
+	{
+		get; set;
+	}
+}
+
+public class VenteParCategorieDto
+{
+	public string CodeCategorie { get; set; } = string.Empty;
+	public string NomCategorie { get; set; } = string.Empty;
+	public decimal ChiffreAffaires
+	{
+		get; set;
+	}
+	public decimal Pourcentage
+	{
+		get; set;
+	}
+	public int NombreProduits
+	{
+		get; set;
+	}
+}
+
+public class MargeBruteReportDto
+{
+	public DateTime DateDebut
+	{
+		get; set;
+	}
+	public DateTime DateFin
+	{
+		get; set;
+	}
+	public decimal ChiffreAffairesHT
+	{
+		get; set;
+	}
+	public decimal CoutAchat
+	{
+		get; set;
+	}
+	public decimal MargeBrute
+	{
+		get; set;
+	}
+	public decimal TauxMarge
+	{
+		get; set;
+	}
+}
+
+#endregion

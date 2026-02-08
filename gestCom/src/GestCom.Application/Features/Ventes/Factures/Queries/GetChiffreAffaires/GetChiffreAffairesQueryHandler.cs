@@ -1,4 +1,5 @@
 using GestCom.Application.Common.Interfaces;
+using GestCom.Application.Features.Reporting.DTOs;
 using GestCom.Application.Features.Ventes.Factures.DTOs;
 using GestCom.Domain.Interfaces;
 using MediatR;

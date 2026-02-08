@@ -1,6 +1,7 @@
 using GestCom.Application.Features.Ventes.Commandes.Commands.CreateCommandeVente;
 using GestCom.Application.Features.Ventes.Commandes.DTOs;
 using GestCom.Shared.Common;
+using GestCom.WebAPI.Controllers.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -78,9 +79,4 @@ public class CommandesVenteController : BaseApiController
         // À implémenter
         return Ok(new { message = $"Commande {numero} annulée" });
     }
-}
-
-public class UpdateStatutRequest
-{
-    public string Statut { get; set; } = string.Empty;
 }

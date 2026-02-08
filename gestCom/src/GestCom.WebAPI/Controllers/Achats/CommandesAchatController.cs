@@ -4,6 +4,7 @@ using GestCom.Application.Common.Interfaces;
 using GestCom.Shared.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using GestCom.WebAPI.Controllers.Configuration;
 
 namespace GestCom.WebAPI.Controllers.Achats;
 
@@ -100,7 +101,3 @@ public class CommandesAchatController : BaseApiController
     }
 }
 
-public class UpdateStatutRequest
-{
-    public string Statut { get; set; } = string.Empty;
-}
