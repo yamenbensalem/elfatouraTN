@@ -56,6 +56,12 @@ public class ProduitConfiguration : IEntityTypeConfiguration<Produit>
             .HasColumnType("decimal(18,3)")
             .HasColumnName("fodec_produit");
             
+        builder.Property(p => p.TauxTVA)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(p => p.TauxFODEC)
+            .HasColumnType("decimal(18,3)");
+            
         builder.Property(p => p.Quantite)
             .HasColumnType("decimal(18,3)")
             .HasColumnName("quantite_produit");

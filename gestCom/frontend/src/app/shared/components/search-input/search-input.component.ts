@@ -6,11 +6,11 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
   selector: 'app-search-input',
   standalone: false,
   template: `
-    <mat-form-field appearance="outline" class="search-field">
+    <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+      <mat-label>{{ placeholder }}</mat-label>
       <mat-icon matPrefix>search</mat-icon>
       <input matInput 
              [formControl]="searchControl" 
-             [placeholder]="placeholder"
              type="text">
       <button mat-icon-button 
               matSuffix 
@@ -27,18 +27,13 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
       max-width: 400px;
     }
 
-    :host ::ng-deep .search-field .mat-mdc-form-field-infix {
-      padding-top: 8px;
-      padding-bottom: 8px;
-    }
-
     :host ::ng-deep .search-field .mat-mdc-text-field-wrapper {
       background-color: #fafafa;
     }
 
-    mat-icon[matPrefix] {
+    :host ::ng-deep .search-field .mat-mdc-form-field-icon-prefix {
       color: #999;
-      margin-right: 8px;
+      padding: 0 4px 0 12px;
     }
   `]
 })

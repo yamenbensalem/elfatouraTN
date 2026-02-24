@@ -97,6 +97,9 @@ public class ClientConfiguration : IEntityTypeConfiguration<Client>
             .HasColumnType("decimal(18,3)")
             .HasColumnName("maxcredit_client");
             
+        builder.Property(c => c.CreditMaximum)
+            .HasColumnType("decimal(18,3)");
+            
         builder.Property(c => c.CodeDevise)
             .HasColumnName("code_devise");
             

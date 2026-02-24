@@ -38,6 +38,12 @@ public class FactureClientConfiguration : IEntityTypeConfiguration<FactureClient
             .HasColumnType("decimal(18,3)")
             .HasColumnName("remise_factureclient");
             
+        builder.Property(f => f.TauxRemise)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(f => f.TauxRemiseGlobale)
+            .HasColumnType("decimal(18,3)");
+            
         builder.Property(f => f.MontantHT)
             .HasColumnType("decimal(18,3)")
             .HasColumnName("montantHT_factureclient");
@@ -65,6 +71,27 @@ public class FactureClientConfiguration : IEntityTypeConfiguration<FactureClient
         builder.Property(f => f.MontantRestant)
             .HasColumnType("decimal(18,3)")
             .HasColumnName("montantRestant_factureclient");
+            
+        builder.Property(f => f.MontantRegle)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(f => f.MontantFodec)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(f => f.MontantRemise)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(f => f.TauxRAS)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(f => f.MontantRAS)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(f => f.NetAPayer)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(f => f.TauxChange)
+            .HasColumnType("decimal(18,6)");
             
         builder.Property(f => f.Origine)
             .HasMaxLength(50)
@@ -162,6 +189,21 @@ public class LigneFactureClientConfiguration : IEntityTypeConfiguration<LigneFac
         builder.Property(l => l.MontantTTC)
             .HasColumnType("decimal(18,3)")
             .HasColumnName("montantTTC");
+            
+        builder.Property(l => l.PrixUnitaireHT)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(l => l.TauxRemise)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(l => l.MontantRemise)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(l => l.TauxFodec)
+            .HasColumnType("decimal(18,3)");
+            
+        builder.Property(l => l.MontantFodec)
+            .HasColumnType("decimal(18,3)");
 
         // Relations
         builder.HasOne(l => l.Produit)
