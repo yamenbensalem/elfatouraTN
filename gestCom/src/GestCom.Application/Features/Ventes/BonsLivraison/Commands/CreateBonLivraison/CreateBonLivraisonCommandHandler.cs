@@ -13,23 +13,29 @@ public class CreateBonLivraisonCommandHandler : IRequestHandler<CreateBonLivrais
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INumeroService _numeroService;
 
-    public CreateBonLivraisonCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+    public CreateBonLivraisonCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, INumeroService numeroService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _currentUserService = currentUserService;
+        _numeroService = numeroService;
     }
 
     public async Task<BonLivraisonDto> Handle(CreateBonLivraisonCommand request, CancellationToken cancellationToken)
     {
+        // Wrap in transaction: stock decrements + bon livraison creation must be atomic
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
         var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
         if (client == null)
         {
             throw new NotFoundException("Client", request.CodeClient);
         }
 
-        var numeroBL = await GenerateNumeroBonLivraisonAsync();
+        var numeroBL = await _numeroService.GenererNumeroBonLivraisonAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
 
         var bonLivraison = new BonLivraison
         {
@@ -77,7 +83,7 @@ public class CreateBonLivraisonCommandHandler : IRequestHandler<CreateBonLivrais
                 MontantTTC = montantTTC
             };
 
-            bonLivraison.LignesBonLivraison.Add(ligne);
+            bonLivraison.Lignes.Add(ligne);
 
             totalHT += montantHT;
             totalTVA += montantTVA;
@@ -106,26 +112,16 @@ public class CreateBonLivraisonCommandHandler : IRequestHandler<CreateBonLivrais
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.CommitTransactionAsync();
 
         var createdBL = await _unitOfWork.BonsLivraison.GetByNumeroAsync(numeroBL, _currentUserService.CodeEntreprise);
         return _mapper.Map<BonLivraisonDto>(createdBL);
-    }
-
-    private async Task<string> GenerateNumeroBonLivraisonAsync()
-    {
-        var year = DateTime.Now.Year;
-        var lastNumber = await _unitOfWork.BonsLivraison.GetLastNumeroAsync(_currentUserService.CodeEntreprise);
-        
-        int nextNumber = 1;
-        if (!string.IsNullOrEmpty(lastNumber))
-        {
-            var parts = lastNumber.Split('-');
-            if (parts.Length >= 2 && int.TryParse(parts[1], out int last))
-            {
-                nextNumber = last + 1;
-            }
         }
-
-        return $"BL{year}-{nextNumber:D6}";
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
+
 }

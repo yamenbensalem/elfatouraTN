@@ -30,6 +30,5 @@ public class CommandeAchat : BaseEntity, IHasEntreprise
     public Entreprise? Entreprise { get; set; }
     public Fournisseur? Fournisseur { get; set; }
     public ICollection<LigneCommandeAchat> Lignes { get; set; } = new List<LigneCommandeAchat>();
-    public ICollection<LigneCommandeAchat> LignesCommande { get; set; } = new List<LigneCommandeAchat>();
     public ICollection<BonReception> BonsReception { get; set; } = new List<BonReception>();
 }

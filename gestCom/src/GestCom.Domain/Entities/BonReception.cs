@@ -25,5 +25,4 @@ public class BonReception : BaseEntity, IHasEntreprise
     public Fournisseur? Fournisseur { get; set; }
     public CommandeAchat? CommandeAchat { get; set; }
     public ICollection<LigneBonReception> Lignes { get; set; } = new List<LigneBonReception>();
-    public ICollection<LigneBonReception> LignesBonReception { get; set; } = new List<LigneBonReception>();
 }

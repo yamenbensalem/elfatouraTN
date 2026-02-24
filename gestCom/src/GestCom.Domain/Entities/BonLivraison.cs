@@ -29,6 +29,5 @@ public class BonLivraison : BaseEntity, IHasEntreprise
     public Client? Client { get; set; }
     public CommandeVente? CommandeVente { get; set; }
     public ICollection<LigneBonLivraison> Lignes { get; set; } = new List<LigneBonLivraison>();
-    public ICollection<LigneBonLivraison> LignesBonLivraison { get; set; } = new List<LigneBonLivraison>();
     public ICollection<BonLivraison_Facture> FacturesLiees { get; set; } = new List<BonLivraison_Facture>();
 }

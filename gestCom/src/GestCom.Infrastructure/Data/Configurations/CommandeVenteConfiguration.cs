@@ -33,9 +33,6 @@ public class CommandeVenteConfiguration : IEntityTypeConfiguration<CommandeVente
         builder.Property(c => c.MontantTVA).HasPrecision(18, 3);
         builder.Property(c => c.MontantTTC).HasPrecision(18, 3);
 
-        // Ignore alias collections
-        builder.Ignore(c => c.LignesCommande);
-
         // Relationships
         builder.HasOne(c => c.Entreprise)
             .WithMany()

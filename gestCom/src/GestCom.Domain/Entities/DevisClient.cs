@@ -33,5 +33,4 @@ public class DevisClient : BaseEntity, IHasEntreprise
     public Entreprise? Entreprise { get; set; }
     public Client? Client { get; set; }
     public ICollection<LigneDevisClient> Lignes { get; set; } = new List<LigneDevisClient>();
-    public ICollection<LigneDevisClient> LignesDevis { get; set; } = new List<LigneDevisClient>();
 }

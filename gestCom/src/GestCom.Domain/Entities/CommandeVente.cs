@@ -35,6 +35,5 @@ public class CommandeVente : BaseEntity, IHasEntreprise
     public Client? Client { get; set; }
     public DevisClient? Devis { get; set; }
     public ICollection<LigneCommandeVente> Lignes { get; set; } = new List<LigneCommandeVente>();
-    public ICollection<LigneCommandeVente> LignesCommande { get; set; } = new List<LigneCommandeVente>();
     public ICollection<BonLivraison> BonsLivraison { get; set; } = new List<BonLivraison>();
 }

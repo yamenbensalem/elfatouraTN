@@ -48,7 +48,6 @@ public class FactureClient : BaseEntity, IHasEntreprise
     public ModePayement? ModePayementNavigation { get; set; }
     public Devise? DeviseNavigation { get; set; }
     public ICollection<LigneFactureClient> Lignes { get; set; } = new List<LigneFactureClient>();
-    public ICollection<LigneFactureClient> LignesFacture { get; set; } = new List<LigneFactureClient>();
     public ICollection<ReglementFacture> Reglements { get; set; } = new List<ReglementFacture>();
     public ICollection<BonLivraison_Facture> BonsLivraisonLies { get; set; } = new List<BonLivraison_Facture>();
 }

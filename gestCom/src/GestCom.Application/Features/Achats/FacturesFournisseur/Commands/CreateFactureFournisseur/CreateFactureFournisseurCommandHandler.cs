@@ -12,12 +12,14 @@ public class CreateFactureFournisseurCommandHandler : IRequestHandler<CreateFact
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INumeroService _numeroService;
 
-    public CreateFactureFournisseurCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+    public CreateFactureFournisseurCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, INumeroService numeroService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _currentUserService = currentUserService;
+        _numeroService = numeroService;
     }
 
     public async Task<FactureFournisseurDto> Handle(CreateFactureFournisseurCommand request, CancellationToken cancellationToken)
@@ -30,25 +32,7 @@ public class CreateFactureFournisseurCommandHandler : IRequestHandler<CreateFact
         }
 
         // Générer le numéro de facture interne
-        var annee = request.DateFacture.Year;
-        var factures = await _unitOfWork.FacturesFournisseur.GetAllAsync();
-        var dernierNumero = factures
-            .Where(f => f.NumeroFacture.StartsWith($"FF{annee}"))
-            .Select(f => f.NumeroFacture)
-            .OrderByDescending(n => n)
-            .FirstOrDefault();
-
-        int sequence = 1;
-        if (!string.IsNullOrEmpty(dernierNumero))
-        {
-            var parts = dernierNumero.Split('-');
-            if (parts.Length == 2 && int.TryParse(parts[1], out int lastSeq))
-            {
-                sequence = lastSeq + 1;
-            }
-        }
-
-        var numeroFacture = $"FF{annee}-{sequence:D6}";
+        var numeroFacture = await _numeroService.GenererNumeroFactureFournisseurAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
 
         // Créer la facture
         var facture = new FactureFournisseur
@@ -64,7 +48,7 @@ public class CreateFactureFournisseurCommandHandler : IRequestHandler<CreateFact
             Observation = request.Observation,
             Statut = "En attente",
             MontantRegle = 0,
-            LignesFacture = new List<LigneFactureFournisseur>()
+            Lignes = new List<LigneFactureFournisseur>()
         };
 
         decimal montantHT = 0;
@@ -106,7 +90,7 @@ public class CreateFactureFournisseurCommandHandler : IRequestHandler<CreateFact
                 MontantTTC = montantLigneTTC
             };
 
-            facture.LignesFacture.Add(ligne);
+            facture.Lignes.Add(ligne);
 
             montantHT += montantNetHT;
             montantTVA += tvaLigne;

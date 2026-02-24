@@ -43,17 +43,6 @@ public class TenantMiddleware
 }
 
 /// <summary>
-/// Interface pour le contexte du tenant
-/// </summary>
-public interface ITenantContext
-{
-    string? CodeEntreprise { get; }
-    string? UserId { get; }
-    string? UserName { get; }
-    void SetTenant(string codeEntreprise, string? userId, string? userName);
-}
-
-/// <summary>
 /// Implémentation du contexte du tenant (scoped)
 /// </summary>
 public class TenantContext : ITenantContext

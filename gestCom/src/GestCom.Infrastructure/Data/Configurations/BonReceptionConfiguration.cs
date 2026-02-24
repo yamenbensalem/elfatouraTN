@@ -26,7 +26,6 @@ public class BonReceptionConfiguration : IEntityTypeConfiguration<BonReception>
 
         // Ignore alias properties
         builder.Ignore(b => b.NumeroBonReception);
-        builder.Ignore(b => b.LignesBonReception);
 
         // Relationships
         builder.HasOne(b => b.Entreprise)

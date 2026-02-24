@@ -1,8 +1,10 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using GestCom.Application;
 using GestCom.Infrastructure;
 using GestCom.WebAPI.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -175,6 +177,31 @@ try
         options.EnableForHttps = true;
     });
 
+    // Rate Limiting (protect auth endpoints from brute-force)
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+        // Fixed window policy for auth endpoints: 10 requests / 60 seconds per IP
+        options.AddFixedWindowLimiter("auth", limiterOptions =>
+        {
+            limiterOptions.PermitLimit = 10;
+            limiterOptions.Window = TimeSpan.FromSeconds(60);
+            limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            limiterOptions.QueueLimit = 0;
+        });
+
+        // Global policy: 100 requests / 60 seconds per IP
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromSeconds(60)
+                }));
+    });
+
     var app = builder.Build();
 
     // Configure the HTTP request pipeline
@@ -209,6 +236,9 @@ try
 
     // CORS
     app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowedOrigins");
+
+    // Rate Limiting
+    app.UseRateLimiter();
 
     // Authentication & Authorization
     app.UseAuthentication();

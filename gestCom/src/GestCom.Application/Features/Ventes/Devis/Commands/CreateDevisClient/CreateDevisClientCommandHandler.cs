@@ -13,12 +13,14 @@ public class CreateDevisClientCommandHandler : IRequestHandler<CreateDevisClient
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INumeroService _numeroService;
 
-    public CreateDevisClientCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+    public CreateDevisClientCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, INumeroService numeroService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _currentUserService = currentUserService;
+        _numeroService = numeroService;
     }
 
     public async Task<DevisClientDto> Handle(CreateDevisClientCommand request, CancellationToken cancellationToken)
@@ -31,7 +33,7 @@ public class CreateDevisClientCommandHandler : IRequestHandler<CreateDevisClient
         }
 
         // Générer le numéro de devis
-        var numeroDevis = await GenerateNumeroDevisAsync();
+        var numeroDevis = await _numeroService.GenererNumeroDevisAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
 
         // Créer le devis
         var devis = new DevisClient
@@ -83,7 +85,7 @@ public class CreateDevisClientCommandHandler : IRequestHandler<CreateDevisClient
                 MontantTTC = montantTTC
             };
 
-            devis.LignesDevis.Add(ligne);
+            devis.Lignes.Add(ligne);
 
             totalHT += montantNetHT;
             totalTVA += montantTVA;
@@ -105,21 +107,4 @@ public class CreateDevisClientCommandHandler : IRequestHandler<CreateDevisClient
         return _mapper.Map<DevisClientDto>(createdDevis);
     }
 
-    private async Task<string> GenerateNumeroDevisAsync()
-    {
-        var year = DateTime.Now.Year;
-        var lastNumber = await _unitOfWork.DevisClients.GetLastNumeroAsync(_currentUserService.CodeEntreprise);
-        
-        int nextNumber = 1;
-        if (!string.IsNullOrEmpty(lastNumber))
-        {
-            var parts = lastNumber.Split('-');
-            if (parts.Length >= 2 && int.TryParse(parts[1], out int last))
-            {
-                nextNumber = last + 1;
-            }
-        }
-
-        return $"DV{year}-{nextNumber:D6}";
-    }
 }

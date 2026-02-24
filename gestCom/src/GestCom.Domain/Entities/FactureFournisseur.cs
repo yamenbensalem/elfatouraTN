@@ -38,6 +38,5 @@ public class FactureFournisseur : BaseEntity, IHasEntreprise
     public Fournisseur? Fournisseur { get; set; }
     public ModePayement? ModePayementNavigation { get; set; }
     public ICollection<LigneFactureFournisseur> Lignes { get; set; } = new List<LigneFactureFournisseur>();
-    public ICollection<LigneFactureFournisseur> LignesFacture { get; set; } = new List<LigneFactureFournisseur>();
     public ICollection<ReglementFournisseur> Reglements { get; set; } = new List<ReglementFournisseur>();
 }

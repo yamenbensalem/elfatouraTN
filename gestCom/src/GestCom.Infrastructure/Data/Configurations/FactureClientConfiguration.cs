@@ -14,7 +14,6 @@ public class FactureClientConfiguration : IEntityTypeConfiguration<FactureClient
         
         // Ignore alias properties
         builder.Ignore(f => f.MontantFODEC);
-        builder.Ignore(f => f.LignesFacture);
         
         builder.Property(f => f.NumeroFacture)
             .HasMaxLength(50)

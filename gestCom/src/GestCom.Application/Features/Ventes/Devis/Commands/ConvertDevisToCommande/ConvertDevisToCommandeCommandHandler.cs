@@ -80,13 +80,13 @@ public class ConvertDevisToCommandeCommandHandler : IRequestHandler<ConvertDevis
             MontantTTC = devis.MontantTTC,
             Observation = request.Observation ?? devis.Observation,
             Statut = "En attente",
-            LignesCommande = new List<LigneCommandeVente>()
+            Lignes = new List<LigneCommandeVente>()
         };
 
         // Copier les lignes du devis
-        if (devis.LignesDevis != null)
+        if (devis.Lignes != null)
         {
-            foreach (var ligneDevis in devis.LignesDevis)
+            foreach (var ligneDevis in devis.Lignes)
             {
                 var ligneCommande = new LigneCommandeVente
                 {
@@ -102,7 +102,7 @@ public class ConvertDevisToCommandeCommandHandler : IRequestHandler<ConvertDevis
                     MontantFodec = ligneDevis.MontantFodec,
                     MontantTTC = ligneDevis.MontantTTC
                 };
-                commande.LignesCommande.Add(ligneCommande);
+                commande.Lignes.Add(ligneCommande);
             }
         }
 

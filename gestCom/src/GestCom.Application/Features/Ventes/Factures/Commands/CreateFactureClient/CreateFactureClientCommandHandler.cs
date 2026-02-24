@@ -13,16 +13,22 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INumeroService _numeroService;
 
-    public CreateFactureClientCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+    public CreateFactureClientCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, INumeroService numeroService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _currentUserService = currentUserService;
+        _numeroService = numeroService;
     }
 
     public async Task<FactureClientDto> Handle(CreateFactureClientCommand request, CancellationToken cancellationToken)
     {
+        // Wrap in transaction: stock decrements + facture creation must be atomic
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
         // Vérifier que le client existe
         var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
         if (client == null)
@@ -40,7 +46,7 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
         }
 
         // Générer le numéro de facture
-        var numeroFacture = await GenerateNumeroFactureAsync();
+        var numeroFacture = await _numeroService.GenererNumeroFactureClientAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
 
         // Créer la facture
         var facture = new FactureClient
@@ -109,7 +115,7 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
                 MontantTTC = montantTTC
             };
 
-            facture.LignesFacture.Add(ligne);
+            facture.Lignes.Add(ligne);
 
             totalHT += montantNetHT;
             totalTVA += montantTVA;
@@ -137,27 +143,17 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
 
         await _unitOfWork.FacturesClient.AddAsync(facture);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.CommitTransactionAsync();
 
         // Recharger avec les relations
         var createdFacture = await _unitOfWork.FacturesClient.GetByNumeroAsync(numeroFacture, _currentUserService.CodeEntreprise);
         return _mapper.Map<FactureClientDto>(createdFacture);
-    }
-
-    private async Task<string> GenerateNumeroFactureAsync()
-    {
-        var year = DateTime.Now.Year;
-        var lastNumber = await _unitOfWork.FacturesClient.GetLastNumeroAsync(_currentUserService.CodeEntreprise);
-        
-        int nextNumber = 1;
-        if (!string.IsNullOrEmpty(lastNumber))
-        {
-            var parts = lastNumber.Split('-');
-            if (parts.Length >= 2 && int.TryParse(parts[1], out int last))
-            {
-                nextNumber = last + 1;
-            }
         }
-
-        return $"FC{year}-{nextNumber:D6}";
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
+
 }

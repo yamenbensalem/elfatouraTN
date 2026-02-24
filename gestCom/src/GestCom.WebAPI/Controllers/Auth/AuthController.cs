@@ -1,6 +1,7 @@
 using GestCom.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace GestCom.WebAPI.Controllers.Auth;
@@ -10,6 +11,7 @@ namespace GestCom.WebAPI.Controllers.Auth;
 /// </summary>
 [Route("api/v1/auth")]
 [ApiController]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;

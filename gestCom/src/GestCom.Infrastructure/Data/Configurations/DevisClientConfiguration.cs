@@ -33,7 +33,6 @@ public class DevisClientConfiguration : IEntityTypeConfiguration<DevisClient>
 
         // Ignore alias properties
         builder.Ignore(d => d.Observation);
-        builder.Ignore(d => d.LignesDevis);
 
         // Relationships
         builder.HasOne(d => d.Entreprise)

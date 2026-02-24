@@ -15,7 +15,7 @@ public class CommandeVenteMappingProfile : Profile
             .ForMember(dest => dest.AdresseClient, 
                 opt => opt.MapFrom(src => src.Client != null ? src.Client.Adresse : null))
             .ForMember(dest => dest.Lignes, 
-                opt => opt.MapFrom(src => src.LignesCommande));
+                opt => opt.MapFrom(src => src.Lignes));
 
         // CommandeVente -> CommandeVenteListDto
         CreateMap<CommandeVente, CommandeVenteListDto>()
@@ -24,7 +24,7 @@ public class CommandeVenteMappingProfile : Profile
             .ForMember(dest => dest.EstLivree, 
                 opt => opt.MapFrom(src => !string.IsNullOrEmpty(src.NumeroBonLivraison)))
             .ForMember(dest => dest.NombreLignes, 
-                opt => opt.MapFrom(src => src.LignesCommande != null ? src.LignesCommande.Count : 0));
+                opt => opt.MapFrom(src => src.Lignes != null ? src.Lignes.Count : 0));
 
         // LigneCommandeVente -> LigneCommandeVenteDto
         CreateMap<LigneCommandeVente, LigneCommandeVenteDto>()
@@ -34,7 +34,7 @@ public class CommandeVenteMappingProfile : Profile
         // CreateCommandeVenteDto -> CommandeVente
         CreateMap<CreateCommandeVenteDto, CommandeVente>()
             .ForMember(dest => dest.NumeroCommande, opt => opt.Ignore())
-            .ForMember(dest => dest.LignesCommande, opt => opt.Ignore());
+            .ForMember(dest => dest.Lignes, opt => opt.Ignore());
 
         // CreateLigneCommandeVenteDto -> LigneCommandeVente
         CreateMap<CreateLigneCommandeVenteDto, LigneCommandeVente>()

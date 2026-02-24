@@ -53,44 +53,54 @@ export class ApiService {
   }
 
   /**
-   * Handle HTTP errors
+   * Handle HTTP errors — re-throws the original HttpErrorResponse
+   * so NgRx effects and callers can inspect error.status / error.error.
    */
   private handleError(error: HttpErrorResponse): Observable<never> {
-    let errorMessage = 'Une erreur inattendue s\'est produite';
+    let userMessage = 'Une erreur inattendue s\'est produite';
 
     if (error.error instanceof ErrorEvent) {
-      // Client-side error
-      errorMessage = `Erreur: ${error.error.message}`;
+      // Client-side / network error
+      userMessage = `Erreur: ${error.error.message}`;
     } else {
       // Server-side error
       switch (error.status) {
+        case 0:
+          userMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
+          break;
         case 400:
-          errorMessage = error.error?.message || 'Requête invalide';
+          userMessage = error.error?.message || 'Requête invalide';
           break;
         case 401:
-          errorMessage = 'Non autorisé. Veuillez vous connecter.';
+          userMessage = 'Non autorisé. Veuillez vous connecter.';
           break;
         case 403:
-          errorMessage = 'Accès interdit. Vous n\'avez pas les permissions nécessaires.';
+          userMessage = 'Accès interdit. Vous n\'avez pas les permissions nécessaires.';
           break;
         case 404:
-          errorMessage = 'Ressource non trouvée';
+          userMessage = 'Ressource non trouvée';
           break;
         case 409:
-          errorMessage = error.error?.message || 'Conflit de données';
+          userMessage = error.error?.message || 'Conflit de données';
           break;
         case 422:
-          errorMessage = error.error?.message || 'Données de validation invalides';
+          userMessage = error.error?.message || 'Données de validation invalides';
           break;
         case 500:
-          errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+          userMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
           break;
         default:
-          errorMessage = `Erreur ${error.status}: ${error.error?.message || error.message}`;
+          userMessage = `Erreur ${error.status}: ${error.error?.message || error.message}`;
       }
     }
 
-    console.error('API Error:', error);
-    return throwError(() => new Error(errorMessage));
+    console.error('API Error:', userMessage, error);
+
+    // Re-throw the original HttpErrorResponse so callers/effects can access
+    // error.status, error.error, etc. Attach a user-friendly message.
+    return throwError(() => ({
+      ...error,
+      userMessage
+    }));
   }
 }

@@ -95,7 +95,7 @@ public class ConvertBLToFactureCommandHandler : IRequestHandler<ConvertBLToFactu
             Observation = request.Observation,
             Statut = "En attente",
             MontantRegle = 0,
-            LignesFacture = new List<LigneFactureClient>()
+            Lignes = new List<LigneFactureClient>()
         };
 
         decimal montantHT = 0;
@@ -106,9 +106,9 @@ public class ConvertBLToFactureCommandHandler : IRequestHandler<ConvertBLToFactu
         // Consolider les lignes de tous les BL
         foreach (var bl in bonsLivraison)
         {
-            if (bl.LignesBonLivraison != null)
+            if (bl.Lignes != null)
             {
-                foreach (var ligneBL in bl.LignesBonLivraison)
+                foreach (var ligneBL in bl.Lignes)
                 {
                     var ligneFacture = new LigneFactureClient
                     {
@@ -125,7 +125,7 @@ public class ConvertBLToFactureCommandHandler : IRequestHandler<ConvertBLToFactu
                         MontantTTC = ligneBL.MontantTTC
                     };
 
-                    facture.LignesFacture.Add(ligneFacture);
+                    facture.Lignes.Add(ligneFacture);
 
                     montantHT += ligneBL.MontantHT;
                     montantTVA += ligneBL.MontantTVA;

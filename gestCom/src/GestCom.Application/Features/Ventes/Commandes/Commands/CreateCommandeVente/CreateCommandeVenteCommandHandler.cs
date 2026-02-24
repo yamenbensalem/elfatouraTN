@@ -13,12 +13,14 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INumeroService _numeroService;
 
-    public CreateCommandeVenteCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+    public CreateCommandeVenteCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, INumeroService numeroService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _currentUserService = currentUserService;
+        _numeroService = numeroService;
     }
 
     public async Task<CommandeVenteDto> Handle(CreateCommandeVenteCommand request, CancellationToken cancellationToken)
@@ -44,7 +46,7 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
             }
         }
 
-        var numeroCommande = await GenerateNumeroCommandeAsync();
+        var numeroCommande = await _numeroService.GenererNumeroCommandeVenteAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
 
         var commande = new CommandeVente
         {
@@ -96,7 +98,7 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
                 MontantTTC = montantTTC
             };
 
-            commande.LignesCommande.Add(ligne);
+            commande.Lignes.Add(ligne);
 
             totalHT += montantNetHT;
             totalTVA += montantTVA;
@@ -130,21 +132,4 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
         return _mapper.Map<CommandeVenteDto>(createdCommande);
     }
 
-    private async Task<string> GenerateNumeroCommandeAsync()
-    {
-        var year = DateTime.Now.Year;
-        var lastNumber = await _unitOfWork.CommandesVente.GetLastNumeroAsync(_currentUserService.CodeEntreprise);
-        
-        int nextNumber = 1;
-        if (!string.IsNullOrEmpty(lastNumber))
-        {
-            var parts = lastNumber.Split('-');
-            if (parts.Length >= 2 && int.TryParse(parts[1], out int last))
-            {
-                nextNumber = last + 1;
-            }
-        }
-
-        return $"CV{year}-{nextNumber:D6}";
-    }
 }

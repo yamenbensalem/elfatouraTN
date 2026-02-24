@@ -37,9 +37,6 @@ public class FactureFournisseurConfiguration : IEntityTypeConfiguration<FactureF
         builder.Property(f => f.MontantRAS).HasPrecision(18, 3);
         builder.Property(f => f.NetAPayer).HasPrecision(18, 3);
 
-        // Ignore alias collections
-        builder.Ignore(f => f.LignesFacture);
-
         // Relationships
         builder.HasOne(f => f.Entreprise)
             .WithMany()

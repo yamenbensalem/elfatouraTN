@@ -71,7 +71,7 @@ public interface IDateTimeService
 /// </summary>
 public interface ICurrentUserService
 {
-    int? UserId { get; }
+    string? UserId { get; }
     string? UserName { get; }
     string? Email { get; }
     string? Role { get; }
@@ -105,4 +105,15 @@ public interface INumeroService
     Task<string> GenererNumeroCommandeAchatAsync(string codeEntreprise);
     Task<string> GenererNumeroBonReceptionAsync(string codeEntreprise);
     Task<string> GenererNumeroReglementAsync(string codeEntreprise);
+}
+
+/// <summary>
+/// Interface pour le contexte du tenant (multi-tenancy)
+/// </summary>
+public interface ITenantContext
+{
+    string? CodeEntreprise { get; }
+    string? UserId { get; }
+    string? UserName { get; }
+    void SetTenant(string codeEntreprise, string? userId, string? userName);
 }

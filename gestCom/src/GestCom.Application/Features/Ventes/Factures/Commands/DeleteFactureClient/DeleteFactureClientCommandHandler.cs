@@ -30,23 +30,34 @@ public class DeleteFactureClientCommandHandler : IRequestHandler<DeleteFactureCl
                 "Impossible de supprimer une facture ayant des règlements. Veuillez d'abord annuler les règlements.");
         }
 
-        // Restaurer le stock si demandé
-        if (request.RestaurerStock && facture.LignesFacture != null)
+        // Wrap in transaction: stock restoration + deletion must be atomic
+        await _unitOfWork.BeginTransactionAsync();
+        try
         {
-            foreach (var ligne in facture.LignesFacture)
+            // Restaurer le stock si demandé
+            if (request.RestaurerStock && facture.Lignes != null)
             {
-                var produit = await _unitOfWork.Produits.GetByCodeAsync(ligne.CodeProduit, _currentUserService.CodeEntreprise);
-                if (produit != null)
+                foreach (var ligne in facture.Lignes)
                 {
-                    produit.Quantite += ligne.Quantite; // Réincrémenter le stock
-                    await _unitOfWork.Produits.UpdateAsync(produit);
+                    var produit = await _unitOfWork.Produits.GetByCodeAsync(ligne.CodeProduit, _currentUserService.CodeEntreprise);
+                    if (produit != null)
+                    {
+                        produit.Quantite += ligne.Quantite; // Réincrémenter le stock
+                        await _unitOfWork.Produits.UpdateAsync(produit);
+                    }
                 }
             }
+
+            await _unitOfWork.FacturesClient.DeleteAsync(facture);
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            return true;
         }
-
-        await _unitOfWork.FacturesClient.DeleteAsync(facture);
-        await _unitOfWork.SaveChangesAsync();
-
-        return true;
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 }

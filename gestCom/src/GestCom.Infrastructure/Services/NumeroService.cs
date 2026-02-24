@@ -115,7 +115,7 @@ public class NumeroService : INumeroService
             var dernierNumero = await getDernierNumero(prefixe, annee);
             var nouveauNumero = dernierNumero + 1;
             
-            var numero = $"{prefixe}{annee}-{nouveauNumero:00000}";
+            var numero = $"{prefixe}{annee}-{nouveauNumero:D6}";
             
             _logger.LogDebug("Numéro généré: {Numero} pour entreprise {CodeEntreprise}", numero, codeEntreprise);
             

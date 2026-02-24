@@ -13,12 +13,14 @@ public class CreateCommandeAchatCommandHandler : IRequestHandler<CreateCommandeA
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INumeroService _numeroService;
 
-    public CreateCommandeAchatCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+    public CreateCommandeAchatCommandHandler(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, INumeroService numeroService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _currentUserService = currentUserService;
+        _numeroService = numeroService;
     }
 
     public async Task<CommandeAchatDto> Handle(CreateCommandeAchatCommand request, CancellationToken cancellationToken)
@@ -31,7 +33,7 @@ public class CreateCommandeAchatCommandHandler : IRequestHandler<CreateCommandeA
             throw new NotFoundException("Fournisseur", request.CodeFournisseur);
         }
 
-        var numeroCommande = await GenerateNumeroCommandeAsync(codeEntreprise);
+        var numeroCommande = await _numeroService.GenererNumeroCommandeAchatAsync(codeEntreprise);
 
         var commande = new CommandeAchat
         {
@@ -99,26 +101,4 @@ public class CreateCommandeAchatCommandHandler : IRequestHandler<CreateCommandeA
         return _mapper.Map<CommandeAchatDto>(createdCommande);
     }
 
-    private async Task<string> GenerateNumeroCommandeAsync(string codeEntreprise)
-    {
-        var year = DateTime.Now.Year;
-        var commandes = await _unitOfWork.CommandesAchat.GetAllAsync();
-        var lastNumber = commandes
-            .Where(c => c.CodeEntreprise == codeEntreprise && c.NumeroCommande.StartsWith($"CA{year}"))
-            .Select(c => c.NumeroCommande)
-            .OrderByDescending(n => n)
-            .FirstOrDefault();
-        
-        int nextNumber = 1;
-        if (!string.IsNullOrEmpty(lastNumber))
-        {
-            var parts = lastNumber.Split('-');
-            if (parts.Length >= 2 && int.TryParse(parts[1], out int last))
-            {
-                nextNumber = last + 1;
-            }
-        }
-
-        return $"CA{year}-{nextNumber:D6}";
-    }
 }

@@ -116,7 +116,7 @@ public class GetDashboardQueryHandler : IRequestHandler<GetDashboardQuery, Dashb
 
         // Top produits (basé sur les lignes de factures)
         var lignesFactures = facturesClientList
-            .SelectMany(f => f.LignesFacture)
+            .SelectMany(f => f.Lignes)
             .ToList();
         
         var produitsDict = produitsList.ToDictionary(p => p.CodeProduit, p => p.Designation);

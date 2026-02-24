@@ -1,3 +1,4 @@
+using GestCom.Application.Common.Interfaces;
 using GestCom.Domain.Entities;
 using GestCom.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -10,13 +11,15 @@ namespace GestCom.Infrastructure.Data;
 /// </summary>
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-    private readonly string? _currentEntrepriseCode;
+    private readonly ITenantContext? _tenantContext;
 
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, string? currentEntrepriseCode = null) 
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantContext? tenantContext = null) 
         : base(options)
     {
-        _currentEntrepriseCode = currentEntrepriseCode;
+        _tenantContext = tenantContext;
     }
+
+    private string? CurrentEntrepriseCode => _tenantContext?.CodeEntreprise;
 
     // Identity & Auth
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -97,7 +100,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     private void ApplyEntrepriseFilter<TEntity>(ModelBuilder builder) where TEntity : class, Domain.Common.IHasEntreprise
     {
         builder.Entity<TEntity>().HasQueryFilter(e => 
-            string.IsNullOrEmpty(_currentEntrepriseCode) || e.CodeEntreprise == _currentEntrepriseCode);
+            string.IsNullOrEmpty(CurrentEntrepriseCode) || e.CodeEntreprise == CurrentEntrepriseCode);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -108,22 +111,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.DateCreation = DateTime.Now;
+                    entry.Entity.DateCreation = DateTime.UtcNow;
                     break;
                 case EntityState.Modified:
-                    entry.Entity.DateModification = DateTime.Now;
+                    entry.Entity.DateModification = DateTime.UtcNow;
                     break;
             }
         }
 
         // Auto-set CodeEntreprise for multi-tenancy
-        if (!string.IsNullOrEmpty(_currentEntrepriseCode))
+        if (!string.IsNullOrEmpty(CurrentEntrepriseCode))
         {
             foreach (var entry in ChangeTracker.Entries<Domain.Common.IHasEntreprise>())
             {
                 if (entry.State == EntityState.Added && string.IsNullOrEmpty(entry.Entity.CodeEntreprise))
                 {
-                    entry.Entity.CodeEntreprise = _currentEntrepriseCode;
+                    entry.Entity.CodeEntreprise = CurrentEntrepriseCode;
                 }
             }
         }

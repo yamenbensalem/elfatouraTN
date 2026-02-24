@@ -23,8 +23,8 @@ public class PagedResult<T>
         Items = items;
         TotalCount = count;
         PageNumber = pageNumber;
-        PageSize = pageSize;
-        TotalPages = (int)Math.Ceiling(count / (double)pageSize);
+        PageSize = pageSize > 0 ? pageSize : 1;
+        TotalPages = (int)Math.Ceiling(count / (double)PageSize);
     }
 
     public static PagedResult<T> Create(List<T> items, int count, int pageNumber, int pageSize)

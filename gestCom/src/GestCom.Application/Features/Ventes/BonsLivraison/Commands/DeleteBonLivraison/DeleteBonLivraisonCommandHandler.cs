@@ -32,34 +32,45 @@ public class DeleteBonLivraisonCommandHandler : IRequestHandler<DeleteBonLivrais
                 $"Impossible de supprimer ce bon de livraison car il est lié à la facture '{factureAssociee.NumeroFacture}'.");
         }
 
-        // Restaurer le stock si demandé
-        if (request.RestaurerStock && bonLivraison.LignesBonLivraison != null)
+        // Wrap in transaction: stock restoration + deletion must be atomic
+        await _unitOfWork.BeginTransactionAsync();
+        try
         {
-            foreach (var ligne in bonLivraison.LignesBonLivraison)
+            // Restaurer le stock si demandé
+            if (request.RestaurerStock && bonLivraison.Lignes != null)
             {
-                var produit = await _unitOfWork.Produits.GetByCodeAsync(ligne.CodeProduit, _currentUserService.CodeEntreprise);
-                if (produit != null)
+                foreach (var ligne in bonLivraison.Lignes)
                 {
-                    produit.Quantite += ligne.Quantite; // Réincrémenter le stock
-                    await _unitOfWork.Produits.UpdateAsync(produit);
+                    var produit = await _unitOfWork.Produits.GetByCodeAsync(ligne.CodeProduit, _currentUserService.CodeEntreprise);
+                    if (produit != null)
+                    {
+                        produit.Quantite += ligne.Quantite; // Réincrémenter le stock
+                        await _unitOfWork.Produits.UpdateAsync(produit);
+                    }
                 }
             }
-        }
 
-        // Mettre à jour le statut de la commande si liée
-        if (!string.IsNullOrEmpty(bonLivraison.NumeroCommande))
-        {
-            var commande = await _unitOfWork.CommandesVente.GetByNumeroAsync(bonLivraison.NumeroCommande, _currentUserService.CodeEntreprise);
-            if (commande != null)
+            // Mettre à jour le statut de la commande si liée
+            if (!string.IsNullOrEmpty(bonLivraison.NumeroCommande))
             {
-                commande.Statut = "En attente";
-                await _unitOfWork.CommandesVente.UpdateAsync(commande);
+                var commande = await _unitOfWork.CommandesVente.GetByNumeroAsync(bonLivraison.NumeroCommande, _currentUserService.CodeEntreprise);
+                if (commande != null)
+                {
+                    commande.Statut = "En attente";
+                    await _unitOfWork.CommandesVente.UpdateAsync(commande);
+                }
             }
+
+            await _unitOfWork.BonsLivraison.DeleteAsync(bonLivraison);
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+
+            return true;
         }
-
-        await _unitOfWork.BonsLivraison.DeleteAsync(bonLivraison);
-        await _unitOfWork.SaveChangesAsync();
-
-        return true;
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 }

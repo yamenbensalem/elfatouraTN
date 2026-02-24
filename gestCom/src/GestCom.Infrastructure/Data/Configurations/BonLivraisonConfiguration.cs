@@ -27,7 +27,6 @@ public class BonLivraisonConfiguration : IEntityTypeConfiguration<BonLivraison>
         // Ignore alias properties that point to the same data
         builder.Ignore(b => b.NumeroBonLivraison);
         builder.Ignore(b => b.DateBonLivraison);
-        builder.Ignore(b => b.LignesBonLivraison); // Ignore the duplicate alias collection
 
         // One-to-many: BonLivraison -> Lignes
         builder.HasMany(b => b.Lignes)
