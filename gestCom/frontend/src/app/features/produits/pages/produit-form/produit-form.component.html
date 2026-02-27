@@ -19,6 +19,13 @@
           <h3 class="section-title">Informations Générales</h3>
           
           <div class="form-grid">
+            <!-- Service checkbox (boolean flag) -->
+            <div class="checkbox-group full-width">
+              <mat-checkbox formControlName="isService" color="primary">
+                Service
+              </mat-checkbox>
+            </div>
+
             <!-- Code Produit -->
             <mat-form-field appearance="outline">
               <mat-label>Code Produit</mat-label>
@@ -121,8 +128,8 @@
           </div>
         </div>
 
-        <!-- Section: Stock -->
-        <div class="form-section">
+        <!-- Section: Stock (hidden for services) -->
+        <div class="form-section" *ngIf="!isService">
           <h3 class="section-title">Stock</h3>
           
           <div class="form-grid">

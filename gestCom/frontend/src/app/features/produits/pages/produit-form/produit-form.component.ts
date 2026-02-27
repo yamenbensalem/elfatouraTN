@@ -50,6 +50,9 @@ export class ProduitFormComponent implements OnInit, OnDestroy {
 
   private initForm(): void {
     this.produitForm = this.fb.group({
+      // indicates whether the item is a service (no stock management)
+      isService: [false],
+
       codeProduit: ['', [Validators.required, Validators.maxLength(50)]],
       designation: ['', [Validators.required, Validators.maxLength(200)]],
       codeCategorie: ['', [Validators.maxLength(50)]],
@@ -64,6 +67,16 @@ export class ProduitFormComponent implements OnInit, OnDestroy {
       emplacement: ['', [Validators.maxLength(100)]],
       notes: ['', [Validators.maxLength(1000)]]
     });
+
+    // reset stock values when toggling service flag
+    this.produitForm.get('isService')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isSvc => {
+        if (isSvc) {
+          this.produitForm.patchValue({ stockMinimum: 0, stockMaximum: 0, emplacement: '' });
+        }
+      });
+
   }
 
   private checkEditMode(): void {
@@ -93,6 +106,7 @@ export class ProduitFormComponent implements OnInit, OnDestroy {
       .subscribe(produit => {
         if (produit) {
           this.produitForm.patchValue({
+            isService: produit['isService'] || false,
             codeProduit: produit.codeProduit,
             designation: produit.designation,
             codeCategorie: produit.codeCategorie || '',
@@ -150,6 +164,12 @@ export class ProduitFormComponent implements OnInit, OnDestroy {
 
     this.submitting = true;
     const formValue = this.produitForm.getRawValue();
+    const isService = formValue.isService;
+
+    // for services, ignore/zero out stock fields
+    const stockMinimum = isService ? 0 : formValue.stockMinimum;
+    const stockMaximum = isService ? 0 : formValue.stockMaximum;
+    const emplacement = isService ? undefined : formValue.emplacement || undefined;
 
     if (this.isEditMode && this.produitCode) {
       const updateRequest: UpdateProduitRequest = {
@@ -161,11 +181,13 @@ export class ProduitFormComponent implements OnInit, OnDestroy {
         tauxFODEC: formValue.tauxFODEC,
         unite: formValue.unite || undefined,
         codeBarres: formValue.codeBarres || undefined,
-        stockMinimum: formValue.stockMinimum,
-        stockMaximum: formValue.stockMaximum,
-        emplacement: formValue.emplacement || undefined,
-        notes: formValue.notes || undefined
-      };
+        stockMinimum,
+        stockMaximum,
+        emplacement,
+        notes: formValue.notes || undefined,
+        // preserve flag, backend may ignore extra properties
+        isService
+      } as any;
 
       this.store.dispatch(ProduitsPageActions.updateProduit({
         codeProduit: this.produitCode,
@@ -182,11 +204,12 @@ export class ProduitFormComponent implements OnInit, OnDestroy {
         tauxFODEC: formValue.tauxFODEC,
         unite: formValue.unite || undefined,
         codeBarres: formValue.codeBarres || undefined,
-        stockMinimum: formValue.stockMinimum,
-        stockMaximum: formValue.stockMaximum,
-        emplacement: formValue.emplacement || undefined,
-        notes: formValue.notes || undefined
-      };
+        stockMinimum,
+        stockMaximum,
+        emplacement,
+        notes: formValue.notes || undefined,
+        isService
+      } as any;
 
       this.store.dispatch(ProduitsPageActions.createProduit({ produit: createRequest }));
     }
@@ -213,5 +236,10 @@ export class ProduitFormComponent implements OnInit, OnDestroy {
   isFieldInvalid(fieldName: string): boolean {
     const control = this.produitForm.get(fieldName);
     return control ? control.invalid && control.touched : false;
+  }
+
+  // read-only helpers
+  get isService(): boolean {
+    return this.produitForm.get('isService')?.value;
   }
 }

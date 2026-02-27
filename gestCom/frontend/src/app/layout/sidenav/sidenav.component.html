@@ -23,11 +23,15 @@
     } @else {
       <!-- Expandable nav item -->
       <mat-list-item (click)="toggleNavItem(item)" class="expandable-item">
-        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-        <span matListItemTitle>{{ item.label }}</span>
-        <mat-icon class="expand-icon" [class.expanded]="item.expanded">
-          expand_more
-        </mat-icon>
+        <div class="expandable-content">
+          <div class="expandable-left">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </div>
+          <mat-icon class="expand-icon" [class.expanded]="item.expanded">
+            expand_more
+          </mat-icon>
+        </div>
       </mat-list-item>
 
       <!-- Children -->

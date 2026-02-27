@@ -9,6 +9,7 @@ export interface Produit {
   tauxFODEC: number;
   unite?: string;
   codeBarres?: string;
+  isService?: boolean; // true for services (no stock)
   stockActuel: number;
   stockMinimum: number;
   stockMaximum: number;
@@ -28,6 +29,7 @@ export interface CreateProduitRequest {
   tauxFODEC?: number;
   unite?: string;
   codeBarres?: string;
+  isService?: boolean;
   stockMinimum?: number;
   stockMaximum?: number;
   emplacement?: string;
@@ -43,6 +45,7 @@ export interface UpdateProduitRequest {
   tauxFODEC?: number;
   unite?: string;
   codeBarres?: string;
+  isService?: boolean;
   stockMinimum?: number;
   stockMaximum?: number;
   emplacement?: string;
