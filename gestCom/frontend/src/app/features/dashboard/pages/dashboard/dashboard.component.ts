@@ -77,25 +77,25 @@ export class DashboardComponent implements OnInit {
     {
       label: 'Nouveau Client',
       icon: 'person_add',
-      route: '/clients/nouveau',
+      route: '/clients/new',
       color: '#1976d2'
     },
     {
       label: 'Nouvelle Facture',
       icon: 'receipt_long',
-      route: '/factures-client/nouvelle',
+      route: '/factures-client/new',
       color: '#388e3c'
     },
     {
       label: 'Nouveau Devis',
       icon: 'request_quote',
-      route: '/devis/nouveau',
+      route: '/devis/new',
       color: '#7b1fa2'
     },
     {
       label: 'Nouveau Produit',
       icon: 'add_box',
-      route: '/produits/nouveau',
+      route: '/produits/new',
       color: '#f57c00'
     }
   ];
