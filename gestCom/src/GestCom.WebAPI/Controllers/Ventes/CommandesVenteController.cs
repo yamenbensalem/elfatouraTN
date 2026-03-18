@@ -65,6 +65,24 @@ public class CommandesVenteController : BaseApiController
     }
 
     /// <summary>
+    /// Met à jour une commande de vente
+    /// </summary>
+    [HttpPut("{numero}")]
+    [ProducesResponseType(typeof(CommandeVenteDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CommandeVenteDto>> Update(string numero, [FromBody] GestCom.Application.Features.Ventes.Commandes.Commands.UpdateCommandeVente.UpdateCommandeVenteCommand command)
+    {
+        if (numero != command.NumeroCommande)
+        {
+            return BadRequest("Le numéro de la commande ne correspond pas à celui de l'URL.");
+        }
+
+        var result = await Mediator.Send(command);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Met à jour le statut d'une commande
     /// </summary>
     [HttpPatch("{numero}/statut")]

@@ -64,6 +64,44 @@
           </div>
         </div>
 
+        <!-- Section: Lignes de Commande -->
+        <div class="form-section">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="section-title mb-0">Lignes de Commande</h3>
+            <button mat-stroked-button color="primary" type="button" (click)="addLigne()">
+              <mat-icon>add</mat-icon> Ajouter un produit
+            </button>
+          </div>
+          
+          <div formArrayName="lignes">
+            <div *ngFor="let ligne of lignes.controls; let i = index" [formGroupName]="i" class="ligne-row d-flex gap-3 mb-2 align-items-start border p-3 rounded">
+              <mat-form-field appearance="outline" class="flex-grow-1">
+                <mat-label>Code Produit</mat-label>
+                <input matInput formControlName="codeProduit" required>
+              </mat-form-field>
+              
+              <mat-form-field appearance="outline" style="width: 120px;">
+                <mat-label>Quantité</mat-label>
+                <input matInput type="number" formControlName="quantite" min="0.01" required>
+              </mat-form-field>
+              
+              <mat-form-field appearance="outline" style="width: 150px;">
+                <mat-label>Prix Unit. HT</mat-label>
+                <input matInput type="number" formControlName="prixUnitaireHT" min="0" required>
+              </mat-form-field>
+              
+              <mat-form-field appearance="outline" style="width: 120px;">
+                <mat-label>Remise %</mat-label>
+                <input matInput type="number" formControlName="tauxRemise" min="0" max="100">
+              </mat-form-field>
+
+              <button mat-icon-button color="warn" type="button" (click)="removeLigne(i)" [disabled]="lignes.length === 1" class="mt-2">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Section: Notes -->
         <div class="form-section">
           <h3 class="section-title">Notes</h3>

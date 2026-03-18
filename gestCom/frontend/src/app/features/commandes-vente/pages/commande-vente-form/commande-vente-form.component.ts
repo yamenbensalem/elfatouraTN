@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
@@ -54,8 +54,28 @@ export class CommandeVenteFormComponent implements OnInit, OnDestroy {
       dateCommande: [new Date(), [Validators.required]],
       codeClient: ['', [Validators.required, Validators.maxLength(50)]],
       dateLivraisonPrevue: [null],
-      notes: ['', [Validators.maxLength(1000)]]
+      notes: ['', [Validators.maxLength(1000)]],
+      lignes: this.fb.array([])
     });
+    this.addLigne();
+  }
+
+  get lignes(): FormArray {
+    return this.commandeForm.get('lignes') as FormArray;
+  }
+
+  addLigne(): void {
+    const ligneForm = this.fb.group({
+      codeProduit: ['', Validators.required],
+      quantite: [1, [Validators.required, Validators.min(0.01)]],
+      prixUnitaireHT: [0, [Validators.required, Validators.min(0)]],
+      tauxRemise: [0]
+    });
+    this.lignes.push(ligneForm);
+  }
+
+  removeLigne(index: number): void {
+    this.lignes.removeAt(index);
   }
 
   private checkEditMode(): void {
@@ -90,6 +110,20 @@ export class CommandeVenteFormComponent implements OnInit, OnDestroy {
             dateLivraisonPrevue: commande.dateLivraisonPrevue ? new Date(commande.dateLivraisonPrevue) : null,
             notes: commande.notes || ''
           });
+
+          this.lignes.clear();
+          if (commande.lignes && commande.lignes.length > 0) {
+            commande.lignes.forEach(ligne => {
+              this.lignes.push(this.fb.group({
+                codeProduit: [ligne.codeProduit, Validators.required],
+                quantite: [ligne.quantite, [Validators.required, Validators.min(0.01)]],
+                prixUnitaireHT: [ligne.prixUnitaireHT, [Validators.required, Validators.min(0)]],
+                tauxRemise: [ligne.tauxRemise || 0]
+              }));
+            });
+          } else {
+             this.addLigne();
+          }
         }
       });
   }
@@ -130,13 +164,21 @@ export class CommandeVenteFormComponent implements OnInit, OnDestroy {
 
     this.submitting = true;
     const formValue = this.commandeForm.getRawValue();
+    const preparedLignes = formValue.lignes.map((l: any) => ({
+        codeProduit: l.codeProduit,
+        quantite: l.quantite,
+        prixUnitaireHT: l.prixUnitaireHT,
+        tauxRemise: l.tauxRemise || 0,
+        tauxTVA: 19 // Defaulting to 19% for dev context
+    }));
 
     if (this.isEditMode && this.commandeCode) {
-      const updateRequest: UpdateCommandeVenteRequest = {
+      const updateRequest: any = {
         dateCommande: formValue.dateCommande || undefined,
         codeClient: formValue.codeClient || undefined,
         dateLivraisonPrevue: formValue.dateLivraisonPrevue || undefined,
-        notes: formValue.notes || undefined
+        notes: formValue.notes || undefined,
+        lignes: preparedLignes
       };
 
       this.store.dispatch(CommandesVentePageActions.updateCommandeVente({
@@ -144,13 +186,13 @@ export class CommandeVenteFormComponent implements OnInit, OnDestroy {
         commande: updateRequest
       }));
     } else {
-      const createRequest: CreateCommandeVenteRequest = {
+      const createRequest: any = {
         numeroCommande: formValue.numeroCommande,
         dateCommande: formValue.dateCommande,
         codeClient: formValue.codeClient,
         dateLivraisonPrevue: formValue.dateLivraisonPrevue || undefined,
         notes: formValue.notes || undefined,
-        lignes: []
+        lignes: preparedLignes
       };
 
       this.store.dispatch(CommandesVentePageActions.createCommandeVente({ commande: createRequest }));

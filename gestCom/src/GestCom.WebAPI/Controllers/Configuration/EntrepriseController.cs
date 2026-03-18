@@ -95,7 +95,9 @@ public class EntrepriseController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ParametresDecimalesDto>> UpdateParametresDecimales([FromBody] ParametresDecimalesDto dto)
     {
-        // À implémenter
+        // Dans une vraie implémentation, on ferait appel à un command MediatR.
+        // Simulons la mise à jour pour le prototype.
+        if (dto == null) return BadRequest("Données invalides");
         return Ok(dto);
     }
 

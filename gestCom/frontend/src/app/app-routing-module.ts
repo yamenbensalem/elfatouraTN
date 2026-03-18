@@ -69,9 +69,18 @@ const routes: Routes = [
         path: 'produits',
         loadChildren: () => import('./features/produits/produits.module').then(m => m.ProduitsModule)
       },
-      { path: 'categories', redirectTo: 'dashboard' },
-      { path: 'entreprise', redirectTo: 'dashboard' },
-      { path: 'parametres', redirectTo: 'dashboard' },
+      { 
+        path: 'categories', 
+        redirectTo: 'dashboard' 
+      },
+      { 
+        path: 'entreprise', 
+        loadChildren: () => import('./features/entreprise/entreprise-module').then(m => m.EntrepriseModule)
+      },
+      { 
+        path: 'parametres', 
+        loadChildren: () => import('./features/parametres/parametres-module').then(m => m.ParametresModule) 
+      },
       { path: 'profil', redirectTo: 'dashboard' }
     ]
   },

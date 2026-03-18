@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Actions, ofType } from '@ngrx/effects';
@@ -54,8 +54,28 @@ export class CommandeAchatFormComponent implements OnInit, OnDestroy {
       dateCommande: [new Date(), [Validators.required]],
       codeFournisseur: ['', [Validators.required, Validators.maxLength(50)]],
       dateReceptionPrevue: [null],
-      notes: ['', [Validators.maxLength(1000)]]
+      notes: ['', [Validators.maxLength(1000)]],
+      lignes: this.fb.array([])
     });
+    this.addLigne();
+  }
+
+  get lignes(): FormArray {
+    return this.commandeForm.get('lignes') as FormArray;
+  }
+
+  addLigne(): void {
+    const ligneForm = this.fb.group({
+      codeProduit: ['', Validators.required],
+      quantite: [1, [Validators.required, Validators.min(0.01)]],
+      prixUnitaireHT: [0, [Validators.required, Validators.min(0)]],
+      tauxRemise: [0]
+    });
+    this.lignes.push(ligneForm);
+  }
+
+  removeLigne(index: number): void {
+    this.lignes.removeAt(index);
   }
 
   private checkEditMode(): void {
@@ -90,6 +110,20 @@ export class CommandeAchatFormComponent implements OnInit, OnDestroy {
             dateReceptionPrevue: commande.dateReceptionPrevue ? new Date(commande.dateReceptionPrevue) : null,
             notes: commande.notes || ''
           });
+
+          this.lignes.clear();
+          if (commande.lignes && commande.lignes.length > 0) {
+            commande.lignes.forEach((ligne: any) => {
+              this.lignes.push(this.fb.group({
+                codeProduit: [ligne.codeProduit, Validators.required],
+                quantite: [ligne.quantite, [Validators.required, Validators.min(0.01)]],
+                prixUnitaireHT: [ligne.prixUnitaire, [Validators.required, Validators.min(0)]], // Use prixUnitaire because CommandeAchat likely maps it like that
+                tauxRemise: [ligne.remise || 0]
+              }));
+            });
+          } else {
+             this.addLigne();
+          }
         }
       });
   }
@@ -130,30 +164,40 @@ export class CommandeAchatFormComponent implements OnInit, OnDestroy {
 
     this.submitting = true;
     const formValue = this.commandeForm.getRawValue();
+    const preparedLignes = formValue.lignes.map((l: any) => ({
+        codeProduit: l.codeProduit,
+        quantite: l.quantite,
+        prixUnitaire: l.prixUnitaireHT, // CommandeAchat generally maps to prixUnitaire or prixUnitaireHT
+        prixUnitaireHT: l.prixUnitaireHT,
+        tauxRemise: l.tauxRemise || 0,
+        remise: l.tauxRemise || 0,
+        tauxTVA: 19 // Defaulting to 19%
+    }));
 
     if (this.isEditMode && this.commandeCode) {
-      const updateRequest: UpdateCommandeAchatRequest = {
+      const updateRequest: any = {
         dateCommande: formValue.dateCommande || undefined,
         codeFournisseur: formValue.codeFournisseur || undefined,
         dateReceptionPrevue: formValue.dateReceptionPrevue || undefined,
-        notes: formValue.notes || undefined
+        notes: formValue.notes || undefined,
+        lignes: preparedLignes
       };
 
       this.store.dispatch(CommandesAchatPageActions.updateCommandeAchat({
         codeCommande: this.commandeCode,
-        commande: updateRequest
+        commande: updateRequest as UpdateCommandeAchatRequest
       }));
     } else {
-      const createRequest: CreateCommandeAchatRequest = {
+      const createRequest: any = {
         codeCommande: formValue.codeCommande,
         dateCommande: formValue.dateCommande,
         codeFournisseur: formValue.codeFournisseur,
         dateReceptionPrevue: formValue.dateReceptionPrevue || undefined,
         notes: formValue.notes || undefined,
-        lignes: []
+        lignes: preparedLignes
       };
 
-      this.store.dispatch(CommandesAchatPageActions.createCommandeAchat({ commande: createRequest }));
+      this.store.dispatch(CommandesAchatPageActions.createCommandeAchat({ commande: createRequest as CreateCommandeAchatRequest }));
     }
   }
 

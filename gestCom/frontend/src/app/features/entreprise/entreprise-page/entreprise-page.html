@@ -1,0 +1,124 @@
+<div class="page-container">
+  <div class="page-header d-flex justify-content-between align-items-center">
+    <h2>Informations de l'Entreprise</h2>
+    <div class="actions">
+      <button mat-raised-button color="primary" [disabled]="entrepriseForm.invalid || isSaving" (click)="onSubmit()">
+        <mat-icon>save</mat-icon> Enregistrer
+      </button>
+    </div>
+  </div>
+
+  <div class="page-content mt-4" *ngIf="!isLoading">
+    <mat-card>
+      <mat-card-content>
+        <form [formGroup]="entrepriseForm" class="row">
+          <!-- Code Entreprise / Raison Sociale -->
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Code Entreprise</mat-label>
+              <input matInput formControlName="codeEntreprise" readonly>
+            </mat-form-field>
+          </div>
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Raison Sociale</mat-label>
+              <input matInput formControlName="raisonSociale">
+              <mat-error *ngIf="entrepriseForm.get('raisonSociale')?.hasError('required')">
+                Ce champ est requis
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Matricule Fiscal / Adresse -->
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Matricule Fiscal</mat-label>
+              <input matInput formControlName="matriculeFiscal">
+              <mat-error *ngIf="entrepriseForm.get('matriculeFiscal')?.hasError('required')">
+                Ce champ est requis
+              </mat-error>
+            </mat-form-field>
+          </div>
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Adresse</mat-label>
+              <input matInput formControlName="adresse">
+            </mat-form-field>
+          </div>
+
+          <!-- Code Postal / Ville -->
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Code Postal</mat-label>
+              <input matInput formControlName="codePostal">
+            </mat-form-field>
+          </div>
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Ville</mat-label>
+              <input matInput formControlName="ville">
+            </mat-form-field>
+          </div>
+
+          <!-- Téléphone / Fax -->
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Téléphone</mat-label>
+              <input matInput formControlName="telephone">
+            </mat-form-field>
+          </div>
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Fax</mat-label>
+              <input matInput formControlName="fax">
+            </mat-form-field>
+          </div>
+
+          <!-- Email / Site Web -->
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="email" type="email">
+              <mat-error *ngIf="entrepriseForm.get('email')?.hasError('email')">
+                Format email invalide
+              </mat-error>
+            </mat-form-field>
+          </div>
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Site Web</mat-label>
+              <input matInput formControlName="siteWeb">
+            </mat-form-field>
+          </div>
+
+          <!-- RIB / Nom Banque -->
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>RIB</mat-label>
+              <input matInput formControlName="rib">
+            </mat-form-field>
+          </div>
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Banque</mat-label>
+              <input matInput formControlName="nomBanque">
+            </mat-form-field>
+          </div>
+
+          <!-- Devise -->
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Devise par défaut</mat-label>
+              <input matInput formControlName="codeDevise">
+            </mat-form-field>
+          </div>
+
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+  
+  <div *ngIf="isLoading" class="d-flex justify-content-center mt-5">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+</div>

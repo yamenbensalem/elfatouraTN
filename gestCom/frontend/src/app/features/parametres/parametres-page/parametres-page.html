@@ -1,0 +1,68 @@
+<div class="page-container">
+  <div class="page-header d-flex justify-content-between align-items-center">
+    <h2>Paramètres</h2>
+    <div class="actions">
+      <button mat-raised-button color="primary" [disabled]="parametresForm.invalid || isSaving" (click)="onSubmit()">
+        <mat-icon>save</mat-icon> Enregistrer
+      </button>
+    </div>
+  </div>
+
+  <div class="page-content mt-4" *ngIf="!isLoading">
+    <mat-card class="mb-4">
+      <mat-card-header>
+        <mat-card-title>Configuration des Décimales</mat-card-title>
+      </mat-card-header>
+      <mat-card-content class="pt-3">
+        <form [formGroup]="parametresForm" class="row">
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Décimales pour les quantités</mat-label>
+              <input matInput type="number" formControlName="decimalesQuantite" min="0" max="5">
+              <mat-error *ngIf="parametresForm.get('decimalesQuantite')?.hasError('required')">
+                Requis
+              </mat-error>
+              <mat-error *ngIf="parametresForm.get('decimalesQuantite')?.hasError('min') || parametresForm.get('decimalesQuantite')?.hasError('max')">
+                Doit être entre 0 et 5
+              </mat-error>
+            </mat-form-field>
+          </div>
+          
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Décimales pour les prix unitaires</mat-label>
+              <input matInput type="number" formControlName="decimalesPrix" min="0" max="5">
+              <mat-error *ngIf="parametresForm.get('decimalesPrix')?.hasError('required')">
+                Requis
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Décimales pour les montants totaux</mat-label>
+              <input matInput type="number" formControlName="decimalesMontant" min="0" max="5">
+              <mat-error *ngIf="parametresForm.get('decimalesMontant')?.hasError('required')">
+                Requis
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <mat-form-field appearance="outline" class="w-100">
+              <mat-label>Décimales pour la TVA</mat-label>
+              <input matInput type="number" formControlName="decimalesTva" min="0" max="5">
+              <mat-error *ngIf="parametresForm.get('decimalesTva')?.hasError('required')">
+                Requis
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+  
+  <div *ngIf="isLoading" class="d-flex justify-content-center mt-5">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+</div>
