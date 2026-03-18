@@ -1,4 +1,5 @@
 using GestCom.Domain.Entities;
+using GestCom.Shared.Common;
 
 namespace GestCom.Domain.Interfaces;
 
@@ -47,6 +48,7 @@ public interface ICommandeVenteRepository : IRepository<CommandeVente>
     Task<string?> GetLastNumeroAsync(string codeEntreprise);
     Task<IEnumerable<CommandeVente>> GetCommandesByClientAsync(string codeClient, string codeEntreprise);
     Task<IEnumerable<CommandeVente>> GetCommandesByStatutAsync(string statut, string codeEntreprise);
+    Task<PagedResult<CommandeVente>> GetPagedCommandesVenteAsync(int pageNumber, int pageSize, string codeEntreprise, string? codeClient = null, string? statut = null, DateTime? dateDebut = null, DateTime? dateFin = null);
     void Update(CommandeVente commande);
 }
 
@@ -84,6 +86,7 @@ public interface ICommandeAchatRepository : IRepository<CommandeAchat>
 {
     Task<CommandeAchat?> GetByNumeroAsync(string numeroCommande, string codeEntreprise);
     Task<IEnumerable<CommandeAchat>> GetCommandesByFournisseurAsync(string codeFournisseur, string codeEntreprise);
+    Task<PagedResult<CommandeAchat>> GetPagedCommandesAchatAsync(int pageNumber, int pageSize, string codeEntreprise, string? codeFournisseur = null, string? statut = null, DateTime? dateDebut = null, DateTime? dateFin = null);
 }
 
 public interface IBonReceptionRepository : IRepository<BonReception>

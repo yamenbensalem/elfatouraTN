@@ -122,7 +122,9 @@ $fournisseurs = @(
     @{ codeFournisseur="FRN001"; raisonSociale="Fournisseur Alpha"; matriculeFiscale="1111111ALP001"; telephone="71100001"; adresse="Zone Ind. Ben Arous"; ville="Ben Arous"; pays="Tunisie"; email="contact@alpha.tn"; delaiPaiement=30; tauxRemise=5; codeDevise=5 },
     @{ codeFournisseur="FRN002"; raisonSociale="Import Export Beta"; matriculeFiscale="2222222BET002"; telephone="71200002"; adresse="15 Rue du Commerce"; ville="Tunis"; pays="Tunisie"; email="info@beta.tn"; delaiPaiement=45; tauxRemise=3; codeDevise=5 },
     @{ codeFournisseur="FRN003"; raisonSociale="Grossiste Gamma"; matriculeFiscale="3333333GAM003"; telephone="74300003"; adresse="Route de Gabes km5"; ville="Sfax"; pays="Tunisie"; email="ventes@gamma.tn"; delaiPaiement=60; tauxRemise=8; codeDevise=5 },
-    @{ codeFournisseur="FRN004"; raisonSociale="Distribution Delta"; matriculeFiscale="4444444DEL004"; telephone="73400004"; adresse="Zone Commerciale Nord"; ville="Sousse"; pays="Tunisie"; email="cmd@delta.tn"; delaiPaiement=30; tauxRemise=2; codeDevise=5 }
+    @{ codeFournisseur="FRN004"; raisonSociale="Distribution Delta"; matriculeFiscale="4444444DEL004"; telephone="73400004"; adresse="Zone Commerciale Nord"; ville="Sousse"; pays="Tunisie"; email="cmd@delta.tn"; delaiPaiement=30; tauxRemise=2; codeDevise=5 },
+    @{ codeFournisseur="FRN005"; raisonSociale="Electro Pro"; matriculeFiscale="5555555ELP005"; telephone="72500005"; adresse="Route de Tunis"; ville="Nabeul"; pays="Tunisie"; email="contact@electropro.tn"; delaiPaiement=30; tauxRemise=0; codeDevise=5 },
+    @{ codeFournisseur="FRN006"; raisonSociale="Meca Service"; matriculeFiscale="6666666MEC006"; telephone="73600006"; adresse="Z.I. Sousse"; ville="Sousse"; pays="Tunisie"; email="sales@mecaservice.tn"; delaiPaiement=45; tauxRemise=5; codeDevise=5 }
 )
 
 foreach ($f in $fournisseurs) {
@@ -221,8 +223,8 @@ Write-Section "6/10 - Commandes de Vente"
 
 $commandesVente = @(
     @{
-        dateCommande        = "2025-02-01"
-        dateLivraisonPrevue = "2025-02-15"
+        dateCommande        = "2026-03-01"
+        dateLivraisonPrevue = "2026-03-15"
         codeClient          = "CLI001"
         tauxRemise          = 0
         codeDevise          = "5"
@@ -234,8 +236,8 @@ $commandesVente = @(
         )
     },
     @{
-        dateCommande        = "2025-02-10"
-        dateLivraisonPrevue = "2025-02-28"
+        dateCommande        = "2026-03-10"
+        dateLivraisonPrevue = "2026-03-28"
         codeClient          = "CLI004"
         tauxRemise          = 2
         codeDevise          = "5"
@@ -243,6 +245,19 @@ $commandesVente = @(
         observations        = "Commande textile"
         lignes = @(
             @{ codeProduit="PRD006"; quantite=20; prixUnitaireHT=31.5; tauxTVA=19; tauxRemise=0 }
+        )
+    },
+    @{
+        dateCommande        = "2026-03-15"
+        dateLivraisonPrevue = "2026-04-05"
+        codeClient          = "CLI002"
+        tauxRemise          = 5
+        codeDevise          = "5"
+        tauxChange          = 1
+        observations        = "Commande papier et stylos"
+        lignes = @(
+            @{ codeProduit="PRD007"; quantite=50; prixUnitaireHT=12.61; tauxTVA=19; tauxRemise=0 },
+            @{ codeProduit="PRD008"; quantite=20; prixUnitaireHT=19.66; tauxTVA=19; tauxRemise=5 }
         )
     }
 )
@@ -262,8 +277,8 @@ Write-Section "7/10 - Commandes d'Achat"
 $commandesAchat = @(
     @{
         codeFournisseur = "FRN001"
-        dateCommande    = "2025-01-20"
-        dateLivraison   = "2025-02-05"
+        dateCommande    = "2026-03-01"
+        dateLivraison   = "2026-03-05"
         remise          = 0
         notes           = "Reapprovisionnement informatique"
         lignes = @(
@@ -274,13 +289,24 @@ $commandesAchat = @(
     },
     @{
         codeFournisseur = "FRN003"
-        dateCommande    = "2025-02-01"
-        dateLivraison   = "2025-02-20"
+        dateCommande    = "2026-03-10"
+        dateLivraison   = "2026-03-20"
         remise          = 5
         notes           = "Commande alimentaire"
         lignes = @(
             @{ codeProduit="PRD004"; quantite=100; prixUnitaire=14;   tauxTVA=7; remise=0 },
             @{ codeProduit="PRD005"; quantite=200; prixUnitaire=5.96; tauxTVA=7; remise=0 }
+        )
+    },
+    @{
+        codeFournisseur = "FRN002"
+        dateCommande    = "2026-03-15"
+        dateLivraison   = "2026-03-28"
+        remise          = 2
+        notes           = "Papeterie"
+        lignes = @(
+            @{ codeProduit="PRD007"; quantite=500; prixUnitaire=10; tauxTVA=19; remise=0 },
+            @{ codeProduit="PRD008"; quantite=200; prixUnitaire=15; tauxTVA=19; remise=0 }
         )
     }
 )
@@ -300,8 +326,8 @@ Write-Section "8/10 - Factures Client"
 
 $facturesClient = @(
     @{
-        dateFacture      = "2025-02-15"
-        dateEcheance     = "2025-03-15"
+        dateFacture      = "2026-03-05"
+        dateEcheance     = "2026-04-05"
         codeClient       = "CLI001"
         tauxRemise       = 0
         timbre           = 1
@@ -316,8 +342,8 @@ $facturesClient = @(
         )
     },
     @{
-        dateFacture      = "2025-02-20"
-        dateEcheance     = "2025-03-20"
+        dateFacture      = "2026-03-10"
+        dateEcheance     = "2026-04-10"
         codeClient       = "CLI002"
         tauxRemise       = 2
         timbre           = 1
@@ -332,8 +358,8 @@ $facturesClient = @(
         )
     },
     @{
-        dateFacture      = "2025-03-01"
-        dateEcheance     = "2025-04-01"
+        dateFacture      = "2026-03-15"
+        dateEcheance     = "2026-04-15"
         codeClient       = "CLI005"
         tauxRemise       = 0
         timbre           = 1
@@ -362,10 +388,10 @@ Write-Section "9/10 - Factures Fournisseur"
 
 $facturesFournisseur = @(
     @{
-        dateFacture              = "2025-02-10"
-        dateEcheance             = "2025-03-10"
+        dateFacture              = "2026-03-01"
+        dateEcheance             = "2026-04-01"
         codeFournisseur          = "FRN001"
-        numeroFactureFournisseur = "FFEXT-2025-001"
+        numeroFactureFournisseur = "FFEXT-2026-001"
         tauxRemiseGlobale        = 0
         observation              = "Facture equipement informatique"
         lignes = @(
@@ -374,15 +400,27 @@ $facturesFournisseur = @(
         )
     },
     @{
-        dateFacture              = "2025-02-25"
-        dateEcheance             = "2025-04-25"
+        dateFacture              = "2026-03-10"
+        dateEcheance             = "2026-04-10"
         codeFournisseur          = "FRN003"
-        numeroFactureFournisseur = "FFEXT-2025-002"
+        numeroFactureFournisseur = "FFEXT-2026-002"
         tauxRemiseGlobale        = 3
         observation              = "Facture produits alimentaires"
         lignes = @(
             @{ codeProduit="PRD004"; quantite=100; prixUnitaireHT=14;   tauxTVA=7; tauxRemise=0; tauxFodec=0 },
             @{ codeProduit="PRD005"; quantite=200; prixUnitaireHT=5.96; tauxTVA=7; tauxRemise=0; tauxFodec=0 }
+        )
+    },
+    @{
+        dateFacture              = "2026-03-15"
+        dateEcheance             = "2026-04-15"
+        codeFournisseur          = "FRN002"
+        numeroFactureFournisseur = "FFEXT-2026-003"
+        tauxRemiseGlobale        = 0
+        observation              = "Facture papeterie"
+        lignes = @(
+            @{ codeProduit="PRD007"; quantite=500; prixUnitaireHT=10; tauxTVA=19; tauxRemise=0; tauxFodec=0 },
+            @{ codeProduit="PRD008"; quantite=200; prixUnitaireHT=15; tauxTVA=19; tauxRemise=0; tauxFodec=0 }
         )
     }
 )

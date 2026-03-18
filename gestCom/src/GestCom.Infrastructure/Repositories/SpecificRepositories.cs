@@ -1,6 +1,7 @@
 using GestCom.Domain.Entities;
 using GestCom.Domain.Interfaces;
 using GestCom.Infrastructure.Data;
+using GestCom.Shared.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestCom.Infrastructure.Repositories;
@@ -91,6 +92,37 @@ public class CommandeVenteRepository : Repository<CommandeVente>, ICommandeVente
     public void Update(CommandeVente commande)
     {
         _dbSet.Update(commande);
+    }
+
+    public async Task<PagedResult<CommandeVente>> GetPagedCommandesVenteAsync(int pageNumber, int pageSize, string codeEntreprise, string? codeClient = null, string? statut = null, DateTime? dateDebut = null, DateTime? dateFin = null)
+    {
+        var query = _dbSet
+            .Include(c => c.Client)
+            .Include(c => c.Lignes)
+            .Where(c => c.CodeEntreprise == codeEntreprise);
+
+        if (!string.IsNullOrEmpty(codeClient))
+            query = query.Where(c => c.CodeClient == codeClient);
+
+        if (!string.IsNullOrEmpty(statut))
+            query = query.Where(c => c.Statut == statut);
+
+        if (dateDebut.HasValue)
+            query = query.Where(c => c.DateCommande >= dateDebut.Value);
+
+        if (dateFin.HasValue)
+            query = query.Where(c => c.DateCommande <= dateFin.Value);
+
+        var count = await query.CountAsync();
+        
+        var items = await query
+            .OrderByDescending(c => c.DateCommande)
+            .ThenByDescending(c => c.NumeroCommande)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return PagedResult<CommandeVente>.Create(items, count, pageNumber, pageSize);
     }
 }
 
@@ -268,6 +300,37 @@ public class CommandeAchatRepository : Repository<CommandeAchat>, ICommandeAchat
             .Where(c => c.CodeFournisseur == codeFournisseur && c.CodeEntreprise == codeEntreprise)
             .OrderByDescending(c => c.DateCommande)
             .ToListAsync();
+    }
+
+    public async Task<PagedResult<CommandeAchat>> GetPagedCommandesAchatAsync(int pageNumber, int pageSize, string codeEntreprise, string? codeFournisseur = null, string? statut = null, DateTime? dateDebut = null, DateTime? dateFin = null)
+    {
+        var query = _dbSet
+            .Include(c => c.Fournisseur)
+            .Include(c => c.Lignes)
+            .Where(c => c.CodeEntreprise == codeEntreprise);
+
+        if (!string.IsNullOrEmpty(codeFournisseur))
+            query = query.Where(c => c.CodeFournisseur == codeFournisseur);
+
+        if (!string.IsNullOrEmpty(statut))
+            query = query.Where(c => c.Statut == statut);
+
+        if (dateDebut.HasValue)
+            query = query.Where(c => c.DateCommande >= dateDebut.Value);
+
+        if (dateFin.HasValue)
+            query = query.Where(c => c.DateCommande <= dateFin.Value);
+
+        var count = await query.CountAsync();
+        
+        var items = await query
+            .OrderByDescending(c => c.DateCommande)
+            .ThenByDescending(c => c.NumeroCommande)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return PagedResult<CommandeAchat>.Create(items, count, pageNumber, pageSize);
     }
 }
 

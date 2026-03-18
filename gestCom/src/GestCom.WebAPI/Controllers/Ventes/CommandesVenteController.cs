@@ -26,8 +26,17 @@ public class CommandesVenteController : BaseApiController
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10)
     {
-        // Pour l'instant, retourner une liste vide paginée - à implémenter avec une Query dédiée
-        return Ok(new PagedResult<CommandeVenteListDto>(new List<CommandeVenteListDto>(), 0, pageNumber, pageSize));
+        var query = new Application.Features.Ventes.Commandes.Queries.GetAllCommandesVente.GetAllCommandesVenteQuery
+        {
+            CodeClient = codeClient,
+            Statut = statut,
+            DateDebut = dateDebut,
+            DateFin = dateFin,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+        var result = await Mediator.Send(query);
+        return Ok(result);
     }
 
     /// <summary>
@@ -38,8 +47,9 @@ public class CommandesVenteController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CommandeVenteDto>> GetByNumero(string numero)
     {
-        // À implémenter avec une Query dédiée
-        return NotFound($"Commande '{numero}' non trouvée.");
+        var query = new Application.Features.Ventes.Commandes.Queries.GetCommandeVenteByNumero.GetCommandeVenteByNumeroQuery(numero);
+        var result = await Mediator.Send(query);
+        return Ok(result);
     }
 
     /// <summary>

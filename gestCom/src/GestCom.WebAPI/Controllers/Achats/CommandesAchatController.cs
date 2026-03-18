@@ -35,8 +35,17 @@ public class CommandesAchatController : BaseApiController
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10)
     {
-        // À implémenter avec une Query dédiée
-        return Ok(new PagedResult<CommandeAchatListDto>(new List<CommandeAchatListDto>(), 0, pageNumber, pageSize));
+        var query = new Application.Features.Achats.CommandesAchat.Queries.GetAllCommandesAchat.GetAllCommandesAchatQuery
+        {
+            CodeFournisseur = codeFournisseur,
+            Statut = statut,
+            DateDebut = dateDebut,
+            DateFin = dateFin,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+        var result = await Mediator.Send(query);
+        return Ok(result);
     }
 
     /// <summary>
@@ -47,8 +56,9 @@ public class CommandesAchatController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CommandeAchatDto>> GetByNumero(string numero)
     {
-        // À implémenter avec une Query dédiée
-        return NotFound($"Commande d'achat '{numero}' non trouvée.");
+        var query = new Application.Features.Achats.CommandesAchat.Queries.GetCommandeAchatByNumero.GetCommandeAchatByNumeroQuery(numero);
+        var result = await Mediator.Send(query);
+        return Ok(result);
     }
 
     /// <summary>
