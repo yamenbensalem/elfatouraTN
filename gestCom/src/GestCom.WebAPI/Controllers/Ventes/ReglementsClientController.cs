@@ -1,5 +1,9 @@
 using GestCom.Application.Features.Ventes.Reglements.Commands.CreateReglementFacture;
 using GestCom.Application.Features.Ventes.Reglements.DTOs;
+using GestCom.Application.Features.Ventes.Reglements.Queries.GetAllReglementsFacture;
+using GestCom.Application.Features.Ventes.Reglements.Queries.GetReglementFactureByNumero;
+using GestCom.Application.Features.Ventes.Reglements.Queries.GetReglementsFactureByFacture;
+using GestCom.Application.Features.Ventes.Reglements.Queries.GetResumeReglementsClient;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,9 +27,16 @@ public class ReglementsClientController : BaseApiController
         [FromQuery] DateTime? dateDebut,
         [FromQuery] DateTime? dateFin)
     {
-        // À implémenter avec une Query dédiée
-        await Task.CompletedTask;
-        return Ok(Array.Empty<ReglementFactureListDto>());
+        var query = new GetAllReglementsFactureQuery
+        {
+            CodeClient = codeClient,
+            NumeroFacture = numeroFacture,
+            DateDebut = dateDebut,
+            DateFin = dateFin
+        };
+
+        var result = await Mediator.Send(query);
+        return Ok(result);
     }
 
     /// <summary>
@@ -36,9 +47,13 @@ public class ReglementsClientController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReglementFactureDto>> GetByNumero(string numero)
     {
-        // À implémenter avec une Query dédiée
-        await Task.CompletedTask;
-        return NotFound($"Règlement '{numero}' non trouvé.");
+        var query = new GetReglementFactureByNumeroQuery { NumeroReglement = numero };
+        var result = await Mediator.Send(query);
+
+        if (result == null)
+            return NotFound($"Règlement '{numero}' non trouvé.");
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -48,9 +63,9 @@ public class ReglementsClientController : BaseApiController
     [ProducesResponseType(typeof(IEnumerable<ReglementFactureDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ReglementFactureDto>>> GetByFacture(string numeroFacture)
     {
-        // À implémenter avec une Query dédiée
-        await Task.CompletedTask;
-        return Ok(Array.Empty<ReglementFactureDto>());
+        var query = new GetReglementsFactureByFactureQuery { NumeroFacture = numeroFacture };
+        var result = await Mediator.Send(query);
+        return Ok(result);
     }
 
     /// <summary>
@@ -58,11 +73,16 @@ public class ReglementsClientController : BaseApiController
     /// </summary>
     [HttpGet("client/{codeClient}/resume")]
     [ProducesResponseType(typeof(ResumeReglementsClientDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ResumeReglementsClientDto>> GetResumeClient(string codeClient)
     {
-        // À implémenter avec une Query dédiée
-        await Task.CompletedTask;
-        return Ok(new ResumeReglementsClientDto());
+        var query = new GetResumeReglementsClientQuery { CodeClient = codeClient };
+        var result = await Mediator.Send(query);
+
+        if (result == null)
+            return NotFound($"Client '{codeClient}' non trouvé.");
+
+        return Ok(result);
     }
 
     /// <summary>

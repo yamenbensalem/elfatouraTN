@@ -9,8 +9,8 @@ namespace GestCom.Application.Features.Ventes.BonsLivraison.Commands.ConvertBLTo
 public class ConvertBLToFactureCommand : IRequest<FactureClientDto>
 {
     public List<string> NumerosBonLivraison { get; set; } = new();
-    public DateTime DateFacture { get; set; }
-    public DateTime DateEcheance { get; set; }
+    public DateTime DateFacture { get; set; } = DateTime.Now;
+    public DateTime DateEcheance { get; set; } = DateTime.Now.AddDays(30);
     public decimal TauxRemiseGlobale { get; set; }
     public string? Observation { get; set; }
 }
