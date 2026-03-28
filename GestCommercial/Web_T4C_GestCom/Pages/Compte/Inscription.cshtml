@@ -1,0 +1,213 @@
+@page
+@model Web_T4C_GestCom.Pages.Compte.InscriptionModel
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Créer un compte – GestCom</title>
+    <link rel="stylesheet" href="~/bootstrap/bootstrap.min.css" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 1.5rem;
+        }
+        .auth-card {
+            background: #ffffff;
+            border-radius: 1.5rem;
+            padding: 2.25rem 2.25rem 2rem;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+        }
+        .brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .brand-icon {
+            width: 60px; height: 60px;
+            border-radius: 1rem;
+            background: linear-gradient(145deg, #6366f1, #8b5cf6);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 6px 16px rgba(99,102,241,0.4);
+        }
+        .brand-name { font-size: 1.35rem; font-weight: 800; color: #1e1b4b; margin: 0; }
+        .brand-sub  { font-size: 0.8rem; color: #6b7280; margin: 0.1rem 0 0; }
+        .auth-title    { font-size: 1.4rem; font-weight: 800; color: #111827; text-align: center; margin: 0 0 0.25rem; }
+        .auth-subtitle { font-size: 0.875rem; color: #6b7280; text-align: center; margin: 0 0 1.5rem; }
+        .row-2col { display: flex; gap: 0.75rem; }
+        .row-2col > div { flex: 1; }
+        .input-icon-wrap { position: relative; margin-bottom: 0.85rem; }
+        .field-icon {
+            position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+            color: #9ca3af; pointer-events: none; display: flex;
+        }
+        .toggle-password {
+            position: absolute; right: 0.85rem; top: 50%; transform: translateY(-50%);
+            background: none; border: none; padding: 0; cursor: pointer;
+            color: #9ca3af; display: flex; line-height: 1;
+        }
+        .toggle-password:hover { color: #6b7280; }
+        .auth-input {
+            width: 100%; padding: 0.8rem 1rem 0.8rem 2.75rem;
+            border: 1.5px solid #e5e7eb; border-radius: 0.65rem;
+            font-size: 0.92rem; background: #f9fafb; color: #111827;
+            outline: none; transition: border-color .2s, box-shadow .2s;
+        }
+        .auth-input:focus { border-color: #8b5cf6; background: #fff; box-shadow: 0 0 0 3px rgba(139,92,246,0.15); }
+        .auth-input.has-toggle { padding-right: 2.75rem; }
+        .auth-input::placeholder { color: #9ca3af; }
+        .field-error { font-size: 0.76rem; color: #ef4444; margin: 0.2rem 0 0 0.2rem; display: block; }
+        .auth-alert {
+            background: #fef2f2; border: 1px solid #fecaca; color: #dc2626;
+            border-radius: 0.65rem; padding: 0.65rem 1rem; font-size: 0.875rem;
+            margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-auth {
+            width: 100%; padding: 0.875rem; border: none; border-radius: 0.65rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+            color: white; font-size: 1rem; font-weight: 700; cursor: pointer;
+            transition: opacity .2s, transform .15s;
+            box-shadow: 0 4px 15px rgba(139,92,246,0.4);
+            margin-top: 0.5rem;
+        }
+        .btn-auth:hover { opacity: 0.92; transform: translateY(-1px); }
+        .auth-bottom { text-align: center; margin-top: 1.4rem; font-size: 0.875rem; color: #6b7280; }
+        .auth-bottom a { color: #8b5cf6; font-weight: 600; text-decoration: none; }
+        .auth-bottom a:hover { text-decoration: underline; }
+        .auth-footer { margin-top: 1.75rem; font-size: 0.75rem; color: rgba(255,255,255,0.65); text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="auth-card">
+    <div class="brand">
+        <div class="brand-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="white" viewBox="0 0 16 16">
+                <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>
+            </svg>
+        </div>
+        <p class="brand-name">GestCom</p>
+        <p class="brand-sub">Gestion Commerciale</p>
+    </div>
+
+    <h1 class="auth-title">Créer un compte</h1>
+    <p class="auth-subtitle">Rejoignez votre espace de gestion</p>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="auth-alert">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+            </svg>
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <form method="post">
+        @Html.AntiForgeryToken()
+
+        <!-- Prénom + Nom -->
+        <div class="row-2col">
+            <div>
+                <div class="input-icon-wrap">
+                    <span class="field-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.294 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
+                        </svg>
+                    </span>
+                    <input asp-for="Input.Prenom" class="auth-input" placeholder="Prénom *" />
+                </div>
+                <span asp-validation-for="Input.Prenom" class="field-error"></span>
+            </div>
+            <div>
+                <div class="input-icon-wrap">
+                    <span class="field-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.294 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
+                        </svg>
+                    </span>
+                    <input asp-for="Input.Nom" class="auth-input" placeholder="Nom *" />
+                </div>
+                <span asp-validation-for="Input.Nom" class="field-error"></span>
+            </div>
+        </div>
+
+        <!-- Email -->
+        <div class="input-icon-wrap">
+            <span class="field-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414zM0 4.697v7.104l5.803-3.558zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586zm3.436-.586L16 11.801V4.697z"/>
+                </svg>
+            </span>
+            <input asp-for="Input.Email" class="auth-input" type="email" placeholder="Email *" autocomplete="email" />
+        </div>
+        <span asp-validation-for="Input.Email" class="field-error"></span>
+
+        <!-- Password -->
+        <div class="input-icon-wrap" style="margin-top:0.25rem">
+            <span class="field-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
+                </svg>
+            </span>
+            <input asp-for="Input.Password" id="pwd1" class="auth-input has-toggle" type="password" placeholder="Mot de passe * (min. 6 caractères)" />
+            <button type="button" class="toggle-password" onclick="togglePwd('pwd1','eye1')" title="Afficher">
+                <svg id="eye1" xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/><path d="M3.35 5.47q-.27.238-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709z"/><path fill-rule="evenodd" d="M13.646 14.354l-12-12 .708-.708 12 12z"/>
+                </svg>
+            </button>
+        </div>
+        <span asp-validation-for="Input.Password" class="field-error"></span>
+
+        <!-- Confirm Password -->
+        <div class="input-icon-wrap" style="margin-top:0.25rem">
+            <span class="field-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
+                </svg>
+            </span>
+            <input asp-for="Input.ConfirmPassword" id="pwd2" class="auth-input has-toggle" type="password" placeholder="Confirmer le mot de passe *" />
+            <button type="button" class="toggle-password" onclick="togglePwd('pwd2','eye2')" title="Afficher">
+                <svg id="eye2" xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/><path d="M3.35 5.47q-.27.238-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709z"/><path fill-rule="evenodd" d="M13.646 14.354l-12-12 .708-.708 12 12z"/>
+                </svg>
+            </button>
+        </div>
+        <span asp-validation-for="Input.ConfirmPassword" class="field-error"></span>
+
+        <button type="submit" class="btn-auth">Créer mon compte</button>
+    </form>
+
+    <div class="auth-bottom">
+        Déjà inscrit ?
+        <a href="/compte/connexion">Se connecter</a>
+    </div>
+</div>
+
+<footer class="auth-footer">© 2026 GestCom – Tous droits réservés</footer>
+
+<script>
+    var eyeOpen  = '<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>';
+    var eyeClosed = '<path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/><path d="M3.35 5.47q-.27.238-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709z"/><path fill-rule="evenodd" d="M13.646 14.354l-12-12 .708-.708 12 12z"/>';
+    function togglePwd(inputId, iconId) {
+        var input = document.getElementById(inputId);
+        var icon  = document.getElementById(iconId);
+        if (input.type === 'password') { input.type = 'text'; icon.innerHTML = eyeOpen; }
+        else { input.type = 'password'; icon.innerHTML = eyeClosed; }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+@if (Message is not null)
+{
+    <div class="alert alert-@_cssType alert-dismissible fade show" role="alert">
+        @Message
+        <button type="button" class="btn-close" @onclick="Dismiss"></button>
+    </div>
+}
+
+@code {
+    private string? Message;
+    private string _cssType = "info";
+
+    public void ShowSuccess(string message) => Show(message, "success");
+    public void ShowError(string message) => Show(message, "danger");
+    public void ShowWarning(string message) => Show(message, "warning");
+    public void ShowInfo(string message) => Show(message, "info");
+
+    private void Show(string message, string type)
+    {
+        Message = message;
+        _cssType = type;
+        StateHasChanged();
+    }
+
+    private void Dismiss() => Message = null;
+}

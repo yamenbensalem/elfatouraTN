@@ -1,0 +1,47 @@
+@* Shared header component for all print pages *@
+
+<div class="print-company-header">
+    <div>
+        @if (Entreprise is not null)
+        {
+            <div class="print-company-name">@Entreprise.NomEntreprise</div>
+            @if (!string.IsNullOrWhiteSpace(Entreprise.MatriculeFiscale))
+            {
+                <div>MF : @Entreprise.MatriculeFiscale</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Entreprise.Adresse))
+            {
+                <div>@Entreprise.Adresse</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Entreprise.CodePostal) || !string.IsNullOrWhiteSpace(Entreprise.Ville))
+            {
+                <div>@Entreprise.CodePostal @Entreprise.Ville</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Entreprise.Tel))
+            {
+                <div>Tél : @Entreprise.Tel</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Entreprise.Email))
+            {
+                <div>@Entreprise.Email</div>
+            }
+        }
+    </div>
+    <div class="text-end">
+        <div class="print-doc-type">@DocType</div>
+        <div class="print-doc-numero">N° @Numero</div>
+        <div class="mt-1">Date : <strong>@Date.ToString("dd/MM/yyyy")</strong></div>
+        @if (!string.IsNullOrWhiteSpace(Etat))
+        {
+            <div>État : <strong>@Etat</strong></div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public Entreprise? Entreprise { get; set; }
+    [Parameter] public string DocType { get; set; } = string.Empty;
+    [Parameter] public string Numero { get; set; } = string.Empty;
+    [Parameter] public DateTime Date { get; set; }
+    [Parameter] public string? Etat { get; set; }
+}

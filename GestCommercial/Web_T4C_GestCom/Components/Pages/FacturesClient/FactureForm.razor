@@ -1,0 +1,491 @@
+@page "/factures-client/nouveau"
+@page "/factures-client/{Numero}"
+@page "/avoirs/nouveau"
+@page "/avoirs/{Numero}"
+@rendermode InteractiveServer
+@inject IFactureClientService FactureService
+@inject AppDbContext Db
+@inject AppConfigService Config
+@inject NavigationManager Nav
+
+<PageTitle>@PageTitle – T4C GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>@PageTitle</h3>
+    <div class="d-flex gap-2">
+        @if (!_isNew)
+        {
+            <a href="/print/facture-client/@Numero" target="_blank" class="btn btn-outline-success">
+                <i class="bi bi-printer me-1"></i>Imprimer
+            </a>
+            <button type="button" class="btn btn-outline-info" @onclick="CloneAsync">
+                <i class="bi bi-copy"></i> Cloner
+            </button>
+        }
+        <a href="@(_isAvoir ? "avoirs" : "factures-client")" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    </div>
+</div>
+
+<Notification @ref="_notif" />
+<LoadingSpinner Loading="@_loading" />
+
+@if (!_loading)
+{
+    <EditForm Model="_facture" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">
+                @(_isAvoir ? "Informations Avoir" : "Informations Facture")
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    @if (!_isNew)
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label">N° @(_isAvoir ? "Avoir" : "Facture")</label>
+                            <input class="form-control" value="@_facture.NumeroFactureClient" readonly />
+                        </div>
+                    }
+                    <div class="col-md-3">
+                        <label class="form-label">Date <span class="text-danger">*</span></label>
+                        <InputDate class="form-control" @bind-Value="_facture.DateFactureClient" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Client <span class="text-danger">*</span></label>
+                        <InputSelect class="form-select" @bind-Value="_facture.CodeClient">
+                            <option value="">-- Sélectionner --</option>
+                            @foreach (var c in _clients)
+                            {
+                                <option value="@c.CodeClient">@c.NomClient</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => _facture.CodeClient" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Remise (%)</label>
+                        <InputNumber class="form-control" @bind-Value="_facture.Remise"
+                                     @bind-Value:after="RecalculerTotaux" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">État</label>
+                        <InputSelect class="form-select" @bind-Value="_facture.EtatFacture">
+                            <option value="Facture Ouverte">Facture Ouverte</option>
+                            <option value="Facture Livrée">Facture Livrée</option>
+                            <option value="Facture Clôturée">Facture Clôturée</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Timbre Fiscal</label>
+                        <input class="form-control" value="@Config.TimbreFiscal.ToString("0.###")" readonly />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Note</label>
+                        <InputTextArea class="form-control" @bind-Value="_facture.Note" rows="2" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+                <span>Lignes @(_isAvoir ? "Avoir" : "Facture")</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddLigne">
+                    <i class="bi bi-plus"></i> Ajouter une ligne
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="min-width:220px">Produit</th>
+                                <th style="width:100px">Quantité</th>
+                                <th style="width:120px">Prix HT</th>
+                                <th style="width:90px">Remise%</th>
+                                <th style="width:80px">TVA%</th>
+                                <th style="width:80px">FODEC%</th>
+                                <th style="width:120px" class="text-end">Montant HT</th>
+                                <th style="width:50px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < _lignes.Count; i++)
+                            {
+                                var idx = i;
+                                <tr>
+                                    <td>
+                                        <select class="form-select form-select-sm"
+                                                @onchange="e => OnProduitChanged(idx, e.Value?.ToString() ?? string.Empty)">
+                                            <option value="">-- Produit --</option>
+                                            @foreach (var p in _produits)
+                                            {
+                                                <option value="@p.CodeProduit"
+                                                        selected="@(_lignes[idx].CodeProduit == p.CodeProduit)">
+                                                    @p.DesignationProduit
+                                                </option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm"
+                                                     @bind-Value="_lignes[idx].Quantite"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm"
+                                                     @bind-Value="_lignes[idx].PrixUnitaire"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm"
+                                                     @bind-Value="_lignes[idx].Remise"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm"
+                                                     @bind-Value="_lignes[idx].Tva"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm"
+                                                     @bind-Value="_lignes[idx].Fodec"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td class="text-end align-middle fw-semibold">
+                                        @_lignes[idx].MontantHT.ToString("0.###")
+                                    </td>
+                                    <td class="align-middle">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => RemoveLigne(idx)">
+                                            <i class="bi bi-trash me-1"></i>Retirer
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!_lignes.Any())
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-3">
+                                        Aucune ligne. Cliquez sur "Ajouter une ligne".
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row justify-content-end">
+                    <div class="col-md-4">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="text-muted">Total HT</td>
+                                <td class="text-end fw-semibold">@_totalHT.ToString("0.###")</td>
+                            </tr>
+                            @if (_facture.Remise > 0)
+                            {
+                                <tr>
+                                    <td class="text-muted">Remise (@_facture.Remise%)</td>
+                                    <td class="text-end text-danger">-@(_totalHT * _facture.Remise / 100).ToString("0.###")</td>
+                                </tr>
+                            }
+                            @if (_totalFodec > 0)
+                            {
+                                <tr>
+                                    <td class="text-muted">FODEC</td>
+                                    <td class="text-end">@_totalFodec.ToString("0.###")</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td class="text-muted">TVA</td>
+                                <td class="text-end">@_totalTVA.ToString("0.###")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Montant TTC</td>
+                                <td class="text-end">@_totalTTC.ToString("0.###")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Timbre Fiscal</td>
+                                <td class="text-end">@Config.TimbreFiscal.ToString("0.###")</td>
+                            </tr>
+                            <tr class="table-active fw-bold">
+                                <td>Net à Payer</td>
+                                <td class="text-end">@(_totalTTC + Config.TimbreFiscal).ToString("0.###")</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Enregistrer
+            </button>
+            <a href="@(_isAvoir ? "avoirs" : "factures-client")" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </EditForm>
+
+    @if (!_isNew && _facture.Reglements?.Any() == true)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">Règlements</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Mode</th>
+                            <th>Référence</th>
+                            <th class="text-end">Montant</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in _facture.Reglements)
+                        {
+                            <tr>
+                                <td>@r.DateReglement.ToString("dd/MM/yyyy")</td>
+                                <td>@r.ModePayement?.NomModePayement</td>
+                                <td>@r.Reference</td>
+                                <td class="text-end fw-semibold">@r.Montant.ToString("0.###")</td>
+                                <td>@r.Note</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light fw-bold">
+                            <td colspan="3">Total Réglé</td>
+                            <td class="text-end">@_facture.Reglements.Sum(r => r.Montant).ToString("0.###")</td>
+                            <td></td>
+                        </tr>
+                        <tr class="table-warning fw-bold">
+                            <td colspan="3">Solde Restant</td>
+                            <td class="text-end">@_solde.ToString("0.###")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">Ajouter un Règlement</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Date</label>
+                        <InputDate class="form-control" @bind-Value="_newReglement.DateReglement" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Mode de Paiement</label>
+                        <InputSelect class="form-select" @bind-Value="_newReglement.CodeModePayement">
+                            @foreach (var m in _modesPayement)
+                            {
+                                <option value="@m.CodeModePayement">@m.NomModePayement</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Montant</label>
+                        <InputNumber class="form-control" @bind-Value="_newReglement.Montant" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Référence</label>
+                        <InputText class="form-control" @bind-Value="_newReglement.Reference" />
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-success w-100" @onclick="AddReglementAsync">
+                            <i class="bi bi-check-circle"></i> Ajouter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (!_isNew)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">Ajouter un Règlement</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Date</label>
+                        <InputDate class="form-control" @bind-Value="_newReglement.DateReglement" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Mode de Paiement</label>
+                        <InputSelect class="form-select" @bind-Value="_newReglement.CodeModePayement">
+                            @foreach (var m in _modesPayement)
+                            {
+                                <option value="@m.CodeModePayement">@m.NomModePayement</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Montant</label>
+                        <InputNumber class="form-control" @bind-Value="_newReglement.Montant" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Référence</label>
+                        <InputText class="form-control" @bind-Value="_newReglement.Reference" />
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-success w-100" @onclick="AddReglementAsync">
+                            <i class="bi bi-check-circle"></i> Ajouter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string? Numero { get; set; }
+
+    private FactureClient _facture = new();
+    private List<LigneFactureClient> _lignes = [];
+    private List<Client> _clients = [];
+    private List<Produit> _produits = [];
+    private List<ModePayement> _modesPayement = [];
+    private ReglementFactureClient _newReglement = new() { DateReglement = DateTime.Today };
+    private bool _loading = true;
+    private bool _isNew => string.IsNullOrEmpty(Numero);
+    private bool _isAvoir;
+    private Notification _notif = default!;
+
+    private double _totalHT;
+    private double _totalFodec;
+    private double _totalTVA;
+    private double _totalTTC;
+    private double _solde;
+
+    private string PageTitle => _isNew
+        ? (_isAvoir ? "Nouvel Avoir" : "Nouvelle Facture")
+        : (_isAvoir ? $"Avoir : {_facture.NumeroFactureClient}" : $"Facture : {_facture.NumeroFactureClient}");
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isAvoir = Nav.Uri.Contains("/avoirs");
+
+        _clients = await Db.Clients.OrderBy(c => c.NomClient).ToListAsync();
+        _produits = await Db.Produits.Include(p => p.TvaProduit)
+                             .OrderBy(p => p.DesignationProduit).ToListAsync();
+        _modesPayement = await Db.ModesPayement.ToListAsync();
+
+        if (!_isNew)
+        {
+            var existing = await FactureService.GetByNumeroAsync(Numero!);
+            if (existing is not null)
+            {
+                _facture = existing;
+                _lignes = existing.Lignes.ToList();
+                _solde = await FactureService.GetSoldeAsync(Numero!);
+            }
+        }
+        else
+        {
+            _facture.IsAvoir = _isAvoir;
+        }
+
+        _newReglement.NumeroFactureClient = _facture.NumeroFactureClient;
+        RecalculerTotaux();
+        _loading = false;
+    }
+
+    private void AddLigne() => _lignes.Add(new LigneFactureClient());
+
+    private void RemoveLigne(int idx)
+    {
+        _lignes.RemoveAt(idx);
+        RecalculerTotaux();
+    }
+
+    private void OnProduitChanged(int idx, string codeProduit)
+    {
+        _lignes[idx].CodeProduit = codeProduit;
+        var produit = _produits.FirstOrDefault(p => p.CodeProduit == codeProduit);
+        if (produit is not null)
+        {
+            _lignes[idx].PrixUnitaire = produit.PrixVenteHT;
+            _lignes[idx].Tva = produit.TvaProduit?.TauxTvaProduit ?? 19;
+            _lignes[idx].Fodec = produit.Fodec;
+            _lignes[idx].Remise = 0;
+        }
+        RecalculerLigne(idx);
+    }
+
+    private void RecalculerLigne(int idx)
+    {
+        var l = _lignes[idx];
+        l.MontantHT = Math.Round(l.Quantite * l.PrixUnitaire * (1 - l.Remise / 100), 3);
+        RecalculerTotaux();
+    }
+
+    private void RecalculerTotaux()
+    {
+        _totalHT = Math.Round(_lignes.Sum(l => l.MontantHT), 3);
+        _totalFodec = Math.Round(_lignes.Sum(l => l.Fodec * l.MontantHT / 100), 3);
+        _totalTVA = Math.Round(_lignes.Sum(l => l.Tva * l.MontantHT / 100), 3);
+        var remise = _totalHT * _facture.Remise / 100;
+        _totalTTC = Math.Round(_totalHT - remise + _totalFodec + _totalTVA, 3);
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            _facture.IsAvoir = _isAvoir;
+            if (_isNew)
+                await FactureService.CreateAsync(_facture, _lignes, Config);
+            else
+                await FactureService.UpdateAsync(_facture, _lignes);
+
+            Nav.NavigateTo(_isAvoir ? "avoirs" : "factures-client");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
+    }
+
+    private async Task CloneAsync()
+    {
+        try
+        {
+            var clone = await FactureService.CloneAsync(Numero!, _isAvoir);
+            var route = _isAvoir ? "avoirs" : "factures-client";
+            Nav.NavigateTo($"{route}/{clone.NumeroFactureClient}");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur lors du clonage : {ex.Message}");
+        }
+    }
+
+    private async Task AddReglementAsync()
+    {
+        try
+        {
+            _newReglement.NumeroFactureClient = _facture.NumeroFactureClient;
+            await FactureService.AddReglementAsync(_newReglement);
+
+            var existing = await FactureService.GetByNumeroAsync(Numero!);
+            if (existing is not null) _facture = existing;
+            _solde = await FactureService.GetSoldeAsync(Numero!);
+            _newReglement = new ReglementFactureClient { DateReglement = DateTime.Today };
+            _notif.ShowSuccess("Règlement ajouté.");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
+    }
+}

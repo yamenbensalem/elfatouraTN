@@ -1,0 +1,72 @@
+@inherits LayoutComponentBase
+@inject ICurrentUserService CurrentUserService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="layout-wrapper @(_sidebarOpen ? "" : "sidebar-collapsed")">
+
+    <!-- ── Top Bar ─────────────────────────────── -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="topbar-toggle" title="Afficher / masquer le menu" @onclick="ToggleSidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <a class="topbar-brand" href="">
+                <i class="bi bi-graph-up-arrow me-2"></i>T4C GestCom
+            </a>
+        </div>
+        <div class="topbar-right">
+            <span class="topbar-date d-none d-md-block">
+                @DateTime.Now.ToString("dddd dd MMMM yyyy", new System.Globalization.CultureInfo("fr-FR"))
+            </span>
+            <div class="topbar-user">
+                <div class="topbar-avatar">
+                    @(CurrentUserService.Login.Length > 0
+                        ? CurrentUserService.Login[0].ToString().ToUpper()
+                        : "U")
+                </div>
+                <span class="topbar-username d-none d-sm-block">@CurrentUserService.Login</span>
+                <span class="badge @(CurrentUserService.Role switch {
+                    "Admin"   => "bg-danger",
+                    "Manager" => "bg-warning text-dark",
+                    _         => "bg-secondary"
+                }) d-none d-md-inline" style="font-size:0.65rem">
+                    @CurrentUserService.Role
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Sidebar ─────────────────────────────── -->
+    <aside class="sidebar">
+        <NavMenu />
+    </aside>
+
+    <!-- ── Main Content ────────────────────────── -->
+    <main class="main-content">
+        @Body
+    </main>
+
+</div>
+
+<div id="blazor-error-ui">
+    Une erreur s'est produite.
+    <a href="" class="reload">Recharger</a>
+    <a class="dismiss">&#10006;</a>
+</div>
+
+@code {
+    private bool _sidebarOpen = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            var login = state.User.Identity.Name ?? "système";
+            var role  = state.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Employé";
+            CurrentUserService.SetCurrentUser(login, role);
+        }
+    }
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+}

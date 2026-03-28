@@ -1,0 +1,175 @@
+@inject ICurrentUserService CurrentUserService
+
+<div class="sidebar-inner">
+
+    <!-- Dashboard -->
+    <div class="sidebar-section-item">
+        <NavLink class="sidebar-link" href="" Match="NavLinkMatch.All">
+            <i class="bi bi-speedometer2 sidebar-icon"></i>
+            <span>Tableau de bord</span>
+        </NavLink>
+    </div>
+
+    <div class="sidebar-separator"></div>
+
+    <!-- ── VENTES ────────────────────────────── -->
+    <div class="sidebar-group">
+        <button class="sidebar-group-header" type="button"
+                data-bs-toggle="collapse" data-bs-target="#nav-ventes"
+                aria-expanded="true" aria-controls="nav-ventes">
+            <div class="sidebar-group-title">
+                <i class="bi bi-cart3 sidebar-icon"></i>
+                <span>Ventes</span>
+            </div>
+            <i class="bi bi-chevron-down sidebar-chevron"></i>
+        </button>
+        <div id="nav-ventes" class="collapse show">
+            <div class="sidebar-group-items">
+                <NavLink class="sidebar-link sidebar-link-sub" href="clients">
+                    <i class="bi bi-people sidebar-icon"></i> Clients
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="devis">
+                    <i class="bi bi-file-earmark-text sidebar-icon"></i> Devis
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="commandes-vente">
+                    <i class="bi bi-bag-check sidebar-icon"></i> Commandes Vente
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="bons-livraison">
+                    <i class="bi bi-truck sidebar-icon"></i> Bons de Livraison
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="factures-client">
+                    <i class="bi bi-receipt sidebar-icon"></i> Factures Client
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="avoirs">
+                    <i class="bi bi-arrow-return-left sidebar-icon"></i> Avoirs
+                </NavLink>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ACHATS ─────────────────────────────── -->
+    <div class="sidebar-group">
+        <button class="sidebar-group-header" type="button"
+                data-bs-toggle="collapse" data-bs-target="#nav-achats"
+                aria-expanded="true" aria-controls="nav-achats">
+            <div class="sidebar-group-title">
+                <i class="bi bi-building sidebar-icon"></i>
+                <span>Achats</span>
+            </div>
+            <i class="bi bi-chevron-down sidebar-chevron"></i>
+        </button>
+        <div id="nav-achats" class="collapse show">
+            <div class="sidebar-group-items">
+                <NavLink class="sidebar-link sidebar-link-sub" href="fournisseurs">
+                    <i class="bi bi-building sidebar-icon"></i> Fournisseurs
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="commandes-achat">
+                    <i class="bi bi-bag sidebar-icon"></i> Commandes Achat
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="bons-reception">
+                    <i class="bi bi-box-arrow-in-down sidebar-icon"></i> Bons de Réception
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="factures-fournisseur">
+                    <i class="bi bi-receipt-cutoff sidebar-icon"></i> Factures Fournisseur
+                </NavLink>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── STOCK ──────────────────────────────── -->
+    <div class="sidebar-group">
+        <button class="sidebar-group-header" type="button"
+                data-bs-toggle="collapse" data-bs-target="#nav-stock"
+                aria-expanded="true" aria-controls="nav-stock">
+            <div class="sidebar-group-title">
+                <i class="bi bi-boxes sidebar-icon"></i>
+                <span>Stock</span>
+            </div>
+            <i class="bi bi-chevron-down sidebar-chevron"></i>
+        </button>
+        <div id="nav-stock" class="collapse show">
+            <div class="sidebar-group-items">
+                <NavLink class="sidebar-link sidebar-link-sub" href="produits">
+                    <i class="bi bi-boxes sidebar-icon"></i> Produits
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="stock">
+                    <i class="bi bi-bar-chart-line sidebar-icon"></i> État du Stock
+                </NavLink>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── PARAMÈTRES ─────────────────────────── -->
+    <div class="sidebar-group">
+        <button class="sidebar-group-header" type="button"
+                data-bs-toggle="collapse" data-bs-target="#nav-params"
+                aria-expanded="true" aria-controls="nav-params">
+            <div class="sidebar-group-title">
+                <i class="bi bi-gear sidebar-icon"></i>
+                <span>Paramètres</span>
+            </div>
+            <i class="bi bi-chevron-down sidebar-chevron"></i>
+        </button>
+        <div id="nav-params" class="collapse show">
+            <div class="sidebar-group-items">
+                <NavLink class="sidebar-link sidebar-link-sub" href="entreprise">
+                    <i class="bi bi-building-gear sidebar-icon"></i> Entreprise
+                </NavLink>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ADMINISTRATION (Admin only) ───────── -->
+    @if (CurrentUserService.IsAdmin)
+    {
+        <div class="sidebar-group">
+            <button class="sidebar-group-header" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#nav-admin"
+                    aria-expanded="true" aria-controls="nav-admin">
+                <div class="sidebar-group-title">
+                    <i class="bi bi-shield-lock sidebar-icon"></i>
+                    <span>Administration</span>
+                </div>
+                <i class="bi bi-chevron-down sidebar-chevron"></i>
+            </button>
+            <div id="nav-admin" class="collapse show">
+                <div class="sidebar-group-items">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="admin/utilisateurs">
+                        <i class="bi bi-person-lock sidebar-icon"></i> Utilisateurs
+                    </NavLink>
+                    <NavLink class="sidebar-link sidebar-link-sub" href="admin/roles">
+                        <i class="bi bi-person-badge sidebar-icon"></i> Rôles &amp; Permissions
+                    </NavLink>
+                    <NavLink class="sidebar-link sidebar-link-sub" href="admin/journal">
+                        <i class="bi bi-journal-text sidebar-icon"></i> Journal d'Activité
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── User footer ────────────────────────── -->
+    <div class="sidebar-user-strip">
+        <div class="sidebar-user-avatar">
+            @(CurrentUserService.Login.Length > 0
+                ? CurrentUserService.Login[0].ToString().ToUpper()
+                : "U")
+        </div>
+        <div class="flex-grow-1 overflow-hidden">
+            <div class="sidebar-user-name">@CurrentUserService.Login</div>
+            <span class="badge @(CurrentUserService.Role switch {
+                "Admin"   => "bg-danger",
+                "Manager" => "bg-warning text-dark",
+                _         => "bg-secondary"
+            })" style="font-size:0.62rem">@CurrentUserService.Role</span>
+        </div>
+    </div>
+
+    <div class="sidebar-logout">
+        <a class="sidebar-link text-danger" href="/compte/deconnexion">
+            <i class="bi bi-box-arrow-right sidebar-icon"></i>
+            <span>Déconnecter</span>
+        </a>
+    </div>
+
+</div>

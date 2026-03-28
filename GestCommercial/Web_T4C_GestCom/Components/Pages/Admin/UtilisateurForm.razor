@@ -1,0 +1,176 @@
+@page "/admin/utilisateurs/nouveau"
+@page "/admin/utilisateurs/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+@inject IUtilisateurService UtilisateurService
+@inject NavigationManager Nav
+
+<PageTitle>@(_isNew ? "Nouvel Utilisateur" : "Modifier Utilisateur") – T4C GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>@(_isNew ? "Nouvel Utilisateur" : $"Utilisateur : {_utilisateur.Login}")</h3>
+    <a href="/admin/utilisateurs" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+    </a>
+</div>
+
+<Notification @ref="_notif" />
+<LoadingSpinner Loading="@_loading" />
+
+@if (!_loading)
+{
+    <EditForm Model="_utilisateur" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">Informations</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Login <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="_utilisateur.Login"
+                                   disabled="@(!_isNew)" />
+                        <ValidationMessage For="() => _utilisateur.Login" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="_utilisateur.Prenom" />
+                        <ValidationMessage For="() => _utilisateur.Prenom" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Nom <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="_utilisateur.Nom" />
+                        <ValidationMessage For="() => _utilisateur.Nom" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Email</label>
+                        <InputText class="form-control" @bind-Value="_utilisateur.Email" type="email" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Rôle</label>
+                        <InputSelect class="form-select" @bind-Value="_utilisateur.Role">
+                            <option value="Employé">Employé</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Admin">Admin</option>
+                        </InputSelect>
+                    </div>
+                    @if (_isNew)
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
+                            <input class="form-control" type="password" @bind="_plainPassword"
+                                   placeholder="Min. 6 caractères" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Confirmer <span class="text-danger">*</span></label>
+                            <input class="form-control" type="password" @bind="_confirmPassword" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-12">
+                            <details>
+                                <summary class="text-primary" style="cursor:pointer">
+                                    <i class="bi bi-key me-1"></i>Changer le mot de passe
+                                </summary>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-4">
+                                        <input class="form-control" type="password" @bind="_plainPassword"
+                                               placeholder="Nouveau mot de passe" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input class="form-control" type="password" @bind="_confirmPassword"
+                                               placeholder="Confirmer" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-warning w-100"
+                                                @onclick="ChangePassword">
+                                            Modifier
+                                        </button>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Enregistrer
+            </button>
+            <a href="/admin/utilisateurs" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Utilisateur _utilisateur = new();
+    private string _plainPassword = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private bool _loading = true;
+    private bool _isNew => Id is null;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!_isNew)
+        {
+            var existing = await UtilisateurService.GetByIdAsync(Id!.Value);
+            if (existing is not null)
+                _utilisateur = existing;
+            else
+                Nav.NavigateTo("/admin/utilisateurs");
+        }
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_isNew)
+            {
+                if (_plainPassword.Length < 6)
+                { _notif.ShowError("Le mot de passe doit faire au moins 6 caractères."); return; }
+                if (_plainPassword != _confirmPassword)
+                { _notif.ShowError("Les mots de passe ne correspondent pas."); return; }
+                if (await UtilisateurService.LoginExistsAsync(_utilisateur.Login))
+                { _notif.ShowError("Ce login est déjà utilisé."); return; }
+
+                await UtilisateurService.AddAsync(_utilisateur, _plainPassword);
+            }
+            else
+            {
+                await UtilisateurService.UpdateAsync(_utilisateur);
+            }
+            Nav.NavigateTo("/admin/utilisateurs");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        if (_plainPassword.Length < 6)
+        { _notif.ShowError("Le mot de passe doit faire au moins 6 caractères."); return; }
+        if (_plainPassword != _confirmPassword)
+        { _notif.ShowError("Les mots de passe ne correspondent pas."); return; }
+
+        try
+        {
+            await UtilisateurService.ChangePasswordAsync(Id!.Value, _plainPassword);
+            _plainPassword = _confirmPassword = string.Empty;
+            _notif.ShowSuccess("Mot de passe modifié.");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
+    }
+}

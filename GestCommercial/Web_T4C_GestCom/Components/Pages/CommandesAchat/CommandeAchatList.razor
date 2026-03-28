@@ -1,0 +1,132 @@
+@page "/commandes-achat"
+@rendermode InteractiveServer
+@inject ICommandeAchatService CommandeService
+@inject NavigationManager Nav
+
+<PageTitle>Commandes Achat – T4C GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Commandes Achat</h3>
+    <a href="/commandes-achat/nouveau" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nouvelle Commande
+    </a>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>N° Commande</th>
+                        <th>Date</th>
+                        <th>Fournisseur</th>
+                        <th class="text-end">Montant HT</th>
+                        <th class="text-end">TVA</th>
+                        <th class="text-end">Total TTC</th>
+                        <th>État</th>
+                        <th>Réception</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in _commandes)
+                    {
+                        <tr>
+                            <td><a href="/commandes-achat/@c.NumeroCommandeAchat">@c.NumeroCommandeAchat</a></td>
+                            <td>@c.DateCommandeAchat.ToString("dd/MM/yyyy")</td>
+                            <td>@c.Fournisseur?.NomFournisseur</td>
+                            <td class="text-end">@c.MontantHT.ToString("0.###")</td>
+                            <td class="text-end">@c.MontantTVA.ToString("0.###")</td>
+                            <td class="text-end fw-bold">@c.MontantTTC.ToString("0.###")</td>
+                            <td><span class="badge bg-secondary">@c.EtatCommandeAchat</span></td>
+                            <td>
+                                <span class="badge @GetReceptionBadge(c.EtatReception)">@c.EtatReception</span>
+                            </td>
+                            <td class="text-end">
+                                <a href="/commandes-achat/@c.NumeroCommandeAchat"
+                                   class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </a>
+                                <button class="btn btn-sm btn-outline-info me-1"
+                                        @onclick="() => CloneCommande(c.NumeroCommandeAchat)">
+                                    <i class="bi bi-copy me-1"></i>Cloner
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => AskDelete(c)">
+                                    <i class="bi bi-trash me-1"></i>Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_commandes.Any())
+                    {
+                        <tr><td colspan="9" class="text-center text-muted py-4">Aucune commande trouvée.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_commandes.Count commande(s)</div>
+</div>
+
+<ConfirmDialog Title="Supprimer la commande"
+               Message="@($"Confirmer la suppression de {_toDelete?.NumeroCommandeAchat} ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<CommandeAchat> _commandes = [];
+    private bool _loading = true;
+    private bool _confirmVisible;
+    private CommandeAchat? _toDelete;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _commandes = await CommandeService.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task CloneCommande(string numero)
+    {
+        try
+        {
+            var clone = await CommandeService.CloneAsync(numero);
+            _notif.ShowSuccess($"Commande clonée : {clone.NumeroCommandeAchat}");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private void AskDelete(CommandeAchat c) { _toDelete = c; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await CommandeService.DeleteAsync(_toDelete.NumeroCommandeAchat);
+            _notif.ShowSuccess("Commande supprimée.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private static string GetReceptionBadge(string etat) => etat switch
+    {
+        "Reçu" => "bg-success",
+        "Partiellement Reçu" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}

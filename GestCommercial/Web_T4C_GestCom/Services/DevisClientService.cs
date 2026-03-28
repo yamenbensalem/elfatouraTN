@@ -1,0 +1,129 @@
+using Microsoft.EntityFrameworkCore;
+using Web_T4C_GestCom.Data;
+using Web_T4C_GestCom.Data.Models;
+
+namespace Web_T4C_GestCom.Services;
+
+public interface IDevisClientService
+{
+    Task<List<DevisClient>> GetAllAsync(string? clientCode = null);
+    Task<DevisClient?> GetByNumeroAsync(string numero);
+    Task<DevisClient> CreateAsync(DevisClient devis, List<LigneDevisClient> lignes, AppConfigService config);
+    Task UpdateAsync(DevisClient devis, List<LigneDevisClient> lignes);
+    Task DeleteAsync(string numero);
+    Task<DevisClient> CloneAsync(string numero);
+}
+
+public class DevisClientService(AppDbContext db, DocumentNumberService numService) : IDevisClientService
+{
+    public async Task<List<DevisClient>> GetAllAsync(string? clientCode = null)
+    {
+        var query = db.DevisClient
+            .Include(d => d.Client)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(clientCode))
+            query = query.Where(d => d.CodeClient == clientCode);
+
+        return await query.OrderByDescending(d => d.DateDevis).ToListAsync();
+    }
+
+    public async Task<DevisClient?> GetByNumeroAsync(string numero)
+        => await db.DevisClient
+            .Include(d => d.Client)
+            .Include(d => d.Lignes).ThenInclude(l => l.Produit)
+            .FirstOrDefaultAsync(d => d.NumeroDevis == numero);
+
+    public async Task<DevisClient> CreateAsync(DevisClient devis, List<LigneDevisClient> lignes, AppConfigService config)
+    {
+        devis.NumeroDevis = await numService.NextDevisAsync();
+        devis.Timbre = config.TimbreFiscal;
+        RecalculateTotals(devis, lignes);
+
+        db.DevisClient.Add(devis);
+        foreach (var ligne in lignes)
+        {
+            ligne.NumeroDevis = devis.NumeroDevis;
+            db.LignesDevisClient.Add(ligne);
+        }
+
+        await db.SaveChangesAsync();
+        return devis;
+    }
+
+    public async Task UpdateAsync(DevisClient devis, List<LigneDevisClient> lignes)
+    {
+        var oldLignes = await db.LignesDevisClient
+            .Where(l => l.NumeroDevis == devis.NumeroDevis)
+            .ToListAsync();
+
+        db.LignesDevisClient.RemoveRange(oldLignes);
+        RecalculateTotals(devis, lignes);
+
+        db.DevisClient.Update(devis);
+        foreach (var ligne in lignes)
+        {
+            ligne.Id = 0;
+            ligne.NumeroDevis = devis.NumeroDevis;
+            db.LignesDevisClient.Add(ligne);
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(string numero)
+    {
+        var devis = await db.DevisClient
+            .Include(d => d.Lignes)
+            .FirstOrDefaultAsync(d => d.NumeroDevis == numero);
+
+        if (devis is null) return;
+
+        db.LignesDevisClient.RemoveRange(devis.Lignes);
+        db.DevisClient.Remove(devis);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task<DevisClient> CloneAsync(string numero)
+    {
+        var source = await GetByNumeroAsync(numero);
+        if (source is null) throw new InvalidOperationException($"Devis {numero} introuvable.");
+
+        var clone = new DevisClient
+        {
+            NumeroDevis = await numService.NextDevisAsync(),
+            DateDevis = DateTime.Today,
+            CodeClient = source.CodeClient,
+            Remise = source.Remise,
+            Timbre = source.Timbre,
+            Note = source.Note,
+            EtatDevis = "Ouvert"
+        };
+
+        var lignesClone = source.Lignes.Select(l => new LigneDevisClient
+        {
+            NumeroDevis = clone.NumeroDevis,
+            CodeProduit = l.CodeProduit,
+            Quantite = l.Quantite,
+            PrixUnitaire = l.PrixUnitaire,
+            Remise = l.Remise,
+            Tva = l.Tva,
+            MontantHT = l.MontantHT
+        }).ToList();
+
+        RecalculateTotals(clone, lignesClone);
+
+        db.DevisClient.Add(clone);
+        db.LignesDevisClient.AddRange(lignesClone);
+        await db.SaveChangesAsync();
+        return clone;
+    }
+
+    private static void RecalculateTotals(DevisClient devis, List<LigneDevisClient> lignes)
+    {
+        devis.MontantHT = lignes.Sum(l => l.MontantHT);
+        devis.MontantTVA = lignes.Sum(l => l.Tva * l.MontantHT / 100);
+        var remiseMontant = devis.MontantHT * devis.Remise / 100;
+        devis.MontantTTC = devis.MontantHT - remiseMontant + devis.MontantTVA;
+    }
+}

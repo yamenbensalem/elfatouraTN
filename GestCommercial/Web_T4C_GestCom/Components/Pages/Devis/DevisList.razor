@@ -1,0 +1,117 @@
+@page "/devis"
+@rendermode InteractiveServer
+@inject IDevisClientService DevisService
+@inject NavigationManager Nav
+
+<PageTitle>Devis – T4C GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Devis</h3>
+    <a href="devis/nouveau" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nouveau Devis
+    </a>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>N° Devis</th>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th class="text-end">Montant HT</th>
+                        <th class="text-end">TVA</th>
+                        <th class="text-end">Total TTC</th>
+                        <th>État</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in _devis)
+                    {
+                        <tr>
+                            <td><a href="devis/@d.NumeroDevis">@d.NumeroDevis</a></td>
+                            <td>@d.DateDevis.ToString("dd/MM/yyyy")</td>
+                            <td>@d.Client?.NomClient</td>
+                            <td class="text-end">@d.MontantHT.ToString("0.###")</td>
+                            <td class="text-end">@d.MontantTVA.ToString("0.###")</td>
+                            <td class="text-end fw-bold">@d.MontantTTC.ToString("0.###")</td>
+                            <td><span class="badge bg-secondary">@d.EtatDevis</span></td>
+                            <td class="text-end">
+                                <a href="devis/@d.NumeroDevis" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </a>
+                                <button class="btn btn-sm btn-outline-info me-1" @onclick="() => CloneDevis(d.NumeroDevis)">
+                                    <i class="bi bi-copy me-1"></i>Cloner
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(d)">
+                                    <i class="bi bi-trash me-1"></i>Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_devis.Any())
+                    {
+                        <tr><td colspan="8" class="text-center text-muted py-4">Aucun devis trouvé.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_devis.Count devis</div>
+</div>
+
+<ConfirmDialog Title="Supprimer le devis"
+               Message="@($"Confirmer la suppression du devis {_toDelete?.NumeroDevis} ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<DevisClient> _devis = [];
+    private bool _loading = true;
+    private bool _confirmVisible;
+    private DevisClient? _toDelete;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _devis = await DevisService.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task CloneDevis(string numero)
+    {
+        try
+        {
+            var clone = await DevisService.CloneAsync(numero);
+            _notif.ShowSuccess($"Devis cloné : {clone.NumeroDevis}");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur lors du clonage : {ex.Message}");
+        }
+    }
+
+    private void AskDelete(DevisClient d) { _toDelete = d; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        await DevisService.DeleteAsync(_toDelete.NumeroDevis);
+        _notif.ShowSuccess("Devis supprimé.");
+        _toDelete = null;
+        await LoadAsync();
+    }
+}

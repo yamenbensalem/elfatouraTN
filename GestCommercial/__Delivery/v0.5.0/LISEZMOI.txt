@@ -1,0 +1,40 @@
+=====================================================
+  T4C GestCom Web — v0.5.0  (2026-03-28)
+=====================================================
+
+CONTENU DU PACKAGE
+------------------
+  app\                    Application publiée (Release, win-x64)
+  DEPLOIEMENT.md          Guide de déploiement détaillé
+  RELEASE_NOTES.md        Notes de version complètes
+  LISEZMOI.txt            Ce fichier
+
+DÉMARRAGE RAPIDE
+----------------
+1. Installer le Runtime .NET 8 (ASP.NET Core Hosting Bundle) :
+   https://dotnet.microsoft.com/download/dotnet/8.0
+
+2. Configurer la connexion SQL dans :
+   app\appsettings.Production.json
+
+3. Lancer l'application :
+   > set ASPNETCORE_ENVIRONMENT=Production
+   > app\Web_T4C_GestCom.exe --urls "http://0.0.0.0:5000"
+
+4. Ouvrir le navigateur sur :
+   http://localhost:5000
+
+5. Connexion par défaut :
+   Login    : admin
+   Password : admin123
+   (Changer immédiatement après la première connexion)
+
+PRÉREQUIS
+---------
+  - Windows 10/11 ou Windows Server 2019/2022
+  - .NET ASP.NET Core Runtime 8.0.x
+  - SQL Server 2019/2022 (Express suffisant)
+
+Pour le déploiement IIS, consulter DEPLOIEMENT.md
+
+=====================================================

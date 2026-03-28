@@ -1,0 +1,134 @@
+@page "/bons-reception"
+@rendermode InteractiveServer
+@inject IBonReceptionService BonService
+@inject NavigationManager Nav
+
+<PageTitle>Bons de Réception – T4C GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Bons de Réception</h3>
+    <a href="/bons-reception/nouveau" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nouveau Bon
+    </a>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>N° Bon</th>
+                        <th>Date</th>
+                        <th>Fournisseur</th>
+                        <th>Commande Achat</th>
+                        <th class="text-end">Montant HT</th>
+                        <th class="text-end">TVA</th>
+                        <th class="text-end">Total TTC</th>
+                        <th>État</th>
+                        <th>Facturation</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in _bons)
+                    {
+                        <tr>
+                            <td><a href="/bons-reception/@b.NumeroBonReception">@b.NumeroBonReception</a></td>
+                            <td>@b.DateBonReception.ToString("dd/MM/yyyy")</td>
+                            <td>@b.Fournisseur?.NomFournisseur</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(b.NumeroCommandeAchat))
+                                {
+                                    <a href="/commandes-achat/@b.NumeroCommandeAchat">@b.NumeroCommandeAchat</a>
+                                }
+                            </td>
+                            <td class="text-end">@b.MontantHT.ToString("0.###")</td>
+                            <td class="text-end">@b.MontantTVA.ToString("0.###")</td>
+                            <td class="text-end fw-bold">@b.MontantTTC.ToString("0.###")</td>
+                            <td><span class="badge bg-secondary">@b.EtatBonReception</span></td>
+                            <td>
+                                <span class="badge @(b.EtatFacture == "Facturé" ? "bg-success" : "bg-warning text-dark")">
+                                    @b.EtatFacture
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a href="/bons-reception/@b.NumeroBonReception"
+                                   class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </a>
+                                <button class="btn btn-sm btn-outline-info me-1"
+                                        @onclick="() => CloneBon(b.NumeroBonReception)">
+                                    <i class="bi bi-copy me-1"></i>Cloner
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => AskDelete(b)">
+                                    <i class="bi bi-trash me-1"></i>Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_bons.Any())
+                    {
+                        <tr><td colspan="10" class="text-center text-muted py-4">Aucun bon de réception trouvé.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_bons.Count bon(s)</div>
+</div>
+
+<ConfirmDialog Title="Supprimer le bon de réception"
+               Message="@($"Confirmer la suppression de {_toDelete?.NumeroBonReception} ? Le stock sera restitué.")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<BonReception> _bons = [];
+    private bool _loading = true;
+    private bool _confirmVisible;
+    private BonReception? _toDelete;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _bons = await BonService.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task CloneBon(string numero)
+    {
+        try
+        {
+            var clone = await BonService.CloneAsync(numero);
+            _notif.ShowSuccess($"Bon cloné : {clone.NumeroBonReception}");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private void AskDelete(BonReception b) { _toDelete = b; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await BonService.DeleteAsync(_toDelete.NumeroBonReception);
+            _notif.ShowSuccess("Bon de réception supprimé.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+}
