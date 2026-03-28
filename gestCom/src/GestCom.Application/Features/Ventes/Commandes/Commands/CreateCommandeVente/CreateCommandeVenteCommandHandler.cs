@@ -25,8 +25,11 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
 
     public async Task<CommandeVenteDto> Handle(CreateCommandeVenteCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Vérifier que le client existe
-        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         if (client == null)
         {
             throw new NotFoundException("Client", request.CodeClient);
@@ -35,7 +38,7 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
         // Si un devis est référencé, vérifier qu'il existe et n'est pas déjà converti
         if (!string.IsNullOrEmpty(request.NumeroDevis))
         {
-            var devis = await _unitOfWork.DevisClients.GetByNumeroAsync(request.NumeroDevis, _currentUserService.CodeEntreprise);
+            var devis = await _unitOfWork.DevisClients.GetByNumeroAsync(request.NumeroDevis, codeEntreprise);
             if (devis == null)
             {
                 throw new NotFoundException("Devis", request.NumeroDevis);
@@ -46,11 +49,11 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
             }
         }
 
-        var numeroCommande = await _numeroService.GenererNumeroCommandeVenteAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
+        var numeroCommande = await _numeroService.GenererNumeroCommandeVenteAsync(codeEntreprise);
 
         var commande = new CommandeVente
         {
-            CodeEntreprise = _currentUserService.CodeEntreprise!,
+            CodeEntreprise = codeEntreprise,
             NumeroCommande = numeroCommande,
             DateCommande = request.DateCommande,
             DateLivraisonPrevue = request.DateLivraisonPrevue,
@@ -70,7 +73,7 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
 
         foreach (var ligneDto in request.Lignes)
         {
-            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, _currentUserService.CodeEntreprise);
+            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, codeEntreprise);
             if (produit == null)
             {
                 throw new NotFoundException("Produit", ligneDto.CodeProduit);
@@ -117,7 +120,7 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
         // Mettre à jour le devis si référencé
         if (!string.IsNullOrEmpty(request.NumeroDevis))
         {
-            var devis = await _unitOfWork.DevisClients.GetByNumeroAsync(request.NumeroDevis, _currentUserService.CodeEntreprise);
+            var devis = await _unitOfWork.DevisClients.GetByNumeroAsync(request.NumeroDevis, codeEntreprise);
             if (devis != null)
             {
                 devis.NumeroCommande = numeroCommande;
@@ -128,7 +131,7 @@ public class CreateCommandeVenteCommandHandler : IRequestHandler<CreateCommandeV
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var createdCommande = await _unitOfWork.CommandesVente.GetByNumeroAsync(numeroCommande, _currentUserService.CodeEntreprise);
+        var createdCommande = await _unitOfWork.CommandesVente.GetByNumeroAsync(numeroCommande, codeEntreprise);
         return _mapper.Map<CommandeVenteDto>(createdCommande);
     }
 

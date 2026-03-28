@@ -27,6 +27,6 @@ public class CreateClientCommand : IRequest<ClientDto>
     public string? SiteWeb { get; set; }
     
     public decimal MaxCredit { get; set; }
-    public int CodeDevise { get; set; } = 1; // TND par défaut
+    public int CodeDevise { get; set; } = 5; // TND par default
     public string? Responsable { get; set; }
 }

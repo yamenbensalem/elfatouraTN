@@ -21,7 +21,10 @@ public class SearchProduitsQueryHandler : IRequestHandler<SearchProduitsQuery, L
 
     public async Task<List<SearchProduitDto>> Handle(SearchProduitsQuery request, CancellationToken cancellationToken)
     {
-        var produits = await _unitOfWork.Produits.SearchProduitsAsync(_currentUserService.CodeEntreprise, request.SearchTerm);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var produits = await _unitOfWork.Produits.SearchProduitsAsync(codeEntreprise, request.SearchTerm);
         return _mapper.Map<List<SearchProduitDto>>(produits);
     }
 }

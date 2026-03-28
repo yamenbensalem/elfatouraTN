@@ -36,6 +36,32 @@ public class NumeroService : INumeroService
     }
 
     /// <summary>
+    /// Génère le prochain numéro de facture avoir (crédit note)
+    /// Format: HA{Année}-{Numéro:00000}
+    /// </summary>
+    public async Task<string> GenererNumeroFactureAvoirAsync(string codeEntreprise)
+    {
+        return await GenererNumeroAsync("HA", codeEntreprise,
+            async (prefixe, annee) => await GetDernierNumeroFactureAvoirAsync(prefixe, annee));
+    }
+
+    /// <summary>
+    /// Génère le prochain numéro de facture proforma
+    /// Format: FP{Année}-{Numéro:00000}
+    /// </summary>
+    public async Task<string> GenererNumeroFactureProformaAsync(string codeEntreprise)
+    {
+        return await GenererNumeroAsync("FP", codeEntreprise,
+            async (prefixe, annee) => await GetDernierNumeroFactureProformaAsync(prefixe, annee));
+    }
+
+    private async Task<int> GetDernierNumeroFactureProformaAsync(string prefixe, int annee)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("La numerotation des factures proforma n'est pas encore implementee.");
+    }
+
+    /// <summary>
     /// Génère le prochain numéro de devis
     /// Format: DV{Année}-{Numéro:00000}
     /// </summary>
@@ -131,7 +157,19 @@ public class NumeroService : INumeroService
     {
         var pattern = $"{prefixe}{annee}-%";
         var dernierNumero = await _context.FacturesClient
-            .Where(f => EF.Functions.Like(f.NumeroFacture, pattern))
+            .Where(f => !f.Avoir && EF.Functions.Like(f.NumeroFacture, pattern))
+            .OrderByDescending(f => f.NumeroFacture)
+            .Select(f => f.NumeroFacture)
+            .FirstOrDefaultAsync();
+
+        return ExtraireNumero(dernierNumero);
+    }
+
+    private async Task<int> GetDernierNumeroFactureAvoirAsync(string prefixe, int annee)
+    {
+        var pattern = $"{prefixe}{annee}-%";
+        var dernierNumero = await _context.FacturesClient
+            .Where(f => f.Avoir && EF.Functions.Like(f.NumeroFacture, pattern))
             .OrderByDescending(f => f.NumeroFacture)
             .Select(f => f.NumeroFacture)
             .FirstOrDefaultAsync();

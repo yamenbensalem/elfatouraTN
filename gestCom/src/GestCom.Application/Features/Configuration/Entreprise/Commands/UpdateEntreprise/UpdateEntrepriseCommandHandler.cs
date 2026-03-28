@@ -27,11 +27,11 @@ public class UpdateEntrepriseCommandHandler : IRequestHandler<UpdateEntrepriseCo
         }
 
         // Mettre à jour les propriétés
-        entreprise.RaisonSociale = request.RaisonSociale;
-        entreprise.MatriculeFiscal = request.MatriculeFiscal;
-        entreprise.Adresse = request.Adresse;
+        entreprise.RaisonSociale = request.RaisonSociale ?? entreprise.RaisonSociale;
+        entreprise.MatriculeFiscal = request.MatriculeFiscal ?? entreprise.MatriculeFiscal;
+        entreprise.Adresse = request.Adresse ?? entreprise.Adresse;
         entreprise.CodePostal = request.CodePostal;
-        entreprise.Ville = request.Ville;
+        entreprise.Ville = request.Ville ?? entreprise.Ville;
         entreprise.Telephone = request.Telephone;
         entreprise.Fax = request.Fax;
         entreprise.Email = request.Email;

@@ -18,20 +18,23 @@ public class DeleteProduitCommandHandler : IRequestHandler<DeleteProduitCommand,
 
     public async Task<bool> Handle(DeleteProduitCommand request, CancellationToken cancellationToken)
     {
-        var produit = await _unitOfWork.Produits.GetByCodeAsync(request.CodeProduit, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var produit = await _unitOfWork.Produits.GetByCodeAsync(request.CodeProduit, codeEntreprise);
         if (produit == null)
         {
             throw new NotFoundException("Produit", request.CodeProduit);
         }
 
         // Vérifier si le produit n'est pas utilisé dans des documents
-        var hasLignesFacture = await _unitOfWork.Produits.HasLignesFactureAsync(request.CodeProduit, _currentUserService.CodeEntreprise);
+        var hasLignesFacture = await _unitOfWork.Produits.HasLignesFactureAsync(request.CodeProduit, codeEntreprise);
         if (hasLignesFacture)
         {
             throw new BusinessException($"Impossible de supprimer le produit '{request.CodeProduit}' car il est utilisé dans des factures.");
         }
 
-        var hasLignesCommande = await _unitOfWork.Produits.HasLignesCommandeAsync(request.CodeProduit, _currentUserService.CodeEntreprise);
+        var hasLignesCommande = await _unitOfWork.Produits.HasLignesCommandeAsync(request.CodeProduit, codeEntreprise);
         if (hasLignesCommande)
         {
             throw new BusinessException($"Impossible de supprimer le produit '{request.CodeProduit}' car il est utilisé dans des commandes.");

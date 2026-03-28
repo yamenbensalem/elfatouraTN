@@ -28,7 +28,7 @@ public class UpdateClientCommand : IRequest<ClientDto>
     
     public string Etat { get; set; } = "Actif";
     public decimal MaxCredit { get; set; }
-    public int CodeDevise { get; set; } = 1;
+    public int CodeDevise { get; set; } = 5; // TND par defaut
     public string? Responsable { get; set; }
     public string? Note { get; set; }
 }

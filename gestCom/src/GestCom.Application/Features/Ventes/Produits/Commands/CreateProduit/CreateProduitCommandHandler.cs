@@ -23,8 +23,11 @@ public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand,
 
     public async Task<ProduitDto> Handle(CreateProduitCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Vérifier si le produit existe déjà
-        var existingProduit = await _unitOfWork.Produits.GetByCodeAsync(request.CodeProduit, _currentUserService.CodeEntreprise);
+        var existingProduit = await _unitOfWork.Produits.GetByCodeAsync(request.CodeProduit, codeEntreprise);
         if (existingProduit != null)
         {
             throw new BusinessException($"Un produit avec le code '{request.CodeProduit}' existe déjà.");
@@ -33,7 +36,7 @@ public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand,
         // Vérifier si le code barre est unique
         if (!string.IsNullOrEmpty(request.CodeBarre))
         {
-            var produitByCodeBarre = await _unitOfWork.Produits.GetByCodeBarreAsync(request.CodeBarre, _currentUserService.CodeEntreprise);
+            var produitByCodeBarre = await _unitOfWork.Produits.GetByCodeBarreAsync(request.CodeBarre, codeEntreprise);
             if (produitByCodeBarre != null)
             {
                 throw new BusinessException($"Un produit avec le code barre '{request.CodeBarre}' existe déjà.");
@@ -43,7 +46,7 @@ public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand,
         // Vérifier si le fournisseur existe
         if (!string.IsNullOrEmpty(request.CodeFournisseur))
         {
-            var fournisseur = await _unitOfWork.Fournisseurs.GetByCodeAsync(request.CodeFournisseur, _currentUserService.CodeEntreprise);
+            var fournisseur = await _unitOfWork.Fournisseurs.GetByCodeAsync(request.CodeFournisseur, codeEntreprise);
             if (fournisseur == null)
             {
                 throw new NotFoundException("Fournisseur", request.CodeFournisseur);
@@ -52,7 +55,7 @@ public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand,
 
         // Créer l'entité
         var produit = _mapper.Map<Produit>(request);
-        produit.CodeEntreprise = _currentUserService.CodeEntreprise!;
+        produit.CodeEntreprise = codeEntreprise;
         produit.DateCreation = DateTime.Now;
         if (produit.CodeDevise == 0) produit.CodeDevise = 5; // Défaut TND
 
@@ -67,7 +70,7 @@ public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand,
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Recharger avec les relations
-        var createdProduit = await _unitOfWork.Produits.GetByCodeAsync(produit.CodeProduit, _currentUserService.CodeEntreprise);
+        var createdProduit = await _unitOfWork.Produits.GetByCodeAsync(produit.CodeProduit, codeEntreprise);
         return _mapper.Map<ProduitDto>(createdProduit);
     }
 }

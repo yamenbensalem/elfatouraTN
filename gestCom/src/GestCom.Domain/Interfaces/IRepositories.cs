@@ -147,5 +147,4 @@ public interface IRetenuSourceRepository : IRepository<RetenuSource>
 
 public interface IUniteProduitRepository : IRepository<UniteProduit>
 {
-    Task<IEnumerable<UniteProduit>> GetAllAsync();
 }

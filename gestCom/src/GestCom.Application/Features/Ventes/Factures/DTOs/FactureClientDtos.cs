@@ -191,3 +191,34 @@ public class ChiffreAffairesDto
     public List<ChiffreAffairesParMoisDto> ParMois { get; set; } = new();
 }
 
+/// <summary>
+/// DTO pour la création d'une facture avoir (crédit note - total)
+/// </summary>
+public class CreateFactureAvoirTotaleDto
+{
+    public string NumeroFactureOriginale { get; set; } = string.Empty;
+    public string Motif { get; set; } = string.Empty;
+    public string? Observations { get; set; }
+}
+
+/// <summary>
+/// DTO pour la création d'une facture avoir (crédit note - partielle)
+/// </summary>
+public class CreateFactureAvoirPartielleDto
+{
+    public string NumeroFactureOriginale { get; set; } = string.Empty;
+    public string Motif { get; set; } = string.Empty;
+    public string? Observations { get; set; }
+    public List<LigneFactureAvoirDto> Lignes { get; set; } = new();
+}
+
+/// <summary>
+/// DTO pour une ligne de facture avoir partielle
+/// </summary>
+public class LigneFactureAvoirDto
+{
+    public int NumeroLigne { get; set; } // Numéro de ligne dans la facture originale
+    public string CodeProduit { get; set; } = string.Empty;
+    public decimal QuantiteACrediter { get; set; } // Quantité à créditer (peut être inférieure à l'original)
+}
+

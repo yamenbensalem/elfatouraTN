@@ -17,7 +17,10 @@ public class DeleteBonLivraisonCommandHandler : IRequestHandler<DeleteBonLivrais
 
     public async Task<bool> Handle(DeleteBonLivraisonCommand request, CancellationToken cancellationToken)
     {
-        var bonLivraison = await _unitOfWork.BonsLivraison.GetByNumeroAsync(request.NumeroBonLivraison, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var bonLivraison = await _unitOfWork.BonsLivraison.GetByNumeroAsync(request.NumeroBonLivraison, codeEntreprise);
         if (bonLivraison == null)
         {
             throw new InvalidOperationException($"Bon de livraison '{request.NumeroBonLivraison}' non trouvé.");
@@ -41,7 +44,7 @@ public class DeleteBonLivraisonCommandHandler : IRequestHandler<DeleteBonLivrais
             {
                 foreach (var ligne in bonLivraison.Lignes)
                 {
-                    var produit = await _unitOfWork.Produits.GetByCodeAsync(ligne.CodeProduit, _currentUserService.CodeEntreprise);
+                    var produit = await _unitOfWork.Produits.GetByCodeAsync(ligne.CodeProduit, codeEntreprise);
                     if (produit != null)
                     {
                         produit.Quantite += ligne.Quantite; // Réincrémenter le stock
@@ -53,7 +56,7 @@ public class DeleteBonLivraisonCommandHandler : IRequestHandler<DeleteBonLivrais
             // Mettre à jour le statut de la commande si liée
             if (!string.IsNullOrEmpty(bonLivraison.NumeroCommande))
             {
-                var commande = await _unitOfWork.CommandesVente.GetByNumeroAsync(bonLivraison.NumeroCommande, _currentUserService.CodeEntreprise);
+                var commande = await _unitOfWork.CommandesVente.GetByNumeroAsync(bonLivraison.NumeroCommande, codeEntreprise);
                 if (commande != null)
                 {
                     commande.Statut = "En attente";

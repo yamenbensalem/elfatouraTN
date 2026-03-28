@@ -19,18 +19,11 @@ public class GetDashboardDataQueryHandler : IRequestHandler<GetDashboardDataQuer
         _currentUserService = currentUserService;
     }
 
-    public async Task<DashboardDto> Handle(GetDashboardDataQuery request, CancellationToken cancellationToken)
+    public Task<DashboardDto> Handle(GetDashboardDataQuery request, CancellationToken cancellationToken)
     {
-        var codeEntreprise = _currentUserService.CodeEntreprise;
-        var today = DateTime.Today;
-        var debutMois = new DateTime(today.Year, today.Month, 1);
-        var debutAnnee = new DateTime(today.Year, 1, 1);
-        var debutMoisPrecedent = debutMois.AddMonths(-1);
-        var finMoisPrecedent = debutMois.AddDays(-1);
-
         // Retourner un DTO avec des valeurs par défaut
         // L'implémentation complète nécessite les repositories spécialisés
-        return new DashboardDto
+        return Task.FromResult(new DashboardDto
         {
             ChiffreAffairesMois = 0,
             ChiffreAffairesAnnee = 0,
@@ -52,6 +45,6 @@ public class GetDashboardDataQueryHandler : IRequestHandler<GetDashboardDataQuer
             TopProduits = new List<TopProduitDto>(),
             CAParMois = new List<ChiffreAffairesParMoisDto>(),
             VentesParCategorie = new List<VentesParCategorieDto>()
-        };
+        });
     }
 }

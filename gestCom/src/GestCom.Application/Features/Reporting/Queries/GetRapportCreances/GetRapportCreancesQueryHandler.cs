@@ -88,7 +88,7 @@ public class GetRapportCreancesQueryHandler : IRequestHandler<GetRapportCreances
                 return new CreanceClientDto
                 {
                     CodeClient = g.Key,
-                    NomClient = clientsDict.GetValueOrDefault(g.Key),
+                    NomClient = clientsDict.GetValueOrDefault(g.Key) ?? string.Empty,
                     TotalCreances = g.Sum(f => f.MontantTTC - f.MontantRegle),
                     NombreFacturesImpayees = g.Count(),
                     DatePlusAncienneFacture = plusAncienne?.DateEcheance,

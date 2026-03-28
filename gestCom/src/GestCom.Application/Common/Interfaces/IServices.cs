@@ -98,6 +98,8 @@ public interface IStockService
 public interface INumeroService
 {
     Task<string> GenererNumeroFactureClientAsync(string codeEntreprise);
+    Task<string> GenererNumeroFactureAvoirAsync(string codeEntreprise);
+    Task<string> GenererNumeroFactureProformaAsync(string codeEntreprise);
     Task<string> GenererNumeroDevisAsync(string codeEntreprise);
     Task<string> GenererNumeroBonLivraisonAsync(string codeEntreprise);
     Task<string> GenererNumeroCommandeVenteAsync(string codeEntreprise);

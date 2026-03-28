@@ -45,6 +45,7 @@ public class ReportingController : BaseApiController
             TotalTTC = 0,
             ChiffreAffairesParMois = new List<ChiffreAffairesMensuelDto>()
         };
+        await Task.CompletedTask;
         return Ok(result);
     }
 
@@ -67,6 +68,7 @@ public class ReportingController : BaseApiController
             CreancesPlus90Jours = 0,
             DetailParClient = new List<CreanceClientDto>()
         };
+        await Task.CompletedTask;
         return Ok(result);
     }
 
@@ -85,6 +87,7 @@ public class ReportingController : BaseApiController
             DettesEchues = 0,
             DetailParFournisseur = new List<DetteFournisseurDto>()
         };
+        await Task.CompletedTask;
         return Ok(result);
     }
 
@@ -105,6 +108,7 @@ public class ReportingController : BaseApiController
             ProduitsStockFaible = 0,
             DetailParCategorie = new List<StockCategorieDto>()
         };
+        await Task.CompletedTask;
         return Ok(result);
     }
 
@@ -117,6 +121,7 @@ public class ReportingController : BaseApiController
     {
         // À implémenter
         var result = new List<TopProduitDto>();
+        await Task.CompletedTask;
         return Ok(result);
     }
 
@@ -129,6 +134,7 @@ public class ReportingController : BaseApiController
     {
         // À implémenter
         var result = new List<TopClientDto>();
+        await Task.CompletedTask;
         return Ok(result);
     }
 
@@ -141,6 +147,7 @@ public class ReportingController : BaseApiController
     {
         // À implémenter
         var result = new List<VenteParCategorieDto>();
+        await Task.CompletedTask;
         return Ok(result);
     }
 
@@ -162,6 +169,7 @@ public class ReportingController : BaseApiController
             MargeBrute = 0,
             TauxMarge = 0
         };
+        await Task.CompletedTask;
         return Ok(result);
     }
 
@@ -180,6 +188,8 @@ public class ReportingController : BaseApiController
         // À implémenter via IPdfService
         var pdfContent = Array.Empty<byte>();
         var fileName = $"Rapport_{type}_{DateTime.Now:yyyyMMdd}.pdf";
+
+        await Task.CompletedTask;
         
         return File(pdfContent, "application/pdf", fileName);
     }

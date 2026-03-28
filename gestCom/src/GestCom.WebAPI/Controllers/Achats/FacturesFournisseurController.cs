@@ -26,6 +26,8 @@ public class FacturesFournisseurController : BaseApiController
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return Ok(new PagedResult<FactureFournisseurListDto>(new List<FactureFournisseurListDto>(), 0, pageNumber, pageSize));
     }
@@ -38,6 +40,8 @@ public class FacturesFournisseurController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<FactureFournisseurDto>> GetByNumero(string numero)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return NotFound($"Facture fournisseur '{numero}' non trouvée.");
     }
@@ -49,6 +53,8 @@ public class FacturesFournisseurController : BaseApiController
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> GetFacturesEchues([FromQuery] DateTime? dateReference)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return Ok(Array.Empty<object>());
     }
@@ -75,6 +81,8 @@ public class FacturesFournisseurController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(string numero)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return NoContent();
     }

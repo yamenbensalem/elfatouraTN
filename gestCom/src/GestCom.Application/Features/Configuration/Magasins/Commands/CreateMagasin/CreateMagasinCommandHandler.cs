@@ -26,10 +26,13 @@ public class CreateMagasinCommandHandler : IRequestHandler<CreateMagasinCommand,
 
     public async Task<MagasinProduitDto> Handle(CreateMagasinCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Créer l'entité
         var magasin = new MagasinProduit
         {
-            CodeEntreprise = _currentUserService.CodeEntreprise,
+            CodeEntreprise = codeEntreprise,
             Designation = request.LibelleMagasin,
             Adresse = request.Adresse,
             Responsable = request.Responsable,

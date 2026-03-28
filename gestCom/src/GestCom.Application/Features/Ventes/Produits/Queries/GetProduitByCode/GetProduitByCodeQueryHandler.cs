@@ -21,7 +21,10 @@ public class GetProduitByCodeQueryHandler : IRequestHandler<GetProduitByCodeQuer
 
     public async Task<ProduitDto?> Handle(GetProduitByCodeQuery request, CancellationToken cancellationToken)
     {
-        var produit = await _unitOfWork.Produits.GetByCodeAsync(request.CodeProduit, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var produit = await _unitOfWork.Produits.GetByCodeAsync(request.CodeProduit, codeEntreprise);
         if (produit == null)
         {
             return null;

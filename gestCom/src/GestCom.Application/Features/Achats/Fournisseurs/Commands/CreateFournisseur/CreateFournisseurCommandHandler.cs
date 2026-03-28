@@ -23,8 +23,11 @@ public class CreateFournisseurCommandHandler : IRequestHandler<CreateFournisseur
 
     public async Task<FournisseurDto> Handle(CreateFournisseurCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Vérifier si le fournisseur existe déjà
-        var existingFournisseur = await _unitOfWork.Fournisseurs.GetByCodeAsync(request.CodeFournisseur, _currentUserService.CodeEntreprise);
+        var existingFournisseur = await _unitOfWork.Fournisseurs.GetByCodeAsync(request.CodeFournisseur, codeEntreprise);
         if (existingFournisseur != null)
         {
             throw new BusinessException($"Un fournisseur avec le code '{request.CodeFournisseur}' existe déjà.");
@@ -33,7 +36,7 @@ public class CreateFournisseurCommandHandler : IRequestHandler<CreateFournisseur
         // Vérifier unicité du matricule fiscal
         if (!string.IsNullOrEmpty(request.MatriculeFiscale))
         {
-            var fournisseurByMatricule = await _unitOfWork.Fournisseurs.GetByMatriculeFiscaleAsync(request.MatriculeFiscale, _currentUserService.CodeEntreprise);
+            var fournisseurByMatricule = await _unitOfWork.Fournisseurs.GetByMatriculeFiscaleAsync(request.MatriculeFiscale, codeEntreprise);
             if (fournisseurByMatricule != null)
             {
                 throw new BusinessException($"Un fournisseur avec le matricule fiscal '{request.MatriculeFiscale}' existe déjà.");
@@ -41,7 +44,7 @@ public class CreateFournisseurCommandHandler : IRequestHandler<CreateFournisseur
         }
 
         var fournisseur = _mapper.Map<Fournisseur>(request);
-        fournisseur.CodeEntreprise = _currentUserService.CodeEntreprise!;
+        fournisseur.CodeEntreprise = codeEntreprise;
         fournisseur.DateCreation = DateTime.Now;
 
         await _unitOfWork.Fournisseurs.AddAsync(fournisseur);

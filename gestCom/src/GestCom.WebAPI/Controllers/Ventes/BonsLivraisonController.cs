@@ -34,6 +34,8 @@ public class BonsLivraisonController : BaseApiController
         [FromQuery] DateTime? dateDebut,
         [FromQuery] DateTime? dateFin)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return Ok(Array.Empty<BonLivraisonListDto>());
     }
@@ -46,6 +48,8 @@ public class BonsLivraisonController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BonLivraisonDto>> GetByNumero(string numero)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return NotFound($"Bon de livraison '{numero}' non trouvé.");
     }

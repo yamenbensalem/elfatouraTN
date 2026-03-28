@@ -24,7 +24,10 @@ public class GetClientByCodeQueryHandler : IRequestHandler<GetClientByCodeQuery,
 
     public async Task<ClientDto?> Handle(GetClientByCodeQuery request, CancellationToken cancellationToken)
     {
-        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         
         if (client == null)
             return null;
@@ -34,7 +37,7 @@ public class GetClientByCodeQueryHandler : IRequestHandler<GetClientByCodeQuery,
         // Calculer le total des créances
         clientDto.TotalCreances = await _unitOfWork.Clients.GetTotalCreancesAsync(
             request.CodeClient,
-            _currentUserService.CodeEntreprise
+            codeEntreprise
         );
 
         return clientDto;

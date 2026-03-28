@@ -22,7 +22,10 @@ public class UpdateProduitCommandHandler : IRequestHandler<UpdateProduitCommand,
 
     public async Task<ProduitDto> Handle(UpdateProduitCommand request, CancellationToken cancellationToken)
     {
-        var produit = await _unitOfWork.Produits.GetByCodeAsync(request.CodeProduit, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var produit = await _unitOfWork.Produits.GetByCodeAsync(request.CodeProduit, codeEntreprise);
         if (produit == null)
         {
             throw new NotFoundException("Produit", request.CodeProduit);
@@ -31,7 +34,7 @@ public class UpdateProduitCommandHandler : IRequestHandler<UpdateProduitCommand,
         // Vérifier unicité du code barre
         if (!string.IsNullOrEmpty(request.CodeBarre) && request.CodeBarre != produit.CodeBarre)
         {
-            var existingByCodeBarre = await _unitOfWork.Produits.GetByCodeBarreAsync(request.CodeBarre, _currentUserService.CodeEntreprise);
+            var existingByCodeBarre = await _unitOfWork.Produits.GetByCodeBarreAsync(request.CodeBarre, codeEntreprise);
             if (existingByCodeBarre != null && existingByCodeBarre.CodeProduit != request.CodeProduit)
             {
                 throw new BusinessException($"Un produit avec le code barre '{request.CodeBarre}' existe déjà.");
@@ -39,7 +42,7 @@ public class UpdateProduitCommandHandler : IRequestHandler<UpdateProduitCommand,
         }
 
         // Mettre à jour les propriétés
-        produit.Designation = request.Designation;
+        produit.Designation = request.Designation ?? produit.Designation;
         produit.CodeBarre = request.CodeBarre;
         produit.Reference = request.Reference;
         produit.PrixAchatTTC = request.PrixAchatTTC;
@@ -70,7 +73,7 @@ public class UpdateProduitCommandHandler : IRequestHandler<UpdateProduitCommand,
         _unitOfWork.Produits.Update(produit);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var updatedProduit = await _unitOfWork.Produits.GetByCodeAsync(produit.CodeProduit, _currentUserService.CodeEntreprise);
+        var updatedProduit = await _unitOfWork.Produits.GetByCodeAsync(produit.CodeProduit, codeEntreprise);
         return _mapper.Map<ProduitDto>(updatedProduit);
     }
 }

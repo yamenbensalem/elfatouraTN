@@ -16,10 +16,10 @@ public class GetAllUnitesQueryHandler : IRequestHandler<GetAllUnitesQuery, IEnum
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<UniteProduitDto>> Handle(GetAllUnitesQuery request, CancellationToken cancellationToken)
+    public Task<IEnumerable<UniteProduitDto>> Handle(GetAllUnitesQuery request, CancellationToken cancellationToken)
     {
         // UniteProduit repository doesn't exist in IUnitOfWork, need to add it or handle differently
         // For now, let's assume we need to get units from another source or the repository needs to be added
-        return new List<UniteProduitDto>();
+        return Task.FromResult<IEnumerable<UniteProduitDto>>(new List<UniteProduitDto>());
     }
 }

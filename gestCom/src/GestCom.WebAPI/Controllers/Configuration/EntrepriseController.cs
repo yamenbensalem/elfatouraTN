@@ -75,6 +75,8 @@ public class EntrepriseController : BaseApiController
     [ProducesResponseType(typeof(ParametresDecimalesDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ParametresDecimalesDto>> GetParametresDecimales()
     {
+        await Task.CompletedTask;
+
         // À implémenter via query
         var result = new ParametresDecimalesDto
         {
@@ -97,6 +99,8 @@ public class EntrepriseController : BaseApiController
     {
         // Dans une vraie implémentation, on ferait appel à un command MediatR.
         // Simulons la mise à jour pour le prototype.
+        await Task.CompletedTask;
+
         if (dto == null) return BadRequest("Données invalides");
         return Ok(dto);
     }
@@ -108,6 +112,8 @@ public class EntrepriseController : BaseApiController
     [ProducesResponseType(typeof(IEnumerable<SerieNumerotationDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<SerieNumerotationDto>>> GetNumerotation()
     {
+        await Task.CompletedTask;
+
         // À implémenter
         var result = new List<SerieNumerotationDto>
         {
@@ -133,6 +139,8 @@ public class EntrepriseController : BaseApiController
         string typeDocument, 
         [FromBody] UpdateSerieNumerotationDto dto)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         var result = new SerieNumerotationDto
         {

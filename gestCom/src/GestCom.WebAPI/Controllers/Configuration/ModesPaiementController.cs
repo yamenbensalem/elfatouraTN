@@ -50,6 +50,8 @@ public class ModesPaiementController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ModePayementDto>> Create([FromBody] CreateModePayementDto dto)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         var result = new ModePayementDto
         {
@@ -69,6 +71,8 @@ public class ModesPaiementController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ModePayementDto>> Update(string code, [FromBody] UpdateModePayementDto dto)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return NotFound($"Mode de paiement '{code}' non trouvé.");
     }
@@ -82,6 +86,8 @@ public class ModesPaiementController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Delete(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter - vérifier qu'il n'y a pas de règlements liés
         return NoContent();
     }

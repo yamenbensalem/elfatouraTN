@@ -21,7 +21,10 @@ public class GetFactureClientByNumeroQueryHandler : IRequestHandler<GetFactureCl
 
     public async Task<FactureClientDto?> Handle(GetFactureClientByNumeroQuery request, CancellationToken cancellationToken)
     {
-        var facture = await _unitOfWork.FacturesClient.GetByNumeroAsync(request.NumeroFacture, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var facture = await _unitOfWork.FacturesClient.GetByNumeroAsync(request.NumeroFacture, codeEntreprise);
         if (facture == null)
         {
             return null;

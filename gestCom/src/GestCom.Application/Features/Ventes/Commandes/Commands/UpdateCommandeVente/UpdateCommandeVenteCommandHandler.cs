@@ -24,7 +24,10 @@ public class UpdateCommandeVenteCommandHandler : IRequestHandler<UpdateCommandeV
 
     public async Task<CommandeVenteDto> Handle(UpdateCommandeVenteCommand request, CancellationToken cancellationToken)
     {
-        var commande = await _unitOfWork.CommandesVente.GetByNumeroAsync(request.NumeroCommande, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var commande = await _unitOfWork.CommandesVente.GetByNumeroAsync(request.NumeroCommande, codeEntreprise);
         if (commande == null)
         {
             throw new NotFoundException("CommandeVente", request.NumeroCommande);
@@ -36,7 +39,7 @@ public class UpdateCommandeVenteCommandHandler : IRequestHandler<UpdateCommandeV
         }
 
         // Verify client exists 
-        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         if (client == null)
         {
             throw new NotFoundException("Client", request.CodeClient);
@@ -67,7 +70,7 @@ public class UpdateCommandeVenteCommandHandler : IRequestHandler<UpdateCommandeV
 
         foreach (var ligneDto in request.Lignes)
         {
-            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, _currentUserService.CodeEntreprise);
+            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, codeEntreprise);
             if (produit == null)
             {
                 throw new NotFoundException("Produit", ligneDto.CodeProduit);
@@ -112,7 +115,7 @@ public class UpdateCommandeVenteCommandHandler : IRequestHandler<UpdateCommandeV
         await _unitOfWork.CommandesVente.UpdateAsync(commande);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var updatedCommande = await _unitOfWork.CommandesVente.GetByNumeroAsync(request.NumeroCommande, _currentUserService.CodeEntreprise);
+        var updatedCommande = await _unitOfWork.CommandesVente.GetByNumeroAsync(request.NumeroCommande, codeEntreprise);
         return _mapper.Map<CommandeVenteDto>(updatedCommande);
     }
 }

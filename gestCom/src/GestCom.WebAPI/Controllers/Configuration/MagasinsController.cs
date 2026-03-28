@@ -89,6 +89,8 @@ public class MagasinsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<MagasinProduitDto>> Update(string code, [FromBody] UpdateMagasinDto dto)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return NotFound($"Magasin '{code}' non trouvé.");
     }
@@ -102,6 +104,8 @@ public class MagasinsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Desactiver(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return Ok();
     }
@@ -115,6 +119,8 @@ public class MagasinsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DefinirDefaut(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return Ok();
     }
@@ -128,6 +134,8 @@ public class MagasinsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Delete(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter - vérifier qu'il n'y a pas de stock dans ce magasin
         return NoContent();
     }

@@ -64,6 +64,8 @@ public class TvaController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TvaProduitDto>> Update(string code, [FromBody] UpdateTvaProduitDto dto)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return NotFound($"Taux TVA '{code}' non trouvé.");
     }
@@ -77,6 +79,8 @@ public class TvaController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Delete(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter - vérifier qu'il n'y a pas de produits liés
         return NoContent();
     }

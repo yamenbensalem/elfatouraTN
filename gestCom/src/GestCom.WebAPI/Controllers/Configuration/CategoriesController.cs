@@ -64,6 +64,8 @@ public class CategoriesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CategorieProduitDto>> Update(string code, [FromBody] UpdateCategorieProduitDto dto)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return NotFound($"Catégorie '{code}' non trouvée.");
     }
@@ -77,6 +79,8 @@ public class CategoriesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Delete(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter - vérifier qu'il n'y a pas de produits liés
         return NoContent();
     }

@@ -19,6 +19,9 @@ public class GetChiffreAffairesQueryHandler : IRequestHandler<GetChiffreAffaires
 
     public async Task<ChiffreAffairesDto> Handle(GetChiffreAffairesQuery request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         var result = new ChiffreAffairesDto
         {
             DateDebut = request.DateDebut,
@@ -27,7 +30,7 @@ public class GetChiffreAffairesQueryHandler : IRequestHandler<GetChiffreAffaires
 
         // Récupérer les statistiques globales
         var chiffreAffaires = await _unitOfWork.FacturesClient.GetChiffreAffairesAsync(
-            _currentUserService.CodeEntreprise, 
+            codeEntreprise,
             request.DateDebut, 
             request.DateFin);
 
@@ -37,7 +40,7 @@ public class GetChiffreAffairesQueryHandler : IRequestHandler<GetChiffreAffaires
         if (request.IncludeParMois)
         {
             var statsParMois = await _unitOfWork.FacturesClient.GetChiffreAffairesParMoisAsync(
-                _currentUserService.CodeEntreprise,
+                codeEntreprise,
                 request.DateDebut,
                 request.DateFin);
 

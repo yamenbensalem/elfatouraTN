@@ -24,7 +24,8 @@ public class UpdateCommandeAchatCommandHandler : IRequestHandler<UpdateCommandeA
 
     public async Task<CommandeAchatDto> Handle(UpdateCommandeAchatCommand request, CancellationToken cancellationToken)
     {
-        var codeEntreprise = _currentUserService.CodeEntreprise;
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
 
         var commande = await _unitOfWork.CommandesAchat.GetByNumeroAsync(request.NumeroCommande, codeEntreprise);
         if (commande == null)

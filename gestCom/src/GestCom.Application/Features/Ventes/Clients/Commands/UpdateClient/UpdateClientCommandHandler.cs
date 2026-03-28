@@ -25,8 +25,11 @@ public class UpdateClientCommandHandler : IRequestHandler<UpdateClientCommand, C
 
     public async Task<ClientDto> Handle(UpdateClientCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Récupérer le client existant
-        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         if (client == null)
         {
             throw new NotFoundException($"Client avec le code '{request.CodeClient}' non trouvé.");
@@ -62,7 +65,7 @@ public class UpdateClientCommandHandler : IRequestHandler<UpdateClientCommand, C
         var clientDto = _mapper.Map<ClientDto>(client);
         clientDto.TotalCreances = await _unitOfWork.Clients.GetTotalCreancesAsync(
             request.CodeClient,
-            _currentUserService.CodeEntreprise
+            codeEntreprise
         );
 
         return clientDto;

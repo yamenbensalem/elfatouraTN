@@ -17,7 +17,10 @@ public class DeleteDevisClientCommandHandler : IRequestHandler<DeleteDevisClient
 
     public async Task<bool> Handle(DeleteDevisClientCommand request, CancellationToken cancellationToken)
     {
-        var devis = await _unitOfWork.DevisClients.GetByNumeroAsync(request.NumeroDevis, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var devis = await _unitOfWork.DevisClients.GetByNumeroAsync(request.NumeroDevis, codeEntreprise);
         if (devis == null)
         {
             throw new InvalidOperationException($"Devis '{request.NumeroDevis}' non trouvé.");

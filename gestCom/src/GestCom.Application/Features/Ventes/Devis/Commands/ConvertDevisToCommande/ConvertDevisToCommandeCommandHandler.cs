@@ -22,8 +22,11 @@ public class ConvertDevisToCommandeCommandHandler : IRequestHandler<ConvertDevis
 
     public async Task<CommandeVenteDto> Handle(ConvertDevisToCommandeCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Récupérer le devis
-        var devis = await _unitOfWork.DevisClients.GetByNumeroAsync(request.NumeroDevis, _currentUserService.CodeEntreprise);
+        var devis = await _unitOfWork.DevisClients.GetByNumeroAsync(request.NumeroDevis, codeEntreprise);
         if (devis == null)
         {
             throw new InvalidOperationException($"Devis '{request.NumeroDevis}' non trouvé.");

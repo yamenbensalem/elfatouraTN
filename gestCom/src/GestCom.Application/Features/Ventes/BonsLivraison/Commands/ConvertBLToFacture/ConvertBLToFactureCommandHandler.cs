@@ -22,6 +22,9 @@ public class ConvertBLToFactureCommandHandler : IRequestHandler<ConvertBLToFactu
 
     public async Task<FactureClientDto> Handle(ConvertBLToFactureCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         if (request.NumerosBonLivraison == null || !request.NumerosBonLivraison.Any())
         {
             throw new InvalidOperationException("Au moins un bon de livraison doit être spécifié.");
@@ -33,7 +36,7 @@ public class ConvertBLToFactureCommandHandler : IRequestHandler<ConvertBLToFactu
 
         foreach (var numeroBL in request.NumerosBonLivraison)
         {
-            var bl = await _unitOfWork.BonsLivraison.GetByNumeroAsync(numeroBL, _currentUserService.CodeEntreprise);
+            var bl = await _unitOfWork.BonsLivraison.GetByNumeroAsync(numeroBL, codeEntreprise);
             if (bl == null)
             {
                 throw new InvalidOperationException($"Bon de livraison '{numeroBL}' non trouvé.");
@@ -150,7 +153,7 @@ public class ConvertBLToFactureCommandHandler : IRequestHandler<ConvertBLToFactu
         facture.MontantTTC = facture.MontantHT + montantTVA + montantFodec;
 
         // Gérer la RAS si le client est soumis
-        var client = await _unitOfWork.Clients.GetByCodeAsync(codeClient!, _currentUserService.CodeEntreprise);
+        var client = await _unitOfWork.Clients.GetByCodeAsync(codeClient!, codeEntreprise);
         if (client?.SoumisRAS == true)
         {
             var retenue = await _unitOfWork.RetenuesSource.GetByCodeAsync(1);

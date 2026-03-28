@@ -29,15 +29,18 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
         await _unitOfWork.BeginTransactionAsync();
         try
         {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Vérifier que le client existe
-        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         if (client == null)
         {
             throw new NotFoundException("Client", request.CodeClient);
         }
 
         // Vérifier le crédit maximum
-        var totalCreances = await _unitOfWork.Clients.GetTotalCreancesAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var totalCreances = await _unitOfWork.Clients.GetTotalCreancesAsync(request.CodeClient, codeEntreprise);
         var estimatedTotal = request.Lignes.Sum(l => l.Quantite * l.PrixUnitaireHT * (1 + l.TauxTVA / 100));
         
         if (client.CreditMaximum > 0 && (totalCreances + estimatedTotal) > client.CreditMaximum)
@@ -46,12 +49,12 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
         }
 
         // Générer le numéro de facture
-        var numeroFacture = await _numeroService.GenererNumeroFactureClientAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
+        var numeroFacture = await _numeroService.GenererNumeroFactureClientAsync(codeEntreprise);
 
         // Créer la facture
         var facture = new FactureClient
         {
-            CodeEntreprise = _currentUserService.CodeEntreprise!,
+            CodeEntreprise = codeEntreprise,
             NumeroFacture = numeroFacture,
             DateFacture = request.DateFacture,
             DateEcheance = request.DateEcheance ?? request.DateFacture.AddDays(30),
@@ -78,7 +81,7 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
         foreach (var ligneDto in request.Lignes)
         {
             // Vérifier que le produit existe
-            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, _currentUserService.CodeEntreprise);
+            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, codeEntreprise);
             if (produit == null)
             {
                 throw new NotFoundException("Produit", ligneDto.CodeProduit);
@@ -146,7 +149,7 @@ public class CreateFactureClientCommandHandler : IRequestHandler<CreateFactureCl
         await _unitOfWork.CommitTransactionAsync();
 
         // Recharger avec les relations
-        var createdFacture = await _unitOfWork.FacturesClient.GetByNumeroAsync(numeroFacture, _currentUserService.CodeEntreprise);
+        var createdFacture = await _unitOfWork.FacturesClient.GetByNumeroAsync(numeroFacture, codeEntreprise);
         return _mapper.Map<FactureClientDto>(createdFacture);
         }
         catch

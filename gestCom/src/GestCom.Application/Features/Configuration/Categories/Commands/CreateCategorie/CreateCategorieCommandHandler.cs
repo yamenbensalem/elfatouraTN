@@ -22,13 +22,16 @@ public class CreateCategorieCommandHandler : IRequestHandler<CreateCategorieComm
 
     public async Task<CategorieProduitDto> Handle(CreateCategorieCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Vérifier l'unicité du code
         if (!int.TryParse(request.CodeCategorie, out var codeCategorie))
         {
             throw new InvalidOperationException($"Le code catégorie '{request.CodeCategorie}' doit être un entier valide.");
         }
         
-        var existing = await _unitOfWork.CategoriesProduit.GetByCodeAsync(codeCategorie, _currentUserService.CodeEntreprise);
+        var existing = await _unitOfWork.CategoriesProduit.GetByCodeAsync(codeCategorie, codeEntreprise);
         if (existing != null)
         {
             throw new InvalidOperationException($"Une catégorie avec le code '{request.CodeCategorie}' existe déjà.");
@@ -36,7 +39,7 @@ public class CreateCategorieCommandHandler : IRequestHandler<CreateCategorieComm
 
         var categorie = new CategorieProduit
         {
-            CodeEntreprise = _currentUserService.CodeEntreprise!,
+            CodeEntreprise = codeEntreprise,
             CodeCategorie = codeCategorie,
             Designation = request.LibelleCategorie ?? string.Empty,
             Description = request.Description,

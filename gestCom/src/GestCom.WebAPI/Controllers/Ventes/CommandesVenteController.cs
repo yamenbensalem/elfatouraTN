@@ -90,6 +90,8 @@ public class CommandesVenteController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> UpdateStatut(string numero, [FromBody] UpdateStatutRequest request)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return Ok(new { message = $"Statut de la commande {numero} mis à jour vers {request.Statut}" });
     }
@@ -104,6 +106,8 @@ public class CommandesVenteController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Annuler(string numero)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return Ok(new { message = $"Commande {numero} annulée" });
     }

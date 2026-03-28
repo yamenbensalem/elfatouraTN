@@ -21,8 +21,11 @@ public class DeleteClientCommandHandler : IRequestHandler<DeleteClientCommand, U
 
     public async Task<Unit> Handle(DeleteClientCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Récupérer le client
-        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         if (client == null)
         {
             throw new NotFoundException($"Client avec le code '{request.CodeClient}' non trouvé.");

@@ -24,6 +24,7 @@ public class ReglementsClientController : BaseApiController
         [FromQuery] DateTime? dateFin)
     {
         // À implémenter avec une Query dédiée
+        await Task.CompletedTask;
         return Ok(Array.Empty<ReglementFactureListDto>());
     }
 
@@ -36,6 +37,7 @@ public class ReglementsClientController : BaseApiController
     public async Task<ActionResult<ReglementFactureDto>> GetByNumero(string numero)
     {
         // À implémenter avec une Query dédiée
+        await Task.CompletedTask;
         return NotFound($"Règlement '{numero}' non trouvé.");
     }
 
@@ -47,6 +49,7 @@ public class ReglementsClientController : BaseApiController
     public async Task<ActionResult<IEnumerable<ReglementFactureDto>>> GetByFacture(string numeroFacture)
     {
         // À implémenter avec une Query dédiée
+        await Task.CompletedTask;
         return Ok(Array.Empty<ReglementFactureDto>());
     }
 
@@ -58,6 +61,7 @@ public class ReglementsClientController : BaseApiController
     public async Task<ActionResult<ResumeReglementsClientDto>> GetResumeClient(string codeClient)
     {
         // À implémenter avec une Query dédiée
+        await Task.CompletedTask;
         return Ok(new ResumeReglementsClientDto());
     }
 
@@ -85,6 +89,7 @@ public class ReglementsClientController : BaseApiController
     public async Task<ActionResult> Annuler(string numero)
     {
         // À implémenter - doit recalculer le montant réglé sur la facture
+        await Task.CompletedTask;
         return Ok(new { message = $"Règlement {numero} annulé" });
     }
 }

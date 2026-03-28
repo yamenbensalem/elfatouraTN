@@ -50,6 +50,8 @@ public class UnitesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<UniteProduitDto>> Create([FromBody] CreateUniteProduitDto dto)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         var result = new UniteProduitDto
         {
@@ -68,6 +70,8 @@ public class UnitesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Delete(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter - vérifier qu'il n'y a pas de produits liés
         return NoContent();
     }

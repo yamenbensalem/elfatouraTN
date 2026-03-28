@@ -29,17 +29,20 @@ public class CreateBonLivraisonCommandHandler : IRequestHandler<CreateBonLivrais
         await _unitOfWork.BeginTransactionAsync();
         try
         {
-        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         if (client == null)
         {
             throw new NotFoundException("Client", request.CodeClient);
         }
 
-        var numeroBL = await _numeroService.GenererNumeroBonLivraisonAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
+        var numeroBL = await _numeroService.GenererNumeroBonLivraisonAsync(codeEntreprise);
 
         var bonLivraison = new BonLivraison
         {
-            CodeEntreprise = _currentUserService.CodeEntreprise!,
+            CodeEntreprise = codeEntreprise,
             NumeroBonLivraison = numeroBL,
             DateBonLivraison = request.DateBonLivraison,
             CodeClient = request.CodeClient,
@@ -55,7 +58,7 @@ public class CreateBonLivraisonCommandHandler : IRequestHandler<CreateBonLivrais
 
         foreach (var ligneDto in request.Lignes)
         {
-            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, _currentUserService.CodeEntreprise);
+            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, codeEntreprise);
             if (produit == null)
             {
                 throw new NotFoundException("Produit", ligneDto.CodeProduit);
@@ -102,7 +105,7 @@ public class CreateBonLivraisonCommandHandler : IRequestHandler<CreateBonLivrais
         // Mettre à jour la commande si référencée
         if (!string.IsNullOrEmpty(request.NumeroCommande))
         {
-            var commande = await _unitOfWork.CommandesVente.GetByNumeroAsync(request.NumeroCommande, _currentUserService.CodeEntreprise);
+            var commande = await _unitOfWork.CommandesVente.GetByNumeroAsync(request.NumeroCommande, codeEntreprise);
             if (commande != null)
             {
                 commande.NumeroBonLivraison = numeroBL;
@@ -114,7 +117,7 @@ public class CreateBonLivraisonCommandHandler : IRequestHandler<CreateBonLivrais
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         await _unitOfWork.CommitTransactionAsync();
 
-        var createdBL = await _unitOfWork.BonsLivraison.GetByNumeroAsync(numeroBL, _currentUserService.CodeEntreprise);
+        var createdBL = await _unitOfWork.BonsLivraison.GetByNumeroAsync(numeroBL, codeEntreprise);
         return _mapper.Map<BonLivraisonDto>(createdBL);
         }
         catch

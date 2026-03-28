@@ -26,8 +26,11 @@ public class CreateClientCommandHandler : IRequestHandler<CreateClientCommand, C
 
     public async Task<ClientDto> Handle(CreateClientCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Vérifier si le client existe déjà
-        var existingClient = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var existingClient = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         if (existingClient != null)
         {
             throw new BusinessException($"Un client avec le code '{request.CodeClient}' existe déjà.");
@@ -35,7 +38,7 @@ public class CreateClientCommandHandler : IRequestHandler<CreateClientCommand, C
 
         // Créer l'entité
         var client = _mapper.Map<Client>(request);
-        client.CodeEntreprise = _currentUserService.CodeEntreprise!;
+        client.CodeEntreprise = codeEntreprise;
         client.Etat = "Actif";
         client.NombreTransactions = 0;
         client.DateCreation = DateTime.Now;

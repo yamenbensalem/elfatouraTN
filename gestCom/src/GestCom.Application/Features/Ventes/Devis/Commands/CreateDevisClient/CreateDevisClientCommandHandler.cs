@@ -25,20 +25,23 @@ public class CreateDevisClientCommandHandler : IRequestHandler<CreateDevisClient
 
     public async Task<DevisClientDto> Handle(CreateDevisClientCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Vérifier que le client existe
-        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, _currentUserService.CodeEntreprise);
+        var client = await _unitOfWork.Clients.GetByCodeAsync(request.CodeClient, codeEntreprise);
         if (client == null)
         {
             throw new NotFoundException("Client", request.CodeClient);
         }
 
         // Générer le numéro de devis
-        var numeroDevis = await _numeroService.GenererNumeroDevisAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
+        var numeroDevis = await _numeroService.GenererNumeroDevisAsync(codeEntreprise);
 
         // Créer le devis
         var devis = new DevisClient
         {
-            CodeEntreprise = _currentUserService.CodeEntreprise!,
+            CodeEntreprise = codeEntreprise,
             NumeroDevis = numeroDevis,
             DateDevis = request.DateDevis,
             DateValidite = request.DateValidite ?? request.DateDevis.AddDays(30),
@@ -58,7 +61,7 @@ public class CreateDevisClientCommandHandler : IRequestHandler<CreateDevisClient
 
         foreach (var ligneDto in request.Lignes)
         {
-            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, _currentUserService.CodeEntreprise);
+            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, codeEntreprise);
             if (produit == null)
             {
                 throw new NotFoundException("Produit", ligneDto.CodeProduit);
@@ -103,7 +106,7 @@ public class CreateDevisClientCommandHandler : IRequestHandler<CreateDevisClient
         await _unitOfWork.DevisClients.AddAsync(devis);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var createdDevis = await _unitOfWork.DevisClients.GetByNumeroAsync(numeroDevis, _currentUserService.CodeEntreprise);
+        var createdDevis = await _unitOfWork.DevisClients.GetByNumeroAsync(numeroDevis, codeEntreprise);
         return _mapper.Map<DevisClientDto>(createdDevis);
     }
 

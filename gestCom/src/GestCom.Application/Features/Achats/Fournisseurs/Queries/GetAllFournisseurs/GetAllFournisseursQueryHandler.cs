@@ -24,6 +24,9 @@ public class GetAllFournisseursQueryHandler : IRequestHandler<GetAllFournisseurs
 
     public async Task<PagedResult<FournisseurListDto>> Handle(GetAllFournisseursQuery request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         Expression<Func<Fournisseur, bool>>? filter = null;
         var filters = new List<Expression<Func<Fournisseur, bool>>>();
 
@@ -65,7 +68,7 @@ public class GetAllFournisseursQueryHandler : IRequestHandler<GetAllFournisseurs
         // Calculer les dettes pour chaque fournisseur
         foreach (var dto in dtos)
         {
-            dto.TotalDettes = await _unitOfWork.Fournisseurs.GetTotalDettesAsync(dto.CodeFournisseur, _currentUserService.CodeEntreprise);
+            dto.TotalDettes = await _unitOfWork.Fournisseurs.GetTotalDettesAsync(dto.CodeFournisseur, codeEntreprise);
         }
 
         // Filtrer par dettes si demandé

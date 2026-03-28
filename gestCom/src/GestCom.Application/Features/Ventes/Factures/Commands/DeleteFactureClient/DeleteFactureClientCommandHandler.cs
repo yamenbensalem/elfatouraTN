@@ -17,7 +17,10 @@ public class DeleteFactureClientCommandHandler : IRequestHandler<DeleteFactureCl
 
     public async Task<bool> Handle(DeleteFactureClientCommand request, CancellationToken cancellationToken)
     {
-        var facture = await _unitOfWork.FacturesClient.GetByNumeroAsync(request.NumeroFacture, _currentUserService.CodeEntreprise);
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
+        var facture = await _unitOfWork.FacturesClient.GetByNumeroAsync(request.NumeroFacture, codeEntreprise);
         if (facture == null)
         {
             throw new InvalidOperationException($"Facture '{request.NumeroFacture}' non trouvée.");
@@ -39,7 +42,7 @@ public class DeleteFactureClientCommandHandler : IRequestHandler<DeleteFactureCl
             {
                 foreach (var ligne in facture.Lignes)
                 {
-                    var produit = await _unitOfWork.Produits.GetByCodeAsync(ligne.CodeProduit, _currentUserService.CodeEntreprise);
+                    var produit = await _unitOfWork.Produits.GetByCodeAsync(ligne.CodeProduit, codeEntreprise);
                     if (produit != null)
                     {
                         produit.Quantite += ligne.Quantite; // Réincrémenter le stock

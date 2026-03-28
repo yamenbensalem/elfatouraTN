@@ -22,6 +22,8 @@ public class BonsReceptionController : BaseApiController
         [FromQuery] DateTime? dateDebut,
         [FromQuery] DateTime? dateFin)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return Ok(Array.Empty<BonReceptionListDto>());
     }
@@ -34,6 +36,8 @@ public class BonsReceptionController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<BonReceptionDto>> GetByNumero(string numero)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return NotFound($"Bon de réception '{numero}' non trouvé.");
     }
@@ -60,6 +64,8 @@ public class BonsReceptionController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(string numero, [FromQuery] bool restaurerStock = true)
     {
+        await Task.CompletedTask;
+
         // À implémenter - doit décrémenter le stock si restaurerStock = true
         return NoContent();
     }

@@ -31,6 +31,8 @@ public class FournisseursController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<FournisseurDto>> GetByCode(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return NotFound($"Fournisseur avec le code '{code}' non trouvé.");
     }
@@ -43,6 +45,8 @@ public class FournisseursController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetBalance(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return Ok(new 
         { 
@@ -74,6 +78,8 @@ public class FournisseursController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<FournisseurDto>> Update(string code, [FromBody] UpdateFournisseurDto dto)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return NotFound($"Fournisseur '{code}' non trouvé.");
     }
@@ -87,6 +93,8 @@ public class FournisseursController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(string code)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return NoContent();
     }

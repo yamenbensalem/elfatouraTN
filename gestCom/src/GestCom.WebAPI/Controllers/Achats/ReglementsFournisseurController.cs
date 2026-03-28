@@ -23,6 +23,8 @@ public class ReglementsFournisseurController : BaseApiController
         [FromQuery] DateTime? dateDebut,
         [FromQuery] DateTime? dateFin)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return Ok(Array.Empty<ReglementFournisseurListDto>());
     }
@@ -35,6 +37,8 @@ public class ReglementsFournisseurController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ReglementFournisseurDto>> GetByNumero(string numero)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return NotFound($"Règlement '{numero}' non trouvé.");
     }
@@ -46,6 +50,8 @@ public class ReglementsFournisseurController : BaseApiController
     [ProducesResponseType(typeof(IEnumerable<ReglementFournisseurDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ReglementFournisseurDto>>> GetByFacture(string numeroFacture)
     {
+        await Task.CompletedTask;
+
         // À implémenter avec une Query dédiée
         return Ok(Array.Empty<ReglementFournisseurDto>());
     }
@@ -73,6 +79,8 @@ public class ReglementsFournisseurController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Annuler(string numero)
     {
+        await Task.CompletedTask;
+
         // À implémenter
         return Ok(new { message = $"Règlement {numero} annulé" });
     }

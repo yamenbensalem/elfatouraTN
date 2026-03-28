@@ -24,20 +24,23 @@ public class CreateFactureFournisseurCommandHandler : IRequestHandler<CreateFact
 
     public async Task<FactureFournisseurDto> Handle(CreateFactureFournisseurCommand request, CancellationToken cancellationToken)
     {
+        var codeEntreprise = _currentUserService.CodeEntreprise
+            ?? throw new InvalidOperationException("Code entreprise introuvable pour l'utilisateur courant.");
+
         // Vérifier que le fournisseur existe
-        var fournisseur = await _unitOfWork.Fournisseurs.GetByCodeAsync(request.CodeFournisseur, _currentUserService.CodeEntreprise);
+        var fournisseur = await _unitOfWork.Fournisseurs.GetByCodeAsync(request.CodeFournisseur, codeEntreprise);
         if (fournisseur == null)
         {
             throw new InvalidOperationException($"Fournisseur avec le code '{request.CodeFournisseur}' non trouvé.");
         }
 
         // Générer le numéro de facture interne
-        var numeroFacture = await _numeroService.GenererNumeroFactureFournisseurAsync(_currentUserService.CodeEntreprise ?? "DEFAULT");
+        var numeroFacture = await _numeroService.GenererNumeroFactureFournisseurAsync(codeEntreprise);
 
         // Créer la facture
         var facture = new FactureFournisseur
         {
-            CodeEntreprise = _currentUserService.CodeEntreprise!,
+            CodeEntreprise = codeEntreprise,
             NumeroFacture = numeroFacture,
             DateFacture = request.DateFacture,
             DateEcheance = request.DateEcheance,
@@ -60,7 +63,7 @@ public class CreateFactureFournisseurCommandHandler : IRequestHandler<CreateFact
         foreach (var ligneDto in request.Lignes)
         {
             // Vérifier que le produit existe
-            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, _currentUserService.CodeEntreprise);
+            var produit = await _unitOfWork.Produits.GetByCodeAsync(ligneDto.CodeProduit, codeEntreprise);
             if (produit == null)
             {
                 throw new InvalidOperationException($"Produit avec le code '{ligneDto.CodeProduit}' non trouvé.");
