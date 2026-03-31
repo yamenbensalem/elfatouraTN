@@ -2,6 +2,7 @@
 
 <div class="print-company-header">
     <div>
+        <img src="@GetLogoPath()" alt="Logo entreprise" class="print-company-logo" onerror="this.style.display='none';" />
         @if (Entreprise is not null)
         {
             <div class="print-company-name">@Entreprise.NomEntreprise</div>
@@ -44,4 +45,21 @@
     [Parameter] public string Numero { get; set; } = string.Empty;
     [Parameter] public DateTime Date { get; set; }
     [Parameter] public string? Etat { get; set; }
+
+    private string GetLogoPath()
+    {
+        var raw = Entreprise?.PathLogo;
+
+        if (string.IsNullOrWhiteSpace(raw))
+            return "logoApp.png";
+
+        var path = raw.Trim();
+
+        if (path.StartsWith("~/", StringComparison.Ordinal))
+            path = path[2..];
+        if (path.StartsWith("./", StringComparison.Ordinal))
+            path = path[2..];
+
+        return path;
+    }
 }

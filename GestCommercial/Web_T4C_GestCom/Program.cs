@@ -264,6 +264,16 @@ using (var scope = app.Services.CreateScope())
             Actif  = true
         }, "admin123").GetAwaiter().GetResult();
     }
+
+    var seedMockData = app.Configuration.GetValue<bool>("MockData:Enabled") ||
+                       string.Equals(Environment.GetEnvironmentVariable("SEED_MOCK_DATA"), "true", StringComparison.OrdinalIgnoreCase) ||
+                       string.Equals(Environment.GetEnvironmentVariable("SEED_MOCK_DATA"), "1", StringComparison.OrdinalIgnoreCase);
+
+    if (seedMockData)
+    {
+        var mockLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("MockDataSeeder");
+        MockDataSeeder.Seed(db, mockLogger);
+    }
 }
 
 if (!app.Environment.IsDevelopment())

@@ -490,6 +490,15 @@ h1:focus { outline: none; }
     line-height: 1.5;
 }
 
+.print-company-logo {
+    max-width: 160px;
+    max-height: 52px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: 0.45rem;
+}
+
 .print-company-name {
     font-size: 1.35rem;
     font-weight: 800;
