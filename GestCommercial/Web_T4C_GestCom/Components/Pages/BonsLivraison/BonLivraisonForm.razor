@@ -1,6 +1,7 @@
 @page "/bons-livraison/nouveau"
 @page "/bons-livraison/{Numero}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:bons-livraison.view")]
 @inject IBonLivraisonService BonService
 @inject AppDbContext Db
 @inject NavigationManager Nav

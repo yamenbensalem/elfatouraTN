@@ -28,21 +28,31 @@
                 <NavLink class="sidebar-link sidebar-link-sub" href="clients">
                     <i class="bi bi-people sidebar-icon"></i> Clients
                 </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="devis">
-                    <i class="bi bi-file-earmark-text sidebar-icon"></i> Devis
-                </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="commandes-vente">
-                    <i class="bi bi-bag-check sidebar-icon"></i> Commandes Vente
-                </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="bons-livraison">
-                    <i class="bi bi-truck sidebar-icon"></i> Bons de Livraison
-                </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="factures-client">
-                    <i class="bi bi-receipt sidebar-icon"></i> Factures Client
-                </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="avoirs">
-                    <i class="bi bi-arrow-return-left sidebar-icon"></i> Avoirs
-                </NavLink>
+                <PermissionGuard Permission="devis.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="devis">
+                        <i class="bi bi-file-earmark-text sidebar-icon"></i> Devis
+                    </NavLink>
+                </PermissionGuard>
+                <PermissionGuard Permission="commandes-vente.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="commandes-vente">
+                        <i class="bi bi-bag-check sidebar-icon"></i> Commandes Vente
+                    </NavLink>
+                </PermissionGuard>
+                <PermissionGuard Permission="bons-livraison.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="bons-livraison">
+                        <i class="bi bi-truck sidebar-icon"></i> Bons de Livraison
+                    </NavLink>
+                </PermissionGuard>
+                <PermissionGuard Permission="factures.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="factures-client">
+                        <i class="bi bi-receipt sidebar-icon"></i> Factures Client
+                    </NavLink>
+                </PermissionGuard>
+                <PermissionGuard Permission="factures.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="avoirs">
+                        <i class="bi bi-arrow-return-left sidebar-icon"></i> Avoirs
+                    </NavLink>
+                </PermissionGuard>
             </div>
         </div>
     </div>
@@ -63,15 +73,21 @@
                 <NavLink class="sidebar-link sidebar-link-sub" href="fournisseurs">
                     <i class="bi bi-building sidebar-icon"></i> Fournisseurs
                 </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="commandes-achat">
-                    <i class="bi bi-bag sidebar-icon"></i> Commandes Achat
-                </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="bons-reception">
-                    <i class="bi bi-box-arrow-in-down sidebar-icon"></i> Bons de Réception
-                </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="factures-fournisseur">
-                    <i class="bi bi-receipt-cutoff sidebar-icon"></i> Factures Fournisseur
-                </NavLink>
+                <PermissionGuard Permission="commandes-achat.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="commandes-achat">
+                        <i class="bi bi-bag sidebar-icon"></i> Commandes Achat
+                    </NavLink>
+                </PermissionGuard>
+                <PermissionGuard Permission="bons-reception.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="bons-reception">
+                        <i class="bi bi-box-arrow-in-down sidebar-icon"></i> Bons de Réception
+                    </NavLink>
+                </PermissionGuard>
+                <PermissionGuard Permission="factures-fournisseur.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="factures-fournisseur">
+                        <i class="bi bi-receipt-cutoff sidebar-icon"></i> Factures Fournisseur
+                    </NavLink>
+                </PermissionGuard>
             </div>
         </div>
     </div>

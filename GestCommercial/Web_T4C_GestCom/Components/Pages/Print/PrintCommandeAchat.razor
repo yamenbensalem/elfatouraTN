@@ -1,6 +1,7 @@
 @page "/print/commande-achat/{Numero}"
 @layout PrintLayout
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:commandes-achat.view")]
 @inject AppDbContext Db
 @inject IJSRuntime JS
 

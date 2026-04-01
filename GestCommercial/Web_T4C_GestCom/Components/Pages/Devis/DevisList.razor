@@ -1,5 +1,6 @@
 @page "/devis"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:devis.view")]
 @inject IDevisClientService DevisService
 @inject NavigationManager Nav
 

@@ -1,6 +1,7 @@
 @page "/factures-fournisseur/nouveau"
 @page "/factures-fournisseur/{Numero}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:factures-fournisseur.view")]
 @inject IFactureFournisseurService FactureService
 @inject IFournisseurService FournisseurService
 @inject IProduitService ProduitService

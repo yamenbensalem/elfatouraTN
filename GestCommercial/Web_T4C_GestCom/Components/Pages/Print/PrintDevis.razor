@@ -1,6 +1,7 @@
 @page "/print/devis/{Numero}"
 @layout PrintLayout
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:devis.view")]
 @inject AppDbContext Db
 @inject IJSRuntime JS
 

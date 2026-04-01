@@ -1,6 +1,7 @@
 @page "/commandes-vente/nouveau"
 @page "/commandes-vente/{Numero}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:commandes-vente.view")]
 @inject ICommandeVenteService CommandeService
 @inject AppDbContext Db
 @inject NavigationManager Nav

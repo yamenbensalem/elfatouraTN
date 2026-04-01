@@ -1,6 +1,7 @@
 @page "/factures-client"
 @page "/avoirs"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:factures.view")]
 @inject IFactureClientService FactureService
 @inject NavigationManager Nav
 

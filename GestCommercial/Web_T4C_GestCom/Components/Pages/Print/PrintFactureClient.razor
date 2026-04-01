@@ -1,6 +1,7 @@
 @page "/print/facture-client/{Numero}"
 @layout PrintLayout
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:factures.view")]
 @inject AppDbContext Db
 @inject AppConfigService Config
 @inject IJSRuntime JS

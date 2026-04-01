@@ -4,10 +4,21 @@
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
             <NotAuthorized>
-                @{
-                    var returnUrl = NavigationManager.Uri;
-                    NavigationManager.NavigateTo($"/compte/connexion?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
-                }
+                <AuthorizeView>
+                    <Authorized Context="authorizedUser">
+                        <LayoutView Layout="typeof(Layout.MainLayout)">
+                            <div class="alert alert-danger m-3" role="alert">
+                                Acces refuse. Vous n'avez pas la permission requise pour cette page.
+                            </div>
+                        </LayoutView>
+                    </Authorized>
+                    <NotAuthorized Context="anonymousUser">
+                        @{
+                            var returnUrl = NavigationManager.Uri;
+                            NavigationManager.NavigateTo($"/compte/connexion?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+                        }
+                    </NotAuthorized>
+                </AuthorizeView>
             </NotAuthorized>
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />

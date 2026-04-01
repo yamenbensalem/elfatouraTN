@@ -3,6 +3,7 @@
 @page "/avoirs/nouveau"
 @page "/avoirs/{Numero}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:factures.view")]
 @inject IFactureClientService FactureService
 @inject AppDbContext Db
 @inject AppConfigService Config

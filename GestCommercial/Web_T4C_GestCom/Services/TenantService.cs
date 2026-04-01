@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Web_T4C_GestCom.Auth;
 using Web_T4C_GestCom.Services;
 
 namespace Web_T4C_GestCom.Services;
@@ -23,8 +24,7 @@ public class TenantService : ITenantService
     {
         get
         {
-            var v = User?.FindFirst("CompanyId")?.Value;
-            return v != null && int.TryParse(v, out var id) ? id : null;
+            return User.GetCompanyId();
         }
     }
 
@@ -32,8 +32,7 @@ public class TenantService : ITenantService
     {
         get
         {
-            var v = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            return v != null && int.TryParse(v, out var id) ? id : null;
+            return User.GetUserId();
         }
     }
 

@@ -1,5 +1,6 @@
 @page "/bons-reception"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:bons-reception.view")]
 @inject IBonReceptionService BonService
 @inject NavigationManager Nav
 

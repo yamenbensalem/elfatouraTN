@@ -1,5 +1,6 @@
 @page "/commandes-achat"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:commandes-achat.view")]
 @inject ICommandeAchatService CommandeService
 @inject NavigationManager Nav
 

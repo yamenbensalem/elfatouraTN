@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using Web_T4C_GestCom.Services;
 
 namespace Web_T4C_GestCom.Auth;
@@ -16,8 +15,8 @@ public class PermissionAuthorizationHandler
         AuthorizationHandlerContext context,
         PermissionRequirement requirement)
     {
-        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim is null || !int.TryParse(userIdClaim, out var userId))
+        var userId = context.User.GetUserId();
+        if (!userId.HasValue)
         {
             context.Fail();
             return;
@@ -30,7 +29,7 @@ public class PermissionAuthorizationHandler
             return;
         }
 
-        if (await _permissionService.HasPermissionAsync(userId, requirement.Permission))
+        if (await _permissionService.HasPermissionAsync(userId.Value, requirement.Permission))
             context.Succeed(requirement);
         else
             context.Fail();

@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Components.Authorization
+@using Web_T4C_GestCom.Auth
 @using Web_T4C_GestCom.Services
 @inject IPermissionService PermissionService
 
@@ -32,9 +33,16 @@ else if (Fallback is not null)
         // Admin role bypasses all permission checks
         if (user.IsInRole("Admin")) { _show = true; return; }
 
-        var userIdStr = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (userIdStr is null || !int.TryParse(userIdStr, out var userId)) return;
+        // Prefer claim-based checks injected by PermissionClaimsTransformation.
+        if (user.HasClaim("Permission", Permission))
+        {
+            _show = true;
+            return;
+        }
 
-        _show = await PermissionService.HasPermissionAsync(userId, Permission);
+        var userId = user.GetUserId();
+        if (!userId.HasValue) return;
+
+        _show = await PermissionService.HasPermissionAsync(userId.Value, Permission);
     }
 }

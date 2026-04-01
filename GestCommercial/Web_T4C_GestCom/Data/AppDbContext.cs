@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+using Web_T4C_GestCom.Auth;
 using Web_T4C_GestCom.Data.Models;
 
 namespace Web_T4C_GestCom.Data;
@@ -21,8 +21,7 @@ public class AppDbContext : DbContext
     {
         get
         {
-            var claim = _httpContextAccessor?.HttpContext?.User?.FindFirst("CompanyId");
-            return claim != null && int.TryParse(claim.Value, out var id) ? id : null;
+            return _httpContextAccessor?.HttpContext?.User.GetCompanyId();
         }
     }
 

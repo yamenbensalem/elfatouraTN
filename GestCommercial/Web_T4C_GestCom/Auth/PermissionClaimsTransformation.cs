@@ -22,11 +22,11 @@ public class PermissionClaimsTransformation : IClaimsTransformation
         if (principal.HasClaim(c => c.Type == PermissionClaimType))
             return principal;
 
-        var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (userIdClaim is null || !int.TryParse(userIdClaim, out var userId))
+        var userId = principal.GetUserId();
+        if (!userId.HasValue)
             return principal;
 
-        var permissions = await _permissionService.GetUserPermissionsAsync(userId);
+        var permissions = await _permissionService.GetUserPermissionsAsync(userId.Value);
 
         var clone = principal.Clone();
         var identity = (ClaimsIdentity)clone.Identity!;

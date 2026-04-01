@@ -1,6 +1,7 @@
 @page "/commandes-achat/nouveau"
 @page "/commandes-achat/{Numero}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:commandes-achat.view")]
 @inject ICommandeAchatService CommandeService
 @inject IFournisseurService FournisseurService
 @inject IProduitService ProduitService

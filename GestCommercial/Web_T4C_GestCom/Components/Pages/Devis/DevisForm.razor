@@ -1,6 +1,7 @@
 @page "/devis/nouveau"
 @page "/devis/{Numero}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:devis.view")]
 @inject IDevisClientService DevisService
 @inject AppDbContext Db
 @inject AppConfigService Config

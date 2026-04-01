@@ -1,6 +1,7 @@
 @page "/bons-reception/nouveau"
 @page "/bons-reception/{Numero}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:bons-reception.view")]
 @inject IBonReceptionService BonService
 @inject IFournisseurService FournisseurService
 @inject IProduitService ProduitService

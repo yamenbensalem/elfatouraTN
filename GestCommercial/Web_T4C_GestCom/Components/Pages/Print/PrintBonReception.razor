@@ -1,6 +1,7 @@
 @page "/print/bon-reception/{Numero}"
 @layout PrintLayout
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:bons-reception.view")]
 @inject AppDbContext Db
 @inject IJSRuntime JS
 
