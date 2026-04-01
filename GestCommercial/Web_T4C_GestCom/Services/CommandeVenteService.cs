@@ -14,7 +14,11 @@ public interface ICommandeVenteService
     Task<CommandeVente> CloneAsync(string numero);
 }
 
-public class CommandeVenteService(AppDbContext db, DocumentNumberService numService) : ICommandeVenteService
+public class CommandeVenteService(
+    AppDbContext db,
+    DocumentNumberService numService,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null) : ICommandeVenteService
 {
     public async Task<List<CommandeVente>> GetAllAsync(string? clientCode = null)
     {
@@ -36,6 +40,8 @@ public class CommandeVenteService(AppDbContext db, DocumentNumberService numServ
 
     public async Task<CommandeVente> CreateAsync(CommandeVente commande, List<LigneCommandeVente> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.create");
+
         commande.NumeroCommandeVente = await numService.NextCommandeVenteAsync();
         RecalculateTotals(commande, lignes);
 
@@ -52,6 +58,8 @@ public class CommandeVenteService(AppDbContext db, DocumentNumberService numServ
 
     public async Task UpdateAsync(CommandeVente commande, List<LigneCommandeVente> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.update");
+
         var oldLignes = await db.LignesCommandeVente
             .Where(l => l.NumeroCommandeVente == commande.NumeroCommandeVente)
             .ToListAsync();
@@ -72,6 +80,8 @@ public class CommandeVenteService(AppDbContext db, DocumentNumberService numServ
 
     public async Task DeleteAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.delete");
+
         var commande = await db.CommandesVente
             .Include(c => c.Lignes)
             .FirstOrDefaultAsync(c => c.NumeroCommandeVente == numero);
@@ -85,6 +95,8 @@ public class CommandeVenteService(AppDbContext db, DocumentNumberService numServ
 
     public async Task<CommandeVente> CloneAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.create");
+
         var source = await GetByNumeroAsync(numero);
         if (source is null) throw new InvalidOperationException($"Commande {numero} introuvable.");
 

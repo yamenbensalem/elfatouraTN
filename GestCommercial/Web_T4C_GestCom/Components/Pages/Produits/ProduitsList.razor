@@ -1,5 +1,6 @@
 @page "/produits"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:produits.view")]
 @inject IProduitService ProduitService
 @inject AppDbContext Db
 
@@ -7,9 +8,11 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Produits</h3>
-    <a href="produits/nouveau" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nouveau Produit
-    </a>
+    <PermissionGuard Permission="produits.create">
+        <a href="produits/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau Produit
+        </a>
+    </PermissionGuard>
 </div>
 
 <Notification @ref="_notif" />
@@ -61,12 +64,16 @@
                             <td>@p.UniteProduit?.NomUniteProduit</td>
                             <td>@p.TvaProduit?.TauxTvaProduit%</td>
                             <td class="text-end">
-                                <a href="produits/@p.CodeProduit" class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-pencil me-1"></i>Modifier
-                                </a>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(p)">
-                                    <i class="bi bi-trash me-1"></i>Supprimer
-                                </button>
+                                <PermissionGuard Permission="produits.update">
+                                    <a href="produits/@p.CodeProduit" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
+                                <PermissionGuard Permission="produits.delete">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(p)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
                             </td>
                         </tr>
                     }
@@ -116,9 +123,16 @@
     {
         _confirmVisible = false;
         if (_toDelete is null) return;
-        await ProduitService.DeleteAsync(_toDelete.CodeProduit);
-        _notif.ShowSuccess($"Produit {_toDelete.DesignationProduit} supprimé.");
-        _toDelete = null;
-        await LoadAsync();
+        try
+        {
+            await ProduitService.DeleteAsync(_toDelete.CodeProduit);
+            _notif.ShowSuccess($"Produit {_toDelete.DesignationProduit} supprimé.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
     }
 }

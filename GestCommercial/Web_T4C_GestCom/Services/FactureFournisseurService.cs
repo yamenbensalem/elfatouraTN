@@ -16,7 +16,12 @@ public interface IFactureFournisseurService
     Task<double> GetSoldeAsync(string numero);
 }
 
-public class FactureFournisseurService(AppDbContext db, DocumentNumberService numService, IJournalActiviteService journal)
+public class FactureFournisseurService(
+    AppDbContext db,
+    DocumentNumberService numService,
+    IJournalActiviteService journal,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null)
     : IFactureFournisseurService
 {
     public async Task<List<FactureFournisseur>> GetAllAsync()
@@ -34,6 +39,8 @@ public class FactureFournisseurService(AppDbContext db, DocumentNumberService nu
 
     public async Task<FactureFournisseur> CreateAsync(FactureFournisseur facture, List<LigneFactureFournisseur> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.create");
+
         facture.NumeroFactureFournisseur = await numService.NextFactureFournisseurAsync();
         RecalculateTotals(facture, lignes);
         facture.Lignes = lignes;
@@ -50,6 +57,8 @@ public class FactureFournisseurService(AppDbContext db, DocumentNumberService nu
 
     public async Task<FactureFournisseur> UpdateAsync(FactureFournisseur facture, List<LigneFactureFournisseur> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.update");
+
         var existing = await db.FacturesFournisseur
             .Include(f => f.Lignes)
             .FirstOrDefaultAsync(f => f.NumeroFactureFournisseur == facture.NumeroFactureFournisseur)
@@ -83,6 +92,8 @@ public class FactureFournisseurService(AppDbContext db, DocumentNumberService nu
 
     public async Task DeleteAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.delete");
+
         var facture = await db.FacturesFournisseur
             .Include(f => f.Lignes)
             .Include(f => f.Reglements)
@@ -102,6 +113,8 @@ public class FactureFournisseurService(AppDbContext db, DocumentNumberService nu
 
     public async Task<FactureFournisseur> CloneAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.create");
+
         var source = await GetByNumeroAsync(numero)
             ?? throw new InvalidOperationException("Facture fournisseur introuvable.");
 
@@ -141,6 +154,8 @@ public class FactureFournisseurService(AppDbContext db, DocumentNumberService nu
 
     public async Task AddReglementAsync(ReglementFactureFournisseur reglement)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.update");
+
         reglement.Id = 0;
         db.ReglementsFactureFournisseur.Add(reglement);
         await db.SaveChangesAsync();

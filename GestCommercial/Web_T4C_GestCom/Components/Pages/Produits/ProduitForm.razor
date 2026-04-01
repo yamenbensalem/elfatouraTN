@@ -1,6 +1,7 @@
 @page "/produits/nouveau"
 @page "/produits/{Code}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:produits.view")]
 @inject IProduitService ProduitService
 @inject AppDbContext Db
 @inject NavigationManager Nav
@@ -133,7 +134,9 @@
         </div>
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Enregistrer</button>
+            <PermissionGuard Permission="@(_isNew ? "produits.create" : "produits.update")">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Enregistrer</button>
+            </PermissionGuard>
             <a href="produits" class="btn btn-outline-secondary">Annuler</a>
         </div>
     </EditForm>

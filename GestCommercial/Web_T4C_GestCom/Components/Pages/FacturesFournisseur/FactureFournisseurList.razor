@@ -51,18 +51,22 @@
                                 <span class="badge @GetReglementBadge(f.EtatReglement)">@f.EtatReglement</span>
                             </td>
                             <td class="text-end">
-                                <a href="/factures-fournisseur/@f.NumeroFactureFournisseur"
-                                   class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-pencil me-1"></i>Modifier
-                                </a>
+                                <PermissionGuard Permission="factures-fournisseur.update">
+                                    <a href="/factures-fournisseur/@f.NumeroFactureFournisseur"
+                                       class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
                                 <button class="btn btn-sm btn-outline-info me-1"
                                         @onclick="() => CloneFacture(f.NumeroFactureFournisseur)">
                                     <i class="bi bi-copy me-1"></i>Cloner
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger"
-                                        @onclick="() => AskDelete(f)">
-                                    <i class="bi bi-trash me-1"></i>Supprimer
-                                </button>
+                                <PermissionGuard Permission="factures-fournisseur.delete">
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => AskDelete(f)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
                             </td>
                         </tr>
                     }

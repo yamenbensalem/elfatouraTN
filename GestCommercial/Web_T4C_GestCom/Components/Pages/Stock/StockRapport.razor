@@ -1,5 +1,6 @@
 @page "/stock"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:produits.view")]
 @inject IProduitService ProduitService
 @inject AppDbContext Db
 

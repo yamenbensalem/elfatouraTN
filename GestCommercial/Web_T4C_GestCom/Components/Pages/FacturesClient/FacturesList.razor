@@ -52,17 +52,21 @@
                                 <span class="badge @GetReglementBadge(f.EtatReglement)">@f.EtatReglement</span>
                             </td>
                             <td class="text-end">
-                                <a href="@(_isAvoir ? "avoirs" : "factures-client")/@f.NumeroFactureClient"
-                                   class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-pencil me-1"></i>Modifier
-                                </a>
+                                <PermissionGuard Permission="factures.update">
+                                    <a href="@(_isAvoir ? "avoirs" : "factures-client")/@f.NumeroFactureClient"
+                                       class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
                                 <button class="btn btn-sm btn-outline-info me-1"
                                         @onclick="() => CloneFacture(f.NumeroFactureClient)">
                                     <i class="bi bi-copy me-1"></i>Cloner
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(f)">
-                                    <i class="bi bi-trash me-1"></i>Supprimer
-                                </button>
+                                <PermissionGuard Permission="factures.delete">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(f)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
                             </td>
                         </tr>
                     }
@@ -124,10 +128,17 @@
     {
         _confirmVisible = false;
         if (_toDelete is null) return;
-        await FactureService.DeleteAsync(_toDelete.NumeroFactureClient);
-        _notif.ShowSuccess("Facture supprimée.");
-        _toDelete = null;
-        await LoadAsync();
+        try
+        {
+            await FactureService.DeleteAsync(_toDelete.NumeroFactureClient);
+            _notif.ShowSuccess("Facture supprimée.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
     }
 
     private static string GetReglementBadge(string etat) => etat switch

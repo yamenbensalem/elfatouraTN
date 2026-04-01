@@ -45,15 +45,19 @@
                             <td class="text-end fw-bold">@d.MontantTTC.ToString("0.###")</td>
                             <td><span class="badge bg-secondary">@d.EtatDevis</span></td>
                             <td class="text-end">
-                                <a href="devis/@d.NumeroDevis" class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-pencil me-1"></i>Modifier
-                                </a>
+                                <PermissionGuard Permission="devis.update">
+                                    <a href="devis/@d.NumeroDevis" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
                                 <button class="btn btn-sm btn-outline-info me-1" @onclick="() => CloneDevis(d.NumeroDevis)">
                                     <i class="bi bi-copy me-1"></i>Cloner
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(d)">
-                                    <i class="bi bi-trash me-1"></i>Supprimer
-                                </button>
+                                <PermissionGuard Permission="devis.delete">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(d)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
                             </td>
                         </tr>
                     }
@@ -110,9 +114,16 @@
     {
         _confirmVisible = false;
         if (_toDelete is null) return;
-        await DevisService.DeleteAsync(_toDelete.NumeroDevis);
-        _notif.ShowSuccess("Devis supprimé.");
-        _toDelete = null;
-        await LoadAsync();
+        try
+        {
+            await DevisService.DeleteAsync(_toDelete.NumeroDevis);
+            _notif.ShowSuccess("Devis supprimé.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
     }
 }

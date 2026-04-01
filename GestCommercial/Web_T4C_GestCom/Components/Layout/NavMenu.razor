@@ -25,9 +25,11 @@
         </button>
         <div id="nav-ventes" class="collapse show">
             <div class="sidebar-group-items">
-                <NavLink class="sidebar-link sidebar-link-sub" href="clients">
-                    <i class="bi bi-people sidebar-icon"></i> Clients
-                </NavLink>
+                <PermissionGuard Permission="clients.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="clients">
+                        <i class="bi bi-people sidebar-icon"></i> Clients
+                    </NavLink>
+                </PermissionGuard>
                 <PermissionGuard Permission="devis.view">
                     <NavLink class="sidebar-link sidebar-link-sub" href="devis">
                         <i class="bi bi-file-earmark-text sidebar-icon"></i> Devis
@@ -70,9 +72,11 @@
         </button>
         <div id="nav-achats" class="collapse show">
             <div class="sidebar-group-items">
-                <NavLink class="sidebar-link sidebar-link-sub" href="fournisseurs">
-                    <i class="bi bi-building sidebar-icon"></i> Fournisseurs
-                </NavLink>
+                <PermissionGuard Permission="fournisseurs.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="fournisseurs">
+                        <i class="bi bi-building sidebar-icon"></i> Fournisseurs
+                    </NavLink>
+                </PermissionGuard>
                 <PermissionGuard Permission="commandes-achat.view">
                     <NavLink class="sidebar-link sidebar-link-sub" href="commandes-achat">
                         <i class="bi bi-bag sidebar-icon"></i> Commandes Achat
@@ -105,12 +109,16 @@
         </button>
         <div id="nav-stock" class="collapse show">
             <div class="sidebar-group-items">
-                <NavLink class="sidebar-link sidebar-link-sub" href="produits">
-                    <i class="bi bi-boxes sidebar-icon"></i> Produits
-                </NavLink>
-                <NavLink class="sidebar-link sidebar-link-sub" href="stock">
-                    <i class="bi bi-bar-chart-line sidebar-icon"></i> État du Stock
-                </NavLink>
+                <PermissionGuard Permission="produits.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="produits">
+                        <i class="bi bi-boxes sidebar-icon"></i> Produits
+                    </NavLink>
+                </PermissionGuard>
+                <PermissionGuard Permission="produits.view">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="stock">
+                        <i class="bi bi-bar-chart-line sidebar-icon"></i> État du Stock
+                    </NavLink>
+                </PermissionGuard>
             </div>
         </div>
     </div>

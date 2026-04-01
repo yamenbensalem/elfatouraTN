@@ -14,7 +14,12 @@ public interface IBonReceptionService
     Task<BonReception> CloneAsync(string numero);
 }
 
-public class BonReceptionService(AppDbContext db, DocumentNumberService numService, IJournalActiviteService journal)
+public class BonReceptionService(
+    AppDbContext db,
+    DocumentNumberService numService,
+    IJournalActiviteService journal,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null)
     : IBonReceptionService
 {
     public async Task<List<BonReception>> GetAllAsync()
@@ -33,6 +38,8 @@ public class BonReceptionService(AppDbContext db, DocumentNumberService numServi
 
     public async Task<BonReception> CreateAsync(BonReception bon, List<LigneBonReception> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-reception.create");
+
         bon.NumeroBonReception = await numService.NextBonReceptionAsync();
         RecalculateTotals(bon, lignes);
         bon.Lignes = lignes;
@@ -49,6 +56,8 @@ public class BonReceptionService(AppDbContext db, DocumentNumberService numServi
 
     public async Task<BonReception> UpdateAsync(BonReception bon, List<LigneBonReception> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-reception.update");
+
         var existing = await db.BonsReception
             .Include(b => b.Lignes)
             .FirstOrDefaultAsync(b => b.NumeroBonReception == bon.NumeroBonReception)
@@ -83,6 +92,8 @@ public class BonReceptionService(AppDbContext db, DocumentNumberService numServi
 
     public async Task DeleteAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-reception.delete");
+
         var bon = await db.BonsReception
             .Include(b => b.Lignes)
             .FirstOrDefaultAsync(b => b.NumeroBonReception == numero)
@@ -100,6 +111,8 @@ public class BonReceptionService(AppDbContext db, DocumentNumberService numServi
 
     public async Task<BonReception> CloneAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-reception.create");
+
         var source = await GetByNumeroAsync(numero)
             ?? throw new InvalidOperationException("Bon de réception introuvable.");
 

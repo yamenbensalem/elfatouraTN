@@ -1,14 +1,17 @@
 @page "/fournisseurs"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:fournisseurs.view")]
 @inject IFournisseurService FournisseurService
 
 <PageTitle>Fournisseurs – T4C GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Fournisseurs</h3>
-    <a href="fournisseurs/nouveau" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nouveau Fournisseur
-    </a>
+    <PermissionGuard Permission="fournisseurs.create">
+        <a href="fournisseurs/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau Fournisseur
+        </a>
+    </PermissionGuard>
 </div>
 
 <Notification @ref="_notif" />
@@ -51,12 +54,16 @@
                                 </span>
                             </td>
                             <td class="text-end">
-                                <a href="fournisseurs/@f.CodeFournisseur" class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-pencil me-1"></i>Modifier
-                                </a>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(f)">
-                                    <i class="bi bi-trash me-1"></i>Supprimer
-                                </button>
+                                <PermissionGuard Permission="fournisseurs.update">
+                                    <a href="fournisseurs/@f.CodeFournisseur" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
+                                <PermissionGuard Permission="fournisseurs.delete">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(f)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
                             </td>
                         </tr>
                     }
@@ -100,9 +107,16 @@
     {
         _confirmVisible = false;
         if (_toDelete is null) return;
-        await FournisseurService.DeleteAsync(_toDelete.CodeFournisseur);
-        _notif.ShowSuccess($"Fournisseur {_toDelete.NomFournisseur} supprimé.");
-        _toDelete = null;
-        await LoadAsync();
+        try
+        {
+            await FournisseurService.DeleteAsync(_toDelete.CodeFournisseur);
+            _notif.ShowSuccess($"Fournisseur {_toDelete.NomFournisseur} supprimé.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
     }
 }

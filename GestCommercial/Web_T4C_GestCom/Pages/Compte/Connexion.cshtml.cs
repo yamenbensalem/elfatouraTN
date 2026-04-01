@@ -38,7 +38,7 @@ public class ConnexionModel(IUtilisateurService utilisateurService) : PageModel
         {
             new(ClaimTypes.Name,      user.Login),
             new(ClaimTypes.GivenName, user.NomComplet),
-            new(ClaimTypes.Role,      user.Role),
+            new(ClaimTypes.Role,      RoleNameMapper.NormalizeKnownRoleName(user.Role)),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new("UserId",             user.Id.ToString())
         };

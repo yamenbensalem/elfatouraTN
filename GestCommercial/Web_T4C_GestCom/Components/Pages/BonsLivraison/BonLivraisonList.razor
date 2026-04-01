@@ -49,15 +49,19 @@
                             <td><span class="badge bg-secondary">@b.EtatBonLivraison</span></td>
                             <td><span class="badge @GetFactureBadge(b.EtatFacture)">@b.EtatFacture</span></td>
                             <td class="text-end">
-                                <a href="bons-livraison/@b.NumeroBonLivraison" class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-pencil me-1"></i>Modifier
-                                </a>
+                                <PermissionGuard Permission="bons-livraison.update">
+                                    <a href="bons-livraison/@b.NumeroBonLivraison" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
                                 <button class="btn btn-sm btn-outline-info me-1" @onclick="() => CloneBon(b.NumeroBonLivraison)">
                                     <i class="bi bi-copy me-1"></i>Cloner
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(b)">
-                                    <i class="bi bi-trash me-1"></i>Supprimer
-                                </button>
+                                <PermissionGuard Permission="bons-livraison.delete">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(b)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
                             </td>
                         </tr>
                     }

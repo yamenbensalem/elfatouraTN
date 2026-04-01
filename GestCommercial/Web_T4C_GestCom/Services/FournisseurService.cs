@@ -13,7 +13,11 @@ public interface IFournisseurService
     Task DeleteAsync(string code);
 }
 
-public class FournisseurService(AppDbContext db, IJournalActiviteService journal) : IFournisseurService
+public class FournisseurService(
+    AppDbContext db,
+    IJournalActiviteService journal,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null) : IFournisseurService
 {
     public async Task<List<Fournisseur>> GetAllAsync(string? search = null)
     {
@@ -33,6 +37,8 @@ public class FournisseurService(AppDbContext db, IJournalActiviteService journal
 
     public async Task<string> AddAsync(Fournisseur fournisseur)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "fournisseurs.create");
+
         if (string.IsNullOrWhiteSpace(fournisseur.CodeFournisseur))
         {
             var count = await db.Fournisseurs.CountAsync();
@@ -46,6 +52,8 @@ public class FournisseurService(AppDbContext db, IJournalActiviteService journal
 
     public async Task UpdateAsync(Fournisseur fournisseur)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "fournisseurs.update");
+
         db.Fournisseurs.Update(fournisseur);
         await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Modification", "Fournisseur", fournisseur.CodeFournisseur, fournisseur.NomFournisseur);
@@ -53,6 +61,8 @@ public class FournisseurService(AppDbContext db, IJournalActiviteService journal
 
     public async Task DeleteAsync(string code)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "fournisseurs.delete");
+
         var f = await db.Fournisseurs.FindAsync(code);
         if (f is not null)
         {

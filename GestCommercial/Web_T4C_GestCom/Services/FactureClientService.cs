@@ -16,7 +16,13 @@ public interface IFactureClientService
     Task<FactureClient> CloneAsync(string numero, bool isAvoir = false);
 }
 
-public class FactureClientService(AppDbContext db, DocumentNumberService numService, IProduitService produitService, IJournalActiviteService journal) : IFactureClientService
+public class FactureClientService(
+    AppDbContext db,
+    DocumentNumberService numService,
+    IProduitService produitService,
+    IJournalActiviteService journal,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null) : IFactureClientService
 {
     public async Task<List<FactureClient>> GetAllAsync(bool avoirsOnly = false, string? clientCode = null)
     {
@@ -41,6 +47,8 @@ public class FactureClientService(AppDbContext db, DocumentNumberService numServ
 
     public async Task<FactureClient> CreateAsync(FactureClient facture, List<LigneFactureClient> lignes, AppConfigService config)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.create");
+
         facture.NumeroFactureClient = await numService.NextFactureClientAsync();
         facture.Timbre = config.TimbreFiscal;
         RecalculateTotals(facture, lignes, config);
@@ -61,6 +69,8 @@ public class FactureClientService(AppDbContext db, DocumentNumberService numServ
 
     public async Task UpdateAsync(FactureClient facture, List<LigneFactureClient> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.update");
+
         // Restore stock from old lines before replacing
         var oldLignes = await db.LignesFactureClient
             .Where(l => l.NumeroFactureClient == facture.NumeroFactureClient)
@@ -85,6 +95,8 @@ public class FactureClientService(AppDbContext db, DocumentNumberService numServ
 
     public async Task DeleteAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.delete");
+
         var facture = await db.FacturesClient
             .Include(f => f.Lignes)
             .Include(f => f.Reglements)
@@ -105,6 +117,8 @@ public class FactureClientService(AppDbContext db, DocumentNumberService numServ
 
     public async Task AddReglementAsync(ReglementFactureClient reglement)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.update");
+
         db.ReglementsFactureClient.Add(reglement);
         await db.SaveChangesAsync();
         await UpdateEtatReglementAsync(reglement.NumeroFactureClient);
@@ -123,6 +137,8 @@ public class FactureClientService(AppDbContext db, DocumentNumberService numServ
 
     public async Task<FactureClient> CloneAsync(string numero, bool isAvoir = false)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.create");
+
         var source = await db.FacturesClient
             .Include(f => f.Lignes)
             .FirstOrDefaultAsync(f => f.NumeroFactureClient == numero);

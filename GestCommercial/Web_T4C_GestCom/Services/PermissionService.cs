@@ -38,6 +38,25 @@ public class PermissionService : IPermissionService
             .Distinct()
             .ToListAsync();
 
+        if (perms.Count == 0)
+        {
+            var legacyRole = await db.Utilisateurs
+                .Where(u => u.Id == userId)
+                .Select(u => u.Role)
+                .FirstOrDefaultAsync();
+
+            if (!string.IsNullOrWhiteSpace(legacyRole))
+            {
+                var normalizedRole = RoleNameMapper.NormalizeKnownRoleName(legacyRole);
+                perms = await db.AppRoles
+                    .Where(r => r.Name == normalizedRole)
+                    .SelectMany(r => r.RolePermissions)
+                    .Select(rp => rp.Permission!.Feature + "." + rp.Permission.Action)
+                    .Distinct()
+                    .ToListAsync();
+            }
+        }
+
         _cache.Set(key, (IEnumerable<string>)perms, CacheTtl);
         return perms;
     }

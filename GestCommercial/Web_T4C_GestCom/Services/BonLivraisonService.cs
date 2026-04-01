@@ -14,7 +14,13 @@ public interface IBonLivraisonService
     Task<BonLivraison> CloneAsync(string numero);
 }
 
-public class BonLivraisonService(AppDbContext db, DocumentNumberService numService, IProduitService produitService, IJournalActiviteService journal) : IBonLivraisonService
+public class BonLivraisonService(
+    AppDbContext db,
+    DocumentNumberService numService,
+    IProduitService produitService,
+    IJournalActiviteService journal,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null) : IBonLivraisonService
 {
     public async Task<List<BonLivraison>> GetAllAsync(string? clientCode = null)
     {
@@ -37,6 +43,8 @@ public class BonLivraisonService(AppDbContext db, DocumentNumberService numServi
 
     public async Task<BonLivraison> CreateAsync(BonLivraison bon, List<LigneBonLivraison> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-livraison.create");
+
         bon.NumeroBonLivraison = await numService.NextBonLivraisonAsync();
         RecalculateTotals(bon, lignes);
 
@@ -55,6 +63,8 @@ public class BonLivraisonService(AppDbContext db, DocumentNumberService numServi
 
     public async Task UpdateAsync(BonLivraison bon, List<LigneBonLivraison> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-livraison.update");
+
         var oldLignes = await db.LignesBonLivraison
             .Where(l => l.NumeroBonLivraison == bon.NumeroBonLivraison)
             .ToListAsync();
@@ -80,6 +90,8 @@ public class BonLivraisonService(AppDbContext db, DocumentNumberService numServi
 
     public async Task DeleteAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-livraison.delete");
+
         var bon = await db.BonsLivraison
             .Include(b => b.Lignes)
             .FirstOrDefaultAsync(b => b.NumeroBonLivraison == numero);
@@ -97,6 +109,8 @@ public class BonLivraisonService(AppDbContext db, DocumentNumberService numServi
 
     public async Task<BonLivraison> CloneAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-livraison.create");
+
         var source = await GetByNumeroAsync(numero);
         if (source is null) throw new InvalidOperationException($"Bon de livraison {numero} introuvable.");
 

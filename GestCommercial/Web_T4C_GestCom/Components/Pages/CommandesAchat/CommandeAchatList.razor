@@ -49,18 +49,22 @@
                                 <span class="badge @GetReceptionBadge(c.EtatReception)">@c.EtatReception</span>
                             </td>
                             <td class="text-end">
-                                <a href="/commandes-achat/@c.NumeroCommandeAchat"
-                                   class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-pencil me-1"></i>Modifier
-                                </a>
+                                <PermissionGuard Permission="commandes-achat.update">
+                                    <a href="/commandes-achat/@c.NumeroCommandeAchat"
+                                       class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
                                 <button class="btn btn-sm btn-outline-info me-1"
                                         @onclick="() => CloneCommande(c.NumeroCommandeAchat)">
                                     <i class="bi bi-copy me-1"></i>Cloner
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger"
-                                        @onclick="() => AskDelete(c)">
-                                    <i class="bi bi-trash me-1"></i>Supprimer
-                                </button>
+                                <PermissionGuard Permission="commandes-achat.delete">
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => AskDelete(c)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
                             </td>
                         </tr>
                     }

@@ -107,8 +107,16 @@ else
     private HashSet<int>      _granted     = [];
 
     private static readonly string[] _modules = [
-        "factures", "devis", "commandes-vente", "bons-livraison",
-        "commandes-achat", "bons-reception", "factures-fournisseur"
+        "clients",
+        "factures",
+        "devis",
+        "commandes-vente",
+        "bons-livraison",
+        "fournisseurs",
+        "commandes-achat",
+        "bons-reception",
+        "factures-fournisseur",
+        "produits"
     ];
     private static readonly string[] _actions = ["view", "create", "update", "delete"];
 
@@ -153,10 +161,17 @@ else
 
         await db.SaveChangesAsync();
 
-        // Invalidate cache for all users carrying this role
+        // Invalidate cache for all users carrying this role, including legacy string-based role mapping.
+        var normalizedRoleName = RoleNameMapper.NormalizeKnownRoleName(_selectedRole.Name);
         var affectedUsers = await db.UserRoles
             .Where(ur => ur.RoleId == _selectedRole.Id)
             .Select(ur => ur.UserId)
+            .Union(
+                db.Utilisateurs
+                    .Where(u => u.Role == _selectedRole.Name || u.Role == normalizedRoleName)
+                    .Select(u => u.Id)
+            )
+            .Distinct()
             .ToListAsync();
         foreach (var uid in affectedUsers)
             PermissionService.InvalidateUser(uid);
@@ -166,13 +181,16 @@ else
 
     private static string ModuleLabel(string module) => module switch
     {
+        "clients"               => "Clients",
         "factures"              => "Factures clients",
         "devis"                 => "Devis",
         "commandes-vente"       => "Commandes vente",
         "bons-livraison"        => "Bons de livraison",
+        "fournisseurs"          => "Fournisseurs",
         "commandes-achat"       => "Commandes achat",
         "bons-reception"        => "Bons de réception",
         "factures-fournisseur"  => "Factures fournisseur",
+        "produits"              => "Produits",
         _                       => module
     };
 }

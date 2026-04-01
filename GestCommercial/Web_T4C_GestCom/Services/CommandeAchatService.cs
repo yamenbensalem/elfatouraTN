@@ -14,7 +14,11 @@ public interface ICommandeAchatService
     Task<CommandeAchat> CloneAsync(string numero);
 }
 
-public class CommandeAchatService(AppDbContext db, DocumentNumberService numService)
+public class CommandeAchatService(
+    AppDbContext db,
+    DocumentNumberService numService,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null)
     : ICommandeAchatService
 {
     public async Task<List<CommandeAchat>> GetAllAsync()
@@ -31,6 +35,8 @@ public class CommandeAchatService(AppDbContext db, DocumentNumberService numServ
 
     public async Task<CommandeAchat> CreateAsync(CommandeAchat commande, List<LigneCommandeAchat> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-achat.create");
+
         commande.NumeroCommandeAchat = await numService.NextCommandeAchatAsync();
         RecalculateTotals(commande, lignes);
         commande.Lignes = lignes;
@@ -41,6 +47,8 @@ public class CommandeAchatService(AppDbContext db, DocumentNumberService numServ
 
     public async Task<CommandeAchat> UpdateAsync(CommandeAchat commande, List<LigneCommandeAchat> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-achat.update");
+
         var existing = await db.CommandesAchat
             .Include(c => c.Lignes)
             .FirstOrDefaultAsync(c => c.NumeroCommandeAchat == commande.NumeroCommandeAchat)
@@ -64,6 +72,8 @@ public class CommandeAchatService(AppDbContext db, DocumentNumberService numServ
 
     public async Task DeleteAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-achat.delete");
+
         var commande = await db.CommandesAchat
             .Include(c => c.Lignes)
             .FirstOrDefaultAsync(c => c.NumeroCommandeAchat == numero)
@@ -76,6 +86,8 @@ public class CommandeAchatService(AppDbContext db, DocumentNumberService numServ
 
     public async Task<CommandeAchat> CloneAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-achat.create");
+
         var source = await GetByNumeroAsync(numero)
             ?? throw new InvalidOperationException("Commande introuvable.");
 

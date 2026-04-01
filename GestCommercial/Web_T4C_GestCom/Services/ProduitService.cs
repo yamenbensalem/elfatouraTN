@@ -15,7 +15,11 @@ public interface IProduitService
     Task<List<Produit>> GetStockAlerteAsync();
 }
 
-public class ProduitService(AppDbContext db, IJournalActiviteService journal) : IProduitService
+public class ProduitService(
+    AppDbContext db,
+    IJournalActiviteService journal,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null) : IProduitService
 {
     public async Task<List<Produit>> GetAllAsync(string? search = null, int? categorieCode = null)
     {
@@ -48,6 +52,8 @@ public class ProduitService(AppDbContext db, IJournalActiviteService journal) : 
 
     public async Task<string> AddAsync(Produit produit)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "produits.create");
+
         if (string.IsNullOrWhiteSpace(produit.CodeProduit))
         {
             var count = await db.Produits.CountAsync();
@@ -61,6 +67,8 @@ public class ProduitService(AppDbContext db, IJournalActiviteService journal) : 
 
     public async Task UpdateAsync(Produit produit)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "produits.update");
+
         db.Produits.Update(produit);
         await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Modification", "Produit", produit.CodeProduit, produit.DesignationProduit);
@@ -68,6 +76,8 @@ public class ProduitService(AppDbContext db, IJournalActiviteService journal) : 
 
     public async Task DeleteAsync(string code)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "produits.delete");
+
         var produit = await db.Produits.FindAsync(code);
         if (produit is not null)
         {

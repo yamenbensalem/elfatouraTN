@@ -14,7 +14,11 @@ public interface IClientService
     Task<bool> ExistsAsync(string code);
 }
 
-public class ClientService(AppDbContext db, IJournalActiviteService journal) : IClientService
+public class ClientService(
+    AppDbContext db,
+    IJournalActiviteService journal,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null) : IClientService
 {
     public async Task<List<Client>> GetAllAsync(string? search = null)
     {
@@ -35,6 +39,8 @@ public class ClientService(AppDbContext db, IJournalActiviteService journal) : I
 
     public async Task<string> AddAsync(Client client)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "clients.create");
+
         // Auto-generate code if empty
         if (string.IsNullOrWhiteSpace(client.CodeClient))
         {
@@ -49,6 +55,8 @@ public class ClientService(AppDbContext db, IJournalActiviteService journal) : I
 
     public async Task UpdateAsync(Client client)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "clients.update");
+
         db.Clients.Update(client);
         await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Modification", "Client", client.CodeClient, client.NomClient);
@@ -56,6 +64,8 @@ public class ClientService(AppDbContext db, IJournalActiviteService journal) : I
 
     public async Task DeleteAsync(string code)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "clients.delete");
+
         var client = await db.Clients.FindAsync(code);
         if (client is not null)
         {

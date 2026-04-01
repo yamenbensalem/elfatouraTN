@@ -1,6 +1,7 @@
 @page "/fournisseurs/nouveau"
 @page "/fournisseurs/{Code}"
 @rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:fournisseurs.view")]
 @inject IFournisseurService FournisseurService
 @inject NavigationManager Nav
 @inject AppDbContext Db
@@ -117,9 +118,11 @@
         </div>
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-save"></i> Enregistrer
-            </button>
+            <PermissionGuard Permission="@(_isNew ? "fournisseurs.create" : "fournisseurs.update")">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Enregistrer
+                </button>
+            </PermissionGuard>
             <a href="fournisseurs" class="btn btn-outline-secondary">Annuler</a>
         </div>
     </EditForm>

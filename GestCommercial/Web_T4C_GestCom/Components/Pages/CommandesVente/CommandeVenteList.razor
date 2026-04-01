@@ -47,15 +47,19 @@
                             <td><span class="badge bg-secondary">@c.EtatCommandeVente</span></td>
                             <td><span class="badge @GetLivraisonBadge(c.EtatLivraison)">@c.EtatLivraison</span></td>
                             <td class="text-end">
-                                <a href="commandes-vente/@c.NumeroCommandeVente" class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="bi bi-pencil me-1"></i>Modifier
-                                </a>
+                                <PermissionGuard Permission="commandes-vente.update">
+                                    <a href="commandes-vente/@c.NumeroCommandeVente" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
                                 <button class="btn btn-sm btn-outline-info me-1" @onclick="() => CloneCommande(c.NumeroCommandeVente)">
                                     <i class="bi bi-copy me-1"></i>Cloner
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(c)">
-                                    <i class="bi bi-trash me-1"></i>Supprimer
-                                </button>
+                                <PermissionGuard Permission="commandes-vente.delete">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(c)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
                             </td>
                         </tr>
                     }
@@ -112,10 +116,17 @@
     {
         _confirmVisible = false;
         if (_toDelete is null) return;
-        await CommandeService.DeleteAsync(_toDelete.NumeroCommandeVente);
-        _notif.ShowSuccess("Commande supprimée.");
-        _toDelete = null;
-        await LoadAsync();
+        try
+        {
+            await CommandeService.DeleteAsync(_toDelete.NumeroCommandeVente);
+            _notif.ShowSuccess("Commande supprimée.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
     }
 
     private static string GetLivraisonBadge(string etat) => etat switch

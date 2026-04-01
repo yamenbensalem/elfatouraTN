@@ -199,7 +199,7 @@ using (var scope = app.Services.CreateScope())
             VALUES ('Entreprise Défaut', 'default', 'Standard')
         """);
 
-    // Permissions (7 modules × 4 actions = 28) — seeded as one batch with IDENTITY_INSERT
+    // Permissions (document modules) — seeded as one batch with IDENTITY_INSERT
     db.Database.ExecuteSqlRaw("""
         IF NOT EXISTS (SELECT 1 FROM permission WHERE id_permission = 1)
         BEGIN
@@ -215,6 +215,23 @@ using (var scope = app.Services.CreateScope())
         END
         """);
 
+    // Ensure master-data permissions exist (clients, fournisseurs, produits)
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO permission (feature_permission, action_permission)
+        SELECT v.feature_permission, v.action_permission
+        FROM (VALUES
+            ('clients','view'),('clients','create'),('clients','update'),('clients','delete'),
+            ('fournisseurs','view'),('fournisseurs','create'),('fournisseurs','update'),('fournisseurs','delete'),
+            ('produits','view'),('produits','create'),('produits','update'),('produits','delete')
+        ) AS v(feature_permission, action_permission)
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM permission p
+            WHERE p.feature_permission = v.feature_permission
+              AND p.action_permission = v.action_permission
+        )
+        """);
+
     // System roles
     db.Database.ExecuteSqlRaw("""
         IF NOT EXISTS (SELECT 1 FROM app_role WHERE id_role = 1)
@@ -227,7 +244,7 @@ using (var scope = app.Services.CreateScope())
         END
         """);
 
-    // RolePermissions: Admin=all 28, Manager=view+create+update per module, Employé=view only
+    // RolePermissions: Admin=all document permissions, Manager=view+create+update, Employé=view only
     for (int i = 1; i <= 28; i++)
         db.Database.ExecuteSqlRaw($"""
             IF NOT EXISTS (SELECT 1 FROM role_permission WHERE role_id=1 AND permission_id={i})
@@ -250,6 +267,45 @@ using (var scope = app.Services.CreateScope())
                 INSERT INTO role_permission (role_id, permission_id) VALUES (3, {pid})
             """);
     }
+
+    // Default grants for master-data modules (clients, fournisseurs, produits)
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO role_permission (role_id, permission_id)
+        SELECT 1, p.id_permission
+        FROM permission p
+        WHERE p.feature_permission IN ('clients', 'fournisseurs', 'produits')
+          AND NOT EXISTS (
+              SELECT 1
+              FROM role_permission rp
+              WHERE rp.role_id = 1 AND rp.permission_id = p.id_permission
+          )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO role_permission (role_id, permission_id)
+        SELECT 2, p.id_permission
+        FROM permission p
+        WHERE p.feature_permission IN ('clients', 'fournisseurs', 'produits')
+          AND p.action_permission IN ('view', 'create', 'update')
+          AND NOT EXISTS (
+              SELECT 1
+              FROM role_permission rp
+              WHERE rp.role_id = 2 AND rp.permission_id = p.id_permission
+          )
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO role_permission (role_id, permission_id)
+        SELECT 3, p.id_permission
+        FROM permission p
+        WHERE p.feature_permission IN ('clients', 'fournisseurs', 'produits')
+          AND p.action_permission = 'view'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM role_permission rp
+              WHERE rp.role_id = 3 AND rp.permission_id = p.id_permission
+          )
+        """);
 
     // Seed: créer admin par défaut si aucun utilisateur n'existe
     if (!db.Utilisateurs.Any())
@@ -274,6 +330,10 @@ using (var scope = app.Services.CreateScope())
         var mockLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("MockDataSeeder");
         MockDataSeeder.Seed(db, mockLogger);
     }
+
+    // Backfill/sync legacy role_utilisateur values into user_role mapping table.
+    var roleSyncService = scope.ServiceProvider.GetRequiredService<IUtilisateurService>();
+    roleSyncService.SynchronizeLegacyRolesAsync().GetAwaiter().GetResult();
 }
 
 if (!app.Environment.IsDevelopment())

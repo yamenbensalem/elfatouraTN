@@ -14,7 +14,11 @@ public interface IDevisClientService
     Task<DevisClient> CloneAsync(string numero);
 }
 
-public class DevisClientService(AppDbContext db, DocumentNumberService numService) : IDevisClientService
+public class DevisClientService(
+    AppDbContext db,
+    DocumentNumberService numService,
+    ICurrentUserService? currentUser = null,
+    IPermissionService? permissionService = null) : IDevisClientService
 {
     public async Task<List<DevisClient>> GetAllAsync(string? clientCode = null)
     {
@@ -36,6 +40,8 @@ public class DevisClientService(AppDbContext db, DocumentNumberService numServic
 
     public async Task<DevisClient> CreateAsync(DevisClient devis, List<LigneDevisClient> lignes, AppConfigService config)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "devis.create");
+
         devis.NumeroDevis = await numService.NextDevisAsync();
         devis.Timbre = config.TimbreFiscal;
         RecalculateTotals(devis, lignes);
@@ -53,6 +59,8 @@ public class DevisClientService(AppDbContext db, DocumentNumberService numServic
 
     public async Task UpdateAsync(DevisClient devis, List<LigneDevisClient> lignes)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "devis.update");
+
         var oldLignes = await db.LignesDevisClient
             .Where(l => l.NumeroDevis == devis.NumeroDevis)
             .ToListAsync();
@@ -73,6 +81,8 @@ public class DevisClientService(AppDbContext db, DocumentNumberService numServic
 
     public async Task DeleteAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "devis.delete");
+
         var devis = await db.DevisClient
             .Include(d => d.Lignes)
             .FirstOrDefaultAsync(d => d.NumeroDevis == numero);
@@ -86,6 +96,8 @@ public class DevisClientService(AppDbContext db, DocumentNumberService numServic
 
     public async Task<DevisClient> CloneAsync(string numero)
     {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "devis.create");
+
         var source = await GetByNumeroAsync(numero);
         if (source is null) throw new InvalidOperationException($"Devis {numero} introuvable.");
 
