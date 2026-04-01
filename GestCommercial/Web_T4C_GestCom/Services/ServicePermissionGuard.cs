@@ -15,6 +15,8 @@ internal static class ServicePermissionGuard
         if (currentUser is null || permissionService is null)
             return;
 
+        await currentUser.EnsureInitializedAsync();
+
         if (currentUser.IsAdmin)
             return;
 

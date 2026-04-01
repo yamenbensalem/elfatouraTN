@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
 
@@ -59,14 +60,36 @@
 
     protected override async Task OnInitializedAsync()
     {
+        AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        SyncCurrentUser(state);
+    }
+
+    private void OnAuthenticationStateChanged(Task<AuthenticationState> authStateTask)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            var state = await authStateTask;
+            SyncCurrentUser(state);
+            StateHasChanged();
+        });
+    }
+
+    private void SyncCurrentUser(AuthenticationState state)
+    {
         if (state.User.Identity?.IsAuthenticated == true)
         {
             var login = state.User.Identity.Name ?? "système";
             var role  = state.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Employé";
             CurrentUserService.SetCurrentUser(login, role);
+            return;
         }
+
+        CurrentUserService.Clear();
     }
 
     private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+
+    public void Dispose()
+        => AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
 }
