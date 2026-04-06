@@ -140,7 +140,7 @@
             || message.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase)
             || message.Contains("DELETE statement conflicted", StringComparison.OrdinalIgnoreCase))
         {
-            return "Ce fournisseur ne peut pas etre supprime car il est lie a des factures ou d'autres documents. Supprimez d'abord les documents lies, puis reessayez.";
+            return "Ce fournisseur ne peut pas etre supprime car il est lie a des factures, commandes ou bons de reception. Supprimez d'abord les documents lies, puis reessayez.";
         }
 
         return $"Erreur : {message}";

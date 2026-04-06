@@ -156,7 +156,7 @@
             || message.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase)
             || message.Contains("DELETE statement conflicted", StringComparison.OrdinalIgnoreCase))
         {
-            return "Ce produit ne peut pas etre supprime car il est lie a des lignes de documents. Supprimez d'abord les documents lies, puis reessayez.";
+            return "Ce produit ne peut pas etre supprime car il est utilise dans des lignes de devis, commandes, bons ou factures. Supprimez d'abord les documents lies, puis reessayez.";
         }
 
         return $"Erreur : {message}";
