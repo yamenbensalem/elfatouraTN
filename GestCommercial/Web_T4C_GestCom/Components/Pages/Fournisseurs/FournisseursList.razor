@@ -84,6 +84,11 @@
                OnConfirm="DeleteConfirmed"
                OnCancel="() => _confirmVisible = false" />
 
+<ErrorDialog Title="@_errorTitle"
+             Message="@_errorMessage"
+             Visible="_errorVisible"
+             OnClose="CloseErrorDialog" />
+
 @code {
     private List<Fournisseur> _fournisseurs = [];
     private bool _loading = true;
@@ -91,6 +96,9 @@
     private bool _confirmVisible;
     private Fournisseur? _toDelete;
     private Notification _notif = default!;
+    private bool _errorVisible;
+    private string _errorTitle = "Erreur";
+    private string _errorMessage = "Une erreur est survenue.";
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -116,7 +124,40 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError($"Erreur : {ex.Message}");
+            _errorTitle = "Suppression impossible";
+            _errorMessage = BuildDeleteErrorMessage(ex);
+            _errorVisible = true;
         }
+    }
+
+    private void CloseErrorDialog() => _errorVisible = false;
+
+    private static string BuildDeleteErrorMessage(Exception ex)
+    {
+        var message = FlattenExceptionMessages(ex);
+
+        if (message.Contains("REFERENCE constraint", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("DELETE statement conflicted", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Ce fournisseur ne peut pas etre supprime car il est lie a des factures ou d'autres documents. Supprimez d'abord les documents lies, puis reessayez.";
+        }
+
+        return $"Erreur : {message}";
+    }
+
+    private static string FlattenExceptionMessages(Exception ex)
+    {
+        var messages = new List<string>();
+        var current = ex;
+
+        while (current is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(current.Message))
+                messages.Add(current.Message.Trim());
+            current = current.InnerException;
+        }
+
+        return string.Join(" -> ", messages);
     }
 }
