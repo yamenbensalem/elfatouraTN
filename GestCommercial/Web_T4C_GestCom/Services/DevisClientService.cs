@@ -61,20 +61,38 @@ public class DevisClientService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "devis.update");
 
+        var existing = await db.DevisClient
+            .FirstOrDefaultAsync(d => d.NumeroDevis == devis.NumeroDevis)
+            ?? throw new InvalidOperationException("Devis introuvable.");
+
         var oldLignes = await db.LignesDevisClient
             .Where(l => l.NumeroDevis == devis.NumeroDevis)
             .ToListAsync();
 
         db.LignesDevisClient.RemoveRange(oldLignes);
-        RecalculateTotals(devis, lignes);
+        await db.SaveChangesAsync();
 
-        db.DevisClient.Update(devis);
-        foreach (var ligne in lignes)
+        existing.DateDevis = devis.DateDevis;
+        existing.CodeClient = devis.CodeClient;
+        existing.Remise = devis.Remise;
+        existing.Timbre = devis.Timbre;
+        existing.Note = devis.Note;
+        existing.EtatDevis = devis.EtatDevis;
+
+        var nouvellesLignes = lignes.Select(l => new LigneDevisClient
         {
-            ligne.Id = 0;
-            ligne.NumeroDevis = devis.NumeroDevis;
-            db.LignesDevisClient.Add(ligne);
-        }
+            NumeroDevis = existing.NumeroDevis,
+            CodeProduit = l.CodeProduit,
+            Quantite = l.Quantite,
+            PrixUnitaire = l.PrixUnitaire,
+            Remise = l.Remise,
+            Tva = l.Tva,
+            MontantHT = l.MontantHT
+        }).ToList();
+
+        RecalculateTotals(existing, nouvellesLignes);
+
+        db.LignesDevisClient.AddRange(nouvellesLignes);
 
         await db.SaveChangesAsync();
     }

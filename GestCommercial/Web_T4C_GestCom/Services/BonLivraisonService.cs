@@ -65,6 +65,10 @@ public class BonLivraisonService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-livraison.update");
 
+        var existing = await db.BonsLivraison
+            .FirstOrDefaultAsync(b => b.NumeroBonLivraison == bon.NumeroBonLivraison)
+            ?? throw new InvalidOperationException("Bon de livraison introuvable.");
+
         var oldLignes = await db.LignesBonLivraison
             .Where(l => l.NumeroBonLivraison == bon.NumeroBonLivraison)
             .ToListAsync();
@@ -73,19 +77,37 @@ public class BonLivraisonService(
             await produitService.UpdateStockAsync(old.CodeProduit, old.Quantite);
 
         db.LignesBonLivraison.RemoveRange(oldLignes);
-        RecalculateTotals(bon, lignes);
+        await db.SaveChangesAsync();
 
-        db.BonsLivraison.Update(bon);
-        foreach (var ligne in lignes)
+        existing.DateBonLivraison = bon.DateBonLivraison;
+        existing.CodeClient = bon.CodeClient;
+        existing.NumeroCommandeVente = bon.NumeroCommandeVente;
+        existing.Remise = bon.Remise;
+        existing.Note = bon.Note;
+        existing.EtatBonLivraison = bon.EtatBonLivraison;
+        existing.EtatFacture = bon.EtatFacture;
+
+        var nouvellesLignes = lignes.Select(l => new LigneBonLivraison
         {
-            ligne.Id = 0;
-            ligne.NumeroBonLivraison = bon.NumeroBonLivraison;
+            NumeroBonLivraison = existing.NumeroBonLivraison,
+            CodeProduit = l.CodeProduit,
+            Quantite = l.Quantite,
+            PrixUnitaire = l.PrixUnitaire,
+            Remise = l.Remise,
+            Tva = l.Tva,
+            MontantHT = l.MontantHT
+        }).ToList();
+
+        RecalculateTotals(existing, nouvellesLignes);
+
+        foreach (var ligne in nouvellesLignes)
+        {
             db.LignesBonLivraison.Add(ligne);
             await produitService.UpdateStockAsync(ligne.CodeProduit, -ligne.Quantite);
         }
 
         await db.SaveChangesAsync();
-        await journal.EnregistrerAsync("Modification", "BonLivraison", bon.NumeroBonLivraison, bon.CodeClient);
+        await journal.EnregistrerAsync("Modification", "BonLivraison", existing.NumeroBonLivraison, existing.CodeClient);
     }
 
     public async Task DeleteAsync(string numero)

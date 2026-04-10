@@ -60,20 +60,38 @@ public class CommandeVenteService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.update");
 
+        var existing = await db.CommandesVente
+            .FirstOrDefaultAsync(c => c.NumeroCommandeVente == commande.NumeroCommandeVente)
+            ?? throw new InvalidOperationException("Commande introuvable.");
+
         var oldLignes = await db.LignesCommandeVente
             .Where(l => l.NumeroCommandeVente == commande.NumeroCommandeVente)
             .ToListAsync();
 
         db.LignesCommandeVente.RemoveRange(oldLignes);
-        RecalculateTotals(commande, lignes);
+        await db.SaveChangesAsync();
 
-        db.CommandesVente.Update(commande);
-        foreach (var ligne in lignes)
+        existing.DateCommandeVente = commande.DateCommandeVente;
+        existing.CodeClient = commande.CodeClient;
+        existing.Remise = commande.Remise;
+        existing.EtatCommandeVente = commande.EtatCommandeVente;
+        existing.EtatLivraison = commande.EtatLivraison;
+        existing.Note = commande.Note;
+
+        var nouvellesLignes = lignes.Select(l => new LigneCommandeVente
         {
-            ligne.Id = 0;
-            ligne.NumeroCommandeVente = commande.NumeroCommandeVente;
-            db.LignesCommandeVente.Add(ligne);
-        }
+            NumeroCommandeVente = existing.NumeroCommandeVente,
+            CodeProduit = l.CodeProduit,
+            Quantite = l.Quantite,
+            PrixUnitaire = l.PrixUnitaire,
+            Remise = l.Remise,
+            Tva = l.Tva,
+            MontantHT = l.MontantHT
+        }).ToList();
+
+        RecalculateTotals(existing, nouvellesLignes);
+
+        db.LignesCommandeVente.AddRange(nouvellesLignes);
 
         await db.SaveChangesAsync();
     }

@@ -71,6 +71,10 @@ public class FactureClientService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.update");
 
+        var existing = await db.FacturesClient
+            .FirstOrDefaultAsync(f => f.NumeroFactureClient == facture.NumeroFactureClient)
+            ?? throw new InvalidOperationException("Facture introuvable.");
+
         // Restore stock from old lines before replacing
         var oldLignes = await db.LignesFactureClient
             .Where(l => l.NumeroFactureClient == facture.NumeroFactureClient)
@@ -80,17 +84,41 @@ public class FactureClientService(
             await produitService.UpdateStockAsync(old.CodeProduit, old.Quantite);
 
         db.LignesFactureClient.RemoveRange(oldLignes);
+        await db.SaveChangesAsync();
 
-        db.FacturesClient.Update(facture);
-        foreach (var ligne in lignes)
+        existing.DateFactureClient = facture.DateFactureClient;
+        existing.CodeClient = facture.CodeClient;
+        existing.Remise = facture.Remise;
+        existing.Timbre = facture.Timbre;
+        existing.Note = facture.Note;
+        existing.EtatFacture = facture.EtatFacture;
+        existing.EtatReglement = facture.EtatReglement;
+        existing.IsAvoir = facture.IsAvoir;
+        existing.MontantHT = facture.MontantHT;
+        existing.Fodec = facture.Fodec;
+        existing.MontantTVA = facture.MontantTVA;
+        existing.MontantTTC = facture.MontantTTC;
+
+        var nouvellesLignes = lignes.Select(l => new LigneFactureClient
         {
-            ligne.NumeroFactureClient = facture.NumeroFactureClient;
+            NumeroFactureClient = existing.NumeroFactureClient,
+            CodeProduit = l.CodeProduit,
+            Quantite = l.Quantite,
+            PrixUnitaire = l.PrixUnitaire,
+            Remise = l.Remise,
+            Tva = l.Tva,
+            Fodec = l.Fodec,
+            MontantHT = l.MontantHT
+        }).ToList();
+
+        foreach (var ligne in nouvellesLignes)
+        {
             db.LignesFactureClient.Add(ligne);
             await produitService.UpdateStockAsync(ligne.CodeProduit, -ligne.Quantite);
         }
 
         await db.SaveChangesAsync();
-        await journal.EnregistrerAsync("Modification", "FactureClient", facture.NumeroFactureClient, facture.CodeClient);
+        await journal.EnregistrerAsync("Modification", "FactureClient", existing.NumeroFactureClient, existing.CodeClient);
     }
 
     public async Task DeleteAsync(string numero)
