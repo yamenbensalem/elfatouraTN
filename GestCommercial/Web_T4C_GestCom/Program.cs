@@ -294,18 +294,36 @@ using (var scope = app.Services.CreateScope())
           )
         """);
 
-    db.Database.ExecuteSqlRaw("""
-        INSERT INTO role_permission (role_id, permission_id)
-        SELECT 3, p.id_permission
-        FROM permission p
-        WHERE p.feature_permission IN ('clients', 'fournisseurs', 'produits')
-          AND p.action_permission = 'view'
-          AND NOT EXISTS (
-              SELECT 1
-              FROM role_permission rp
-              WHERE rp.role_id = 3 AND rp.permission_id = p.id_permission
-          )
-        """);
+        db.Database.ExecuteSqlRaw("""
+                INSERT INTO role_permission (role_id, permission_id)
+                SELECT 3, p.id_permission
+                FROM permission p
+                WHERE (
+                        (
+                            p.feature_permission = 'clients'
+                            AND p.action_permission IN ('view', 'create')
+                        )
+                        OR (
+                            p.feature_permission IN ('fournisseurs', 'produits')
+                            AND p.action_permission = 'view'
+                        )
+                      )
+                    AND NOT EXISTS (
+                            SELECT 1
+                            FROM role_permission rp
+                            WHERE rp.role_id = 3 AND rp.permission_id = p.id_permission
+                    )
+                """);
+
+        // Enforce employee policy on clients: create allowed, update/delete denied.
+        db.Database.ExecuteSqlRaw("""
+                DELETE rp
+                FROM role_permission rp
+                INNER JOIN permission p ON p.id_permission = rp.permission_id
+                WHERE rp.role_id = 3
+                    AND p.feature_permission = 'clients'
+                    AND p.action_permission IN ('update', 'delete')
+                """);
 
     // Seed: créer admin par défaut si aucun utilisateur n'existe
     if (!db.Utilisateurs.Any())
