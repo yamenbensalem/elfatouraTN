@@ -21,18 +21,19 @@
             </span>
             <div class="topbar-user">
                 <div class="topbar-avatar">
-                    @(CurrentUserService.Login.Length > 0
-                        ? CurrentUserService.Login[0].ToString().ToUpper()
-                        : "U")
+                    @DisplayInitial
                 </div>
-                <span class="topbar-username d-none d-sm-block">@CurrentUserService.Login</span>
-                <span class="badge @(CurrentUserService.Role switch {
-                    "Admin"   => "bg-danger",
-                    "Manager" => "bg-warning text-dark",
-                    _         => "bg-secondary"
-                }) d-none d-md-inline" style="font-size:0.65rem">
-                    @CurrentUserService.Role
-                </span>
+                <span class="topbar-username d-none d-sm-block">@DisplayLogin</span>
+                @if (!string.IsNullOrWhiteSpace(DisplayRole))
+                {
+                    <span class="badge @(DisplayRole switch {
+                        "Admin"   => "bg-danger",
+                        "Manager" => "bg-warning text-dark",
+                        _         => "bg-secondary"
+                    }) d-none d-md-inline" style="font-size:0.65rem">
+                        @DisplayRole
+                    </span>
+                }
             </div>
         </div>
     </header>
@@ -79,14 +80,27 @@
     {
         if (state.User.Identity?.IsAuthenticated == true)
         {
-            var login = state.User.Identity.Name ?? "système";
-            var role  = state.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Employé";
+            var login = state.User.Identity.Name ?? "utilisateur";
+            var role  = state.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? RoleNameMapper.Employe;
             CurrentUserService.SetCurrentUser(login, role);
             return;
         }
 
         CurrentUserService.Clear();
     }
+
+    private string DisplayLogin
+        => CurrentUserService.IsAuthenticated && !string.IsNullOrWhiteSpace(CurrentUserService.Login)
+            ? CurrentUserService.Login
+            : "Invité";
+
+    private string DisplayRole
+        => CurrentUserService.IsAuthenticated ? CurrentUserService.Role : string.Empty;
+
+    private string DisplayInitial
+        => string.IsNullOrWhiteSpace(DisplayLogin)
+            ? "U"
+            : DisplayLogin[0].ToString().ToUpperInvariant();
 
     private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 

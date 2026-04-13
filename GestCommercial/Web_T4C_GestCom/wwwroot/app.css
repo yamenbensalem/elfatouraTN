@@ -241,25 +241,41 @@ html, body {
     margin-bottom: 0.125rem;
 }
 
+.sidebar-group-items-wrap[hidden] {
+    display: none !important;
+}
+
 .sidebar-group-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 0.45rem 1rem 0.45rem 1.25rem;
-    background: none;
+    padding: 0.55rem 0.9rem 0.55rem 1rem;
+    margin: 0 0.5rem;
+    background: transparent;
     border: none;
+    border-radius: 0.45rem;
     cursor: pointer;
-    color: #6c757d;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    transition: color 0.15s;
+    color: #4b5563;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: background 0.15s, color 0.15s;
 }
 
 .sidebar-group-header:hover {
+    background: #f5f8ff;
     color: var(--primary);
+}
+
+.sidebar-group-header:focus-visible {
+    outline: 2px solid rgba(45, 107, 196, 0.45);
+    outline-offset: 1px;
+}
+
+.sidebar-group-header[aria-expanded="true"] {
+    color: var(--primary);
+    background: #eef4ff;
 }
 
 .sidebar-group-title {

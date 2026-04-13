@@ -1,4 +1,6 @@
 @inject ICurrentUserService CurrentUserService
+@inject NavigationManager NavManager
+@implements IDisposable
 
 <div class="sidebar-inner">
 
@@ -15,15 +17,15 @@
     <!-- ── VENTES ────────────────────────────── -->
     <div class="sidebar-group">
         <button class="sidebar-group-header" type="button"
-                data-bs-toggle="collapse" data-bs-target="#nav-ventes"
-                aria-expanded="true" aria-controls="nav-ventes">
+                @onclick="ToggleVentes"
+                aria-expanded="@_ventesOpen" aria-controls="nav-ventes">
             <div class="sidebar-group-title">
                 <i class="bi bi-cart3 sidebar-icon"></i>
                 <span>Ventes</span>
             </div>
             <i class="bi bi-chevron-down sidebar-chevron"></i>
         </button>
-        <div id="nav-ventes" class="collapse show">
+        <div id="nav-ventes" class="sidebar-group-items-wrap" hidden="@(!_ventesOpen)">
             <div class="sidebar-group-items">
                 <PermissionGuard Permission="clients.view">
                     <NavLink class="sidebar-link sidebar-link-sub" href="clients">
@@ -62,15 +64,15 @@
     <!-- ── ACHATS ─────────────────────────────── -->
     <div class="sidebar-group">
         <button class="sidebar-group-header" type="button"
-                data-bs-toggle="collapse" data-bs-target="#nav-achats"
-                aria-expanded="true" aria-controls="nav-achats">
+                @onclick="ToggleAchats"
+                aria-expanded="@_achatsOpen" aria-controls="nav-achats">
             <div class="sidebar-group-title">
                 <i class="bi bi-building sidebar-icon"></i>
                 <span>Achats</span>
             </div>
             <i class="bi bi-chevron-down sidebar-chevron"></i>
         </button>
-        <div id="nav-achats" class="collapse show">
+        <div id="nav-achats" class="sidebar-group-items-wrap" hidden="@(!_achatsOpen)">
             <div class="sidebar-group-items">
                 <PermissionGuard Permission="fournisseurs.view">
                     <NavLink class="sidebar-link sidebar-link-sub" href="fournisseurs">
@@ -99,15 +101,15 @@
     <!-- ── STOCK ──────────────────────────────── -->
     <div class="sidebar-group">
         <button class="sidebar-group-header" type="button"
-                data-bs-toggle="collapse" data-bs-target="#nav-stock"
-                aria-expanded="true" aria-controls="nav-stock">
+                @onclick="ToggleStock"
+                aria-expanded="@_stockOpen" aria-controls="nav-stock">
             <div class="sidebar-group-title">
                 <i class="bi bi-boxes sidebar-icon"></i>
                 <span>Stock</span>
             </div>
             <i class="bi bi-chevron-down sidebar-chevron"></i>
         </button>
-        <div id="nav-stock" class="collapse show">
+        <div id="nav-stock" class="sidebar-group-items-wrap" hidden="@(!_stockOpen)">
             <div class="sidebar-group-items">
                 <PermissionGuard Permission="produits.view">
                     <NavLink class="sidebar-link sidebar-link-sub" href="produits">
@@ -126,15 +128,15 @@
     <!-- ── PARAMÈTRES ─────────────────────────── -->
     <div class="sidebar-group">
         <button class="sidebar-group-header" type="button"
-                data-bs-toggle="collapse" data-bs-target="#nav-params"
-                aria-expanded="true" aria-controls="nav-params">
+                @onclick="ToggleParams"
+                aria-expanded="@_paramsOpen" aria-controls="nav-params">
             <div class="sidebar-group-title">
                 <i class="bi bi-gear sidebar-icon"></i>
                 <span>Paramètres</span>
             </div>
             <i class="bi bi-chevron-down sidebar-chevron"></i>
         </button>
-        <div id="nav-params" class="collapse show">
+        <div id="nav-params" class="sidebar-group-items-wrap" hidden="@(!_paramsOpen)">
             <div class="sidebar-group-items">
                 <NavLink class="sidebar-link sidebar-link-sub" href="entreprise">
                     <i class="bi bi-building-gear sidebar-icon"></i> Entreprise
@@ -148,15 +150,15 @@
     {
         <div class="sidebar-group">
             <button class="sidebar-group-header" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#nav-admin"
-                    aria-expanded="true" aria-controls="nav-admin">
+                    @onclick="ToggleAdmin"
+                    aria-expanded="@_adminOpen" aria-controls="nav-admin">
                 <div class="sidebar-group-title">
                     <i class="bi bi-shield-lock sidebar-icon"></i>
                     <span>Administration</span>
                 </div>
                 <i class="bi bi-chevron-down sidebar-chevron"></i>
             </button>
-            <div id="nav-admin" class="collapse show">
+            <div id="nav-admin" class="sidebar-group-items-wrap" hidden="@(!_adminOpen)">
                 <div class="sidebar-group-items">
                     <NavLink class="sidebar-link sidebar-link-sub" href="admin/utilisateurs">
                         <i class="bi bi-person-lock sidebar-icon"></i> Utilisateurs
@@ -197,3 +199,65 @@
     </div>
 
 </div>
+
+@code {
+    private bool _ventesOpen = true;
+    private bool _achatsOpen = true;
+    private bool _stockOpen = true;
+    private bool _paramsOpen = true;
+    private bool _adminOpen = true;
+
+    protected override void OnInitialized()
+    {
+        OpenSectionForPath(NavManager.ToBaseRelativePath(NavManager.Uri));
+        NavManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        OpenSectionForPath(NavManager.ToBaseRelativePath(e.Location));
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleVentes() => _ventesOpen = !_ventesOpen;
+    private void ToggleAchats() => _achatsOpen = !_achatsOpen;
+    private void ToggleStock() => _stockOpen = !_stockOpen;
+    private void ToggleParams() => _paramsOpen = !_paramsOpen;
+    private void ToggleAdmin() => _adminOpen = !_adminOpen;
+
+    private void OpenSectionForPath(string path)
+    {
+        var p = (path ?? string.Empty).Trim('/').ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(p))
+            return;
+
+        if (StartsWithAny(p, "clients", "devis", "commandes-vente", "bons-livraison", "factures-client", "avoirs"))
+            _ventesOpen = true;
+
+        if (StartsWithAny(p, "fournisseurs", "commandes-achat", "bons-reception", "factures-fournisseur"))
+            _achatsOpen = true;
+
+        if (StartsWithAny(p, "produits", "stock"))
+            _stockOpen = true;
+
+        if (StartsWithAny(p, "entreprise"))
+            _paramsOpen = true;
+
+        if (StartsWithAny(p, "admin"))
+            _adminOpen = true;
+    }
+
+    private static bool StartsWithAny(string value, params string[] prefixes)
+    {
+        foreach (var prefix in prefixes)
+        {
+            if (value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    public void Dispose()
+        => NavManager.LocationChanged -= OnLocationChanged;
+}

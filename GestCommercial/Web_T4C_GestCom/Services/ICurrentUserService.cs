@@ -26,8 +26,8 @@ public class CurrentUserService : ICurrentUserService, IDisposable
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly Task _initializationTask;
 
-    private string _login = "système";
-    private string _role = "Employé";
+    private string _login = string.Empty;
+    private string _role = string.Empty;
 
     public CurrentUserService(AuthenticationStateProvider authStateProvider, IHttpContextAccessor httpContextAccessor)
     {
@@ -69,8 +69,16 @@ public class CurrentUserService : ICurrentUserService, IDisposable
     public bool IsAdmin => Role == RoleNameMapper.Admin;
 
     public bool IsAuthenticated
-        => !string.IsNullOrWhiteSpace(Login)
-           && !string.Equals(Login, "système", StringComparison.OrdinalIgnoreCase);
+    {
+        get
+        {
+            var principal = _httpContextAccessor.HttpContext?.User;
+            if (principal?.Identity?.IsAuthenticated == true)
+                return true;
+
+            return !string.IsNullOrWhiteSpace(_login);
+        }
+    }
 
     public Task EnsureInitializedAsync() => _initializationTask;
 
@@ -95,8 +103,8 @@ public class CurrentUserService : ICurrentUserService, IDisposable
     {
         if (state.User.Identity?.IsAuthenticated == true)
         {
-            var login = state.User.Identity.Name ?? "système";
-            var role = state.User.FindFirst(ClaimTypes.Role)?.Value ?? "Employé";
+            var login = state.User.Identity.Name ?? "utilisateur";
+            var role = state.User.FindFirst(ClaimTypes.Role)?.Value ?? RoleNameMapper.Employe;
             SetCurrentUser(login, role);
             return;
         }
@@ -106,14 +114,16 @@ public class CurrentUserService : ICurrentUserService, IDisposable
 
     public void SetCurrentUser(string login, string role)
     {
-        _login = string.IsNullOrWhiteSpace(login) ? "système" : login;
-        _role = RoleNameMapper.NormalizeKnownRoleName(role);
+        _login = string.IsNullOrWhiteSpace(login) ? string.Empty : login;
+        _role = string.IsNullOrWhiteSpace(role)
+            ? string.Empty
+            : RoleNameMapper.NormalizeKnownRoleName(role);
     }
 
     public void Clear()
     {
-        _login = "système";
-        _role = "Employé";
+        _login = string.Empty;
+        _role = string.Empty;
     }
 
     public void Dispose()
