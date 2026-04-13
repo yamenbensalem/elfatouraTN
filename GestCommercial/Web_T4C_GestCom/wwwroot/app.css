@@ -263,6 +263,18 @@ html, body {
     transition: background 0.15s, color 0.15s;
 }
 
+details.sidebar-group > .sidebar-group-header {
+    list-style: none;
+}
+
+details.sidebar-group > .sidebar-group-header::-webkit-details-marker {
+    display: none;
+}
+
+details.sidebar-group > .sidebar-group-header::marker {
+    content: "";
+}
+
 .sidebar-group-header:hover {
     background: #f5f8ff;
     color: var(--primary);
@@ -273,6 +285,7 @@ html, body {
     outline-offset: 1px;
 }
 
+details.sidebar-group[open] > .sidebar-group-header,
 .sidebar-group-header[aria-expanded="true"] {
     color: var(--primary);
     background: #eef4ff;
@@ -289,6 +302,7 @@ html, body {
     transition: transform 0.2s;
 }
 
+details.sidebar-group:not([open]) > .sidebar-group-header .sidebar-chevron,
 .sidebar-group-header[aria-expanded="false"] .sidebar-chevron {
     transform: rotate(-90deg);
 }

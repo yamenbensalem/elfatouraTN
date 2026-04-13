@@ -15,17 +15,15 @@
     <div class="sidebar-separator"></div>
 
     <!-- ── VENTES ────────────────────────────── -->
-    <div class="sidebar-group">
-        <button class="sidebar-group-header" type="button"
-                @onclick="ToggleVentes"
-                aria-expanded="@_ventesOpen" aria-controls="nav-ventes">
+    <details class="sidebar-group" open>
+        <summary class="sidebar-group-header" aria-controls="nav-ventes">
             <div class="sidebar-group-title">
                 <i class="bi bi-cart3 sidebar-icon"></i>
                 <span>Ventes</span>
             </div>
             <i class="bi bi-chevron-down sidebar-chevron"></i>
-        </button>
-        <div id="nav-ventes" class="sidebar-group-items-wrap" hidden="@(!_ventesOpen)">
+        </summary>
+        <div id="nav-ventes" class="sidebar-group-items-wrap">
             <div class="sidebar-group-items">
                 <PermissionGuard Permission="clients.view">
                     <NavLink class="sidebar-link sidebar-link-sub" href="clients">
@@ -59,20 +57,18 @@
                 </PermissionGuard>
             </div>
         </div>
-    </div>
+    </details>
 
     <!-- ── ACHATS ─────────────────────────────── -->
-    <div class="sidebar-group">
-        <button class="sidebar-group-header" type="button"
-                @onclick="ToggleAchats"
-                aria-expanded="@_achatsOpen" aria-controls="nav-achats">
+    <details class="sidebar-group" open>
+        <summary class="sidebar-group-header" aria-controls="nav-achats">
             <div class="sidebar-group-title">
                 <i class="bi bi-building sidebar-icon"></i>
                 <span>Achats</span>
             </div>
             <i class="bi bi-chevron-down sidebar-chevron"></i>
-        </button>
-        <div id="nav-achats" class="sidebar-group-items-wrap" hidden="@(!_achatsOpen)">
+        </summary>
+        <div id="nav-achats" class="sidebar-group-items-wrap">
             <div class="sidebar-group-items">
                 <PermissionGuard Permission="fournisseurs.view">
                     <NavLink class="sidebar-link sidebar-link-sub" href="fournisseurs">
@@ -96,20 +92,18 @@
                 </PermissionGuard>
             </div>
         </div>
-    </div>
+    </details>
 
     <!-- ── STOCK ──────────────────────────────── -->
-    <div class="sidebar-group">
-        <button class="sidebar-group-header" type="button"
-                @onclick="ToggleStock"
-                aria-expanded="@_stockOpen" aria-controls="nav-stock">
+    <details class="sidebar-group" open>
+        <summary class="sidebar-group-header" aria-controls="nav-stock">
             <div class="sidebar-group-title">
                 <i class="bi bi-boxes sidebar-icon"></i>
                 <span>Stock</span>
             </div>
             <i class="bi bi-chevron-down sidebar-chevron"></i>
-        </button>
-        <div id="nav-stock" class="sidebar-group-items-wrap" hidden="@(!_stockOpen)">
+        </summary>
+        <div id="nav-stock" class="sidebar-group-items-wrap">
             <div class="sidebar-group-items">
                 <PermissionGuard Permission="produits.view">
                     <NavLink class="sidebar-link sidebar-link-sub" href="produits">
@@ -123,7 +117,7 @@
                 </PermissionGuard>
             </div>
         </div>
-    </div>
+    </details>
 
     <!-- ── PARAMÈTRES ─────────────────────────── -->
     <div class="sidebar-group">
@@ -201,9 +195,6 @@
 </div>
 
 @code {
-    private bool _ventesOpen = true;
-    private bool _achatsOpen = true;
-    private bool _stockOpen = true;
     private bool _paramsOpen = true;
     private bool _adminOpen = true;
 
@@ -219,9 +210,6 @@
         _ = InvokeAsync(StateHasChanged);
     }
 
-    private void ToggleVentes() => _ventesOpen = !_ventesOpen;
-    private void ToggleAchats() => _achatsOpen = !_achatsOpen;
-    private void ToggleStock() => _stockOpen = !_stockOpen;
     private void ToggleParams() => _paramsOpen = !_paramsOpen;
     private void ToggleAdmin() => _adminOpen = !_adminOpen;
 
@@ -230,15 +218,6 @@
         var p = (path ?? string.Empty).Trim('/').ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(p))
             return;
-
-        if (StartsWithAny(p, "clients", "devis", "commandes-vente", "bons-livraison", "factures-client", "avoirs"))
-            _ventesOpen = true;
-
-        if (StartsWithAny(p, "fournisseurs", "commandes-achat", "bons-reception", "factures-fournisseur"))
-            _achatsOpen = true;
-
-        if (StartsWithAny(p, "produits", "stock"))
-            _stockOpen = true;
 
         if (StartsWithAny(p, "entreprise"))
             _paramsOpen = true;
