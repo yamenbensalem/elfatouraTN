@@ -244,7 +244,7 @@ using (var scope = app.Services.CreateScope())
         END
         """);
 
-    // RolePermissions: Admin=all document permissions, Manager=view+create+update, Employé=view only
+    // RolePermissions: Admin=all document permissions, Manager=view+create+update, Employé=view+create
     for (int i = 1; i <= 28; i++)
         db.Database.ExecuteSqlRaw($"""
             IF NOT EXISTS (SELECT 1 FROM role_permission WHERE role_id=1 AND permission_id={i})
@@ -260,13 +260,14 @@ using (var scope = app.Services.CreateScope())
                 """);
         }
     for (int m = 0; m < 7; m++)
-    {
-        int pid = m * 4 + 1;
-        db.Database.ExecuteSqlRaw($"""
-            IF NOT EXISTS (SELECT 1 FROM role_permission WHERE role_id=3 AND permission_id={pid})
-                INSERT INTO role_permission (role_id, permission_id) VALUES (3, {pid})
-            """);
-    }
+        for (int a = 0; a < 2; a++) // view=0, create=1
+        {
+            int pid = m * 4 + a + 1;
+            db.Database.ExecuteSqlRaw($"""
+                IF NOT EXISTS (SELECT 1 FROM role_permission WHERE role_id=3 AND permission_id={pid})
+                    INSERT INTO role_permission (role_id, permission_id) VALUES (3, {pid})
+                """);
+        }
 
     // Default grants for master-data modules (clients, fournisseurs, produits)
     db.Database.ExecuteSqlRaw("""
@@ -295,33 +296,23 @@ using (var scope = app.Services.CreateScope())
         """);
 
         db.Database.ExecuteSqlRaw("""
-                INSERT INTO role_permission (role_id, permission_id)
-                SELECT 3, p.id_permission
-                FROM permission p
-                WHERE (
-                        (
-                            p.feature_permission = 'clients'
-                            AND p.action_permission IN ('view', 'create')
-                        )
-                        OR (
-                            p.feature_permission IN ('fournisseurs', 'produits')
-                            AND p.action_permission = 'view'
-                        )
-                      )
-                    AND NOT EXISTS (
-                            SELECT 1
-                            FROM role_permission rp
-                            WHERE rp.role_id = 3 AND rp.permission_id = p.id_permission
-                    )
-                """);
+            INSERT INTO role_permission (role_id, permission_id)
+            SELECT 3, p.id_permission
+            FROM permission p
+            WHERE p.action_permission IN ('view', 'create')
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM role_permission rp
+                    WHERE rp.role_id = 3 AND rp.permission_id = p.id_permission
+                )
+            """);
 
-        // Enforce employee policy on clients: create allowed, update/delete denied.
+        // Enforce employee policy globally: create allowed, update/delete denied.
         db.Database.ExecuteSqlRaw("""
                 DELETE rp
                 FROM role_permission rp
                 INNER JOIN permission p ON p.id_permission = rp.permission_id
                 WHERE rp.role_id = 3
-                    AND p.feature_permission = 'clients'
                     AND p.action_permission IN ('update', 'delete')
                 """);
 

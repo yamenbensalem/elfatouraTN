@@ -171,9 +171,10 @@ public class AppDbContext : DbContext
         for (int m = 0; m < 7; m++)
             for (int a = 0; a < 3; a++) // view=0, create=1, update=2
                 rp.Add(new RolePermission { RoleId = 2, PermissionId = m * 4 + a + 1 });
-        // Employé → view seulement : ids 1, 5, 9, 13, 17, 21, 25
+        // Employé → view + create (pas update/delete) : ids 1-2, 5-6, 9-10, 13-14, 17-18, 21-22, 25-26
         for (int m = 0; m < 7; m++)
-            rp.Add(new RolePermission { RoleId = 3, PermissionId = m * 4 + 1 });
+            for (int a = 0; a < 2; a++) // view=0, create=1
+                rp.Add(new RolePermission { RoleId = 3, PermissionId = m * 4 + a + 1 });
 
         modelBuilder.Entity<RolePermission>().HasData(rp);
     }
