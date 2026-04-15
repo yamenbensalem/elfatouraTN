@@ -24,6 +24,8 @@ public interface IUtilisateurService
 
 public class UtilisateurService(AppDbContext db, IPermissionService? permissionService = null) : IUtilisateurService
 {
+    private const string HashPrefixBcryptV1 = "v2$bcrypt$";
+
     public async Task<List<Utilisateur>> GetAllAsync()
         => await db.Utilisateurs.OrderBy(u => u.Nom).ThenBy(u => u.Prenom).ToListAsync();
 
@@ -35,9 +37,20 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
 
     public async Task<Utilisateur?> AuthentifierAsync(string login, string password)
     {
-        var hash = HashPassword(password);
-        return await db.Utilisateurs.FirstOrDefaultAsync(
-            u => u.Login == login && u.PasswordHash == hash && u.Actif);
+        var user = await db.Utilisateurs.FirstOrDefaultAsync(u => u.Login == login && u.Actif);
+        if (user is null)
+            return null;
+
+        if (!VerifyPassword(password, user.PasswordHash, out var needsRehash))
+            return null;
+
+        if (needsRehash)
+        {
+            user.PasswordHash = HashPassword(password);
+            await db.SaveChangesAsync();
+        }
+
+        return user;
     }
 
     public async Task<bool> LoginExistsAsync(string login, int? excludeId = null)
@@ -109,8 +122,42 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
 
     public string HashPassword(string password)
     {
+        var bcryptHash = BCrypt.Net.BCrypt.HashPassword(password);
+        return HashPrefixBcryptV1 + bcryptHash;
+    }
+
+    private static bool VerifyPassword(string plainPassword, string storedHash, out bool needsRehash)
+    {
+        needsRehash = false;
+        if (string.IsNullOrWhiteSpace(storedHash))
+            return false;
+
+        if (storedHash.StartsWith(HashPrefixBcryptV1, StringComparison.Ordinal))
+        {
+            var payload = storedHash[HashPrefixBcryptV1.Length..];
+            return BCrypt.Net.BCrypt.Verify(plainPassword, payload);
+        }
+
+        // Compatibility: accept bare bcrypt payload hashes.
+        if (storedHash.StartsWith("$2", StringComparison.Ordinal))
+        {
+            needsRehash = true;
+            return BCrypt.Net.BCrypt.Verify(plainPassword, storedHash);
+        }
+
+        // Legacy v1 format: unsalted SHA-256 hex digest.
+        var sha256Hex = ComputeLegacySha256Hex(plainPassword);
+        if (!string.Equals(sha256Hex, storedHash, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        needsRehash = true;
+        return true;
+    }
+
+    private static string ComputeLegacySha256Hex(string password)
+    {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(password));
-        return Convert.ToHexString(bytes).ToLower();
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
     private async Task SyncUserRoleMappingAsync(int userId, string? legacyRoleName, bool saveImmediately = true)
