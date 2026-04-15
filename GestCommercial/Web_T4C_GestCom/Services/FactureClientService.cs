@@ -27,6 +27,7 @@ public class FactureClientService(
     public async Task<List<FactureClient>> GetAllAsync(bool avoirsOnly = false, string? clientCode = null)
     {
         var query = db.FacturesClient
+            .AsNoTracking()
             .Include(f => f.Client)
             .Include(f => f.Reglements)
             .Where(f => f.IsAvoir == avoirsOnly)
@@ -40,6 +41,7 @@ public class FactureClientService(
 
     public async Task<FactureClient?> GetByNumeroAsync(string numero)
         => await db.FacturesClient
+            .AsNoTracking()
             .Include(f => f.Client)
             .Include(f => f.Lignes).ThenInclude(l => l.Produit)
             .Include(f => f.Reglements).ThenInclude(r => r.ModePayement)

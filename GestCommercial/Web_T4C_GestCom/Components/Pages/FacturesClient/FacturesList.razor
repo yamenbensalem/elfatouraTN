@@ -4,6 +4,7 @@
 @attribute [Authorize(Policy = "perm:factures.view")]
 @inject IFactureClientService FactureService
 @inject NavigationManager Nav
+@implements IDisposable
 
 <PageTitle>@(_isAvoir ? "Avoirs" : "Factures Client") – T4C GestCom</PageTitle>
 
@@ -91,14 +92,15 @@
     private List<FactureClient> _factures = [];
     private bool _loading = true;
     private bool _isAvoir;
+    private string _loadedPath = string.Empty;
     private bool _confirmVisible;
     private FactureClient? _toDelete;
     private Notification _notif = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        _isAvoir = Nav.Uri.Contains("/avoirs");
-        await LoadAsync();
+        Nav.LocationChanged += OnLocationChanged;
+        await RefreshForUriAsync(Nav.Uri, force: true);
     }
 
     private async Task LoadAsync()
@@ -106,6 +108,47 @@
         _loading = true;
         _factures = await FactureService.GetAllAsync(_isAvoir);
         _loading = false;
+    }
+
+    private async Task RefreshForUriAsync(string uri, bool force = false)
+    {
+        var path = NormalizePath(uri);
+        if (!force && string.Equals(_loadedPath, path, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _loadedPath = path;
+        _isAvoir = path.StartsWith("avoirs", StringComparison.OrdinalIgnoreCase);
+        await LoadAsync();
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var path = NormalizePath(e.Location);
+        var isFactureRoute = path.StartsWith("factures-client", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("avoirs", StringComparison.OrdinalIgnoreCase);
+
+        if (!isFactureRoute)
+        {
+            // Force a fresh fetch if the user comes back from another module.
+            _loadedPath = string.Empty;
+            return;
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            await RefreshForUriAsync(e.Location);
+            StateHasChanged();
+        });
+    }
+
+    private static string NormalizePath(string uri)
+    {
+        var relative = new Uri(uri).GetComponents(UriComponents.PathAndQuery, UriFormat.Unescaped);
+        var qIndex = relative.IndexOf('?', StringComparison.Ordinal);
+        if (qIndex >= 0)
+            relative = relative[..qIndex];
+
+        return relative.Trim('/');
     }
 
     private async Task CloneFacture(string numero)
@@ -147,4 +190,7 @@
         "Partiellement Réglé" => "bg-warning text-dark",
         _ => "bg-danger"
     };
+
+    public void Dispose()
+        => Nav.LocationChanged -= OnLocationChanged;
 }
