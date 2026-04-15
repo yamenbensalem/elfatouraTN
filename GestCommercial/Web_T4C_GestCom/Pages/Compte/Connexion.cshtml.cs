@@ -2,13 +2,18 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Web_T4C_GestCom.Services;
 
 namespace Web_T4C_GestCom.Pages.Compte;
 
-public class ConnexionModel(IUtilisateurService utilisateurService) : PageModel
+public class ConnexionModel(
+    IUtilisateurService utilisateurService,
+    ILoginProtectionService loginProtectionService,
+    IJournalActiviteService journalActiviteService,
+    ILogger<ConnexionModel> logger) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -27,12 +32,30 @@ public class ConnexionModel(IUtilisateurService utilisateurService) : PageModel
     {
         if (!ModelState.IsValid) return Page();
 
-        var user = await utilisateurService.AuthentifierAsync(Input.Login, Input.Password);
-        if (user is null)
+        var nowUtc = DateTimeOffset.UtcNow;
+        var login = (Input.Login ?? string.Empty).Trim();
+        var ipAddress = ResolveClientIpAddress();
+
+        var preCheck = loginProtectionService.Evaluate(login, ipAddress, nowUtc);
+        if (preCheck.IsBlocked)
         {
-            ErrorMessage = "Login ou mot de passe incorrect.";
+            await EmitSecurityAlertsAsync(preCheck.Alerts, login, ipAddress, "blocked-precheck");
+            ErrorMessage = BuildBlockedErrorMessage(preCheck, nowUtc);
             return Page();
         }
+
+        var user = await utilisateurService.AuthentifierAsync(login, Input.Password);
+        if (user is null)
+        {
+            var failure = loginProtectionService.RegisterFailure(login, ipAddress, nowUtc);
+            await EmitSecurityAlertsAsync(failure.Alerts, login, ipAddress, "invalid-credentials");
+            ErrorMessage = failure.IsBlocked
+                ? BuildBlockedErrorMessage(failure, nowUtc)
+                : "Login ou mot de passe incorrect.";
+            return Page();
+        }
+
+        loginProtectionService.RegisterSuccess(login, ipAddress);
 
         var claims = new List<Claim>
         {
@@ -58,6 +81,58 @@ public class ConnexionModel(IUtilisateurService utilisateurService) : PageModel
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
         return LocalRedirect(Input.ReturnUrl ?? "/");
+    }
+
+    private async Task EmitSecurityAlertsAsync(
+        IReadOnlyList<string> alerts,
+        string login,
+        string ipAddress,
+        string stage)
+    {
+        if (alerts.Count == 0)
+            return;
+
+        foreach (var alert in alerts.Distinct(StringComparer.Ordinal))
+        {
+            logger.LogWarning(
+                "Alerte de securite login: {AlertCode} | stage={Stage} | login={Login} | ip={IP}",
+                alert,
+                stage,
+                login,
+                ipAddress);
+
+            await journalActiviteService.EnregistrerAsync(
+                "AlerteSecurite",
+                "Authentification",
+                login,
+                $"{alert}; stage={stage}; ip={ipAddress}");
+        }
+    }
+
+    private static string BuildBlockedErrorMessage(LoginProtectionDecision decision, DateTimeOffset nowUtc)
+    {
+        var retryAfterSeconds = decision.GetRetryAfterSeconds(nowUtc);
+        if (retryAfterSeconds <= 0)
+            return "Trop de tentatives de connexion. Reessayez plus tard.";
+
+        if (retryAfterSeconds < 60)
+            return $"Trop de tentatives de connexion. Reessayez dans {retryAfterSeconds} seconde(s).";
+
+        var retryAfterMinutes = (int)Math.Ceiling(retryAfterSeconds / 60.0);
+        return $"Trop de tentatives de connexion. Reessayez dans {retryAfterMinutes} minute(s).";
+    }
+
+    private string ResolveClientIpAddress()
+    {
+        var forwardedFor = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(forwardedFor))
+        {
+            var firstHop = forwardedFor.Split(',')[0].Trim();
+            if (!string.IsNullOrWhiteSpace(firstHop))
+                return firstHop;
+        }
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 
     public class InputModel

@@ -31,6 +31,8 @@ builder.Services.AddMemoryCache();
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<LoginProtectionOptions>(builder.Configuration.GetSection("Security:LoginProtection"));
+builder.Services.AddSingleton<ILoginProtectionService, LoginProtectionService>();
 
 // RBAC
 builder.Services.AddScoped<ITenantService,      TenantService>();
