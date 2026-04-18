@@ -3,14 +3,15 @@
 @inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<div class="layout-wrapper @(_sidebarOpen ? "" : "sidebar-collapsed")">
+<div class="layout-wrapper">
+    <input id="sidebar-toggle" class="sidebar-toggle-input" type="checkbox" />
 
     <!-- ── Top Bar ─────────────────────────────── -->
     <header class="topbar">
         <div class="topbar-left">
-            <button class="topbar-toggle" title="Afficher / masquer le menu" @onclick="ToggleSidebar">
+            <label class="topbar-toggle" for="sidebar-toggle" title="Afficher / masquer le menu" role="button" aria-label="Afficher ou masquer le menu latéral">
                 <i class="bi bi-list"></i>
-            </button>
+            </label>
             <a class="topbar-brand" href="">
                 <i class="bi bi-graph-up-arrow me-2"></i>T4C GestCom
             </a>
@@ -19,22 +20,49 @@
             <span class="topbar-date d-none d-md-block">
                 @DateTime.Now.ToString("dddd dd MMMM yyyy", new System.Globalization.CultureInfo("fr-FR"))
             </span>
-            <div class="topbar-user">
-                <div class="topbar-avatar">
-                    @DisplayInitial
+            <details class="topbar-user-menu">
+                <summary class="topbar-user" aria-label="Menu utilisateur">
+                    <div class="topbar-avatar">
+                        @DisplayInitial
+                    </div>
+                    <span class="topbar-username d-none d-sm-block">@DisplayLogin</span>
+                    @if (!string.IsNullOrWhiteSpace(DisplayRole))
+                    {
+                        <span class="badge @(DisplayRole switch {
+                            "Admin"   => "bg-danger",
+                            "Manager" => "bg-warning text-dark",
+                            _         => "bg-secondary"
+                        }) d-none d-md-inline" style="font-size:0.65rem">
+                            @DisplayRole
+                        </span>
+                    }
+                    <i class="bi bi-chevron-down topbar-user-chevron d-none d-md-inline"></i>
+                </summary>
+
+                <div class="topbar-user-dropdown">
+                    @if (CurrentUserService.IsAdmin)
+                    {
+                        <a class="topbar-user-dropdown-link" href="/admin/utilisateurs">
+                            <i class="bi bi-person-lock"></i>
+                            <span>Utilisateurs</span>
+                        </a>
+                        <a class="topbar-user-dropdown-link" href="/admin/roles">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Rôles &amp; Permissions</span>
+                        </a>
+                        <a class="topbar-user-dropdown-link" href="/admin/journal">
+                            <i class="bi bi-journal-text"></i>
+                            <span>Journal d'Activité</span>
+                        </a>
+                        <div class="topbar-user-dropdown-separator"></div>
+                    }
+
+                    <a class="topbar-user-dropdown-link text-danger" href="/compte/deconnexion">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Déconnecter</span>
+                    </a>
                 </div>
-                <span class="topbar-username d-none d-sm-block">@DisplayLogin</span>
-                @if (!string.IsNullOrWhiteSpace(DisplayRole))
-                {
-                    <span class="badge @(DisplayRole switch {
-                        "Admin"   => "bg-danger",
-                        "Manager" => "bg-warning text-dark",
-                        _         => "bg-secondary"
-                    }) d-none d-md-inline" style="font-size:0.65rem">
-                        @DisplayRole
-                    </span>
-                }
-            </div>
+            </details>
         </div>
     </header>
 
@@ -57,8 +85,6 @@
 </div>
 
 @code {
-    private bool _sidebarOpen = true;
-
     protected override async Task OnInitializedAsync()
     {
         AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
@@ -101,8 +127,6 @@
         => string.IsNullOrWhiteSpace(DisplayLogin)
             ? "U"
             : DisplayLogin[0].ToString().ToUpperInvariant();
-
-    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
     public void Dispose()
         => AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
