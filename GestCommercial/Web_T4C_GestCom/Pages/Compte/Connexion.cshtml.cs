@@ -13,12 +13,14 @@ public class ConnexionModel(
     IUtilisateurService utilisateurService,
     ILoginProtectionService loginProtectionService,
     IJournalActiviteService journalActiviteService,
+    IConfiguration configuration,
     ILogger<ConnexionModel> logger) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; private set; }
+    public bool AllowPublicSignup { get; } = configuration.GetValue<bool>("Security:AllowPublicSignup");
 
     public IActionResult OnGet(string? returnUrl = null)
     {

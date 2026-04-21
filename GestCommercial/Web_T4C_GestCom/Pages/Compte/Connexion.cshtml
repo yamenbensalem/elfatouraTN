@@ -319,10 +319,13 @@
         <button type="submit" class="btn-auth">Se connecter</button>
     </form>
 
-    <div class="auth-bottom">
-        Vous n'avez pas de compte ?
-        <a href="/compte/inscription">Créer un compte</a>
-    </div>
+    @if (Model.AllowPublicSignup)
+    {
+        <div class="auth-bottom">
+            Vous n'avez pas de compte ?
+            <a href="/compte/inscription">Créer un compte</a>
+        </div>
+    }
 </div>
 
 <footer class="auth-footer">© 2026 GestCom – Tous droits réservés</footer>
