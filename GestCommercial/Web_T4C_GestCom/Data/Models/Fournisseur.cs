@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Web_T4C_GestCom.Data.Models;
 
 [Table("fournisseur")]
-public class Fournisseur
+public class Fournisseur : ITenantOwned
 {
     [Key]
     [Column("code_fournisseur")]
@@ -80,9 +80,15 @@ public class Fournisseur
     [Display(Name = "Devise")]
     public int CodeDevise { get; set; } = 1;
 
+    [Column("company_id_fournisseur")]
+    public int? CompanyId { get; set; }
+
     // Navigation
     [ForeignKey(nameof(CodeDevise))]
     public Devise? Devise { get; set; }
+
+    [ForeignKey(nameof(CompanyId))]
+    public Company? Company { get; set; }
 
     public ICollection<CommandeAchat> CommandesAchat { get; set; } = [];
     public ICollection<BonReception> BonsReception { get; set; } = [];

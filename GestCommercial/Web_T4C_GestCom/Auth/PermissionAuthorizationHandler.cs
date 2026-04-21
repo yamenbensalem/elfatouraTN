@@ -22,8 +22,8 @@ public class PermissionAuthorizationHandler
             return;
         }
 
-        // Admin legacy role always grants all permissions
-        if (context.User.IsInRole("Admin"))
+        // Privileged roles always grant all permissions.
+        if (context.User.IsInRole(RoleNameMapper.Admin) || context.User.IsInRole(RoleNameMapper.SuperAdmin))
         {
             context.Succeed(requirement);
             return;

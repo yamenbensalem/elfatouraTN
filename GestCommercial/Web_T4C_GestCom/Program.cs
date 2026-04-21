@@ -277,6 +277,106 @@ using (var scope = app.Services.CreateScope())
     db.Database.ExecuteSqlRaw("""
         IF NOT EXISTS (
             SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'client' AND COLUMN_NAME = 'company_id_client'
+        )
+        BEGIN
+            ALTER TABLE client ADD company_id_client INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'fournisseur' AND COLUMN_NAME = 'company_id_fournisseur'
+        )
+        BEGIN
+            ALTER TABLE fournisseur ADD company_id_fournisseur INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'produit' AND COLUMN_NAME = 'company_id_produit'
+        )
+        BEGIN
+            ALTER TABLE produit ADD company_id_produit INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'devisClient' AND COLUMN_NAME = 'company_id_devis'
+        )
+        BEGIN
+            ALTER TABLE devisClient ADD company_id_devis INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'commandevente' AND COLUMN_NAME = 'company_id_commandevente'
+        )
+        BEGIN
+            ALTER TABLE commandevente ADD company_id_commandevente INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'bonlivraison' AND COLUMN_NAME = 'company_id_bonlivraison'
+        )
+        BEGIN
+            ALTER TABLE bonlivraison ADD company_id_bonlivraison INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'factureclient' AND COLUMN_NAME = 'company_id_factureclient'
+        )
+        BEGIN
+            ALTER TABLE factureclient ADD company_id_factureclient INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'commandeachat' AND COLUMN_NAME = 'company_id_commandeachat'
+        )
+        BEGIN
+            ALTER TABLE commandeachat ADD company_id_commandeachat INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'bonreception' AND COLUMN_NAME = 'company_id_bonreception'
+        )
+        BEGIN
+            ALTER TABLE bonreception ADD company_id_bonreception INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'facturefournisseur' AND COLUMN_NAME = 'company_id_facturefournisseur'
+        )
+        BEGIN
+            ALTER TABLE facturefournisseur ADD company_id_facturefournisseur INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
             WHERE TABLE_NAME = 'utilisateurs' AND COLUMN_NAME = 'is_superadmin_utilisateur'
         )
         BEGIN
@@ -335,6 +435,86 @@ using (var scope = app.Services.CreateScope())
         ) c
         WHERE u.is_superadmin_utilisateur = 0
           AND u.company_id_utilisateur IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_client = c.id_company
+        FROM client t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_client IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_fournisseur = c.id_company
+        FROM fournisseur t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_fournisseur IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_produit = c.id_company
+        FROM produit t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_produit IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_devis = c.id_company
+        FROM devisClient t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_devis IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_commandevente = c.id_company
+        FROM commandevente t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_commandevente IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_bonlivraison = c.id_company
+        FROM bonlivraison t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_bonlivraison IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_factureclient = c.id_company
+        FROM factureclient t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_factureclient IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_commandeachat = c.id_company
+        FROM commandeachat t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_commandeachat IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_bonreception = c.id_company
+        FROM bonreception t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_bonreception IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_facturefournisseur = c.id_company
+        FROM facturefournisseur t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_facturefournisseur IS NULL
         """);
 
     db.Database.ExecuteSqlRaw("""

@@ -130,8 +130,7 @@
             : DisplayLogin[0].ToString().ToUpperInvariant();
 
     private bool CanAccessAdministration
-        => CurrentUserService.IsAdmin ||
-           string.Equals(CurrentUserService.Role, RoleNameMapper.SuperAdmin, StringComparison.OrdinalIgnoreCase);
+        => CurrentUserService.IsAdmin || CurrentUserService.IsSuperAdmin;
 
     public void Dispose()
         => AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;

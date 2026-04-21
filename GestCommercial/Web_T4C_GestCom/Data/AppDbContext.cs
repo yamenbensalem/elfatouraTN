@@ -25,6 +25,26 @@ public class AppDbContext : DbContext
         }
     }
 
+    private bool CurrentIsSuperAdmin
+    {
+        get
+        {
+            return _httpContextAccessor?.HttpContext?.User.IsSuperAdmin() == true;
+        }
+    }
+
+    /// <summary>
+    /// Tenant filters are applied only in real HTTP request scope (not in unit tests/no HttpContext).
+    /// SuperAdmin bypasses tenant filters globally.
+    /// </summary>
+    private bool ShouldApplyTenantFilter
+    {
+        get
+        {
+            return _httpContextAccessor?.HttpContext is not null && !CurrentIsSuperAdmin;
+        }
+    }
+
     // ── Reference data ─────────────────────────────────────────────────────
     public DbSet<Entreprise>        Entreprises         => Set<Entreprise>();
     public DbSet<Devise>            Devises             => Set<Devise>();
@@ -71,6 +91,53 @@ public class AppDbContext : DbContext
     public DbSet<RolePermission> RolePermissions  => Set<RolePermission>();
     public DbSet<FeatureFlag>    FeatureFlags     => Set<FeatureFlag>();
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        ApplyTenantOwnershipRules();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        ApplyTenantOwnershipRules();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void ApplyTenantOwnershipRules()
+    {
+        if (!ShouldApplyTenantFilter)
+            return;
+
+        if (!CurrentCompanyId.HasValue)
+            throw new UnauthorizedAccessException("Aucun tenant actif dans le contexte de sécurité.");
+
+        var tenantId = CurrentCompanyId.Value;
+
+        foreach (var entry in ChangeTracker.Entries()
+                     .Where(e => e.Entity is ITenantOwned &&
+                                 (e.State == EntityState.Added ||
+                                  e.State == EntityState.Modified ||
+                                  e.State == EntityState.Deleted)))
+        {
+            var entity = (ITenantOwned)entry.Entity;
+
+            if (entry.State == EntityState.Added)
+            {
+                // Hard-stamp tenant ownership at creation time.
+                entity.CompanyId = tenantId;
+                continue;
+            }
+
+            if (entity.CompanyId != tenantId)
+                throw new UnauthorizedAccessException("Tentative d'accès cross-tenant détectée.");
+
+            if (entry.State == EntityState.Modified)
+                entity.CompanyId = tenantId;
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -99,6 +166,57 @@ public class AppDbContext : DbContext
             .HasQueryFilter(ff =>
                 CurrentCompanyId == null ||
                 ff.CompanyId == CurrentCompanyId);
+
+        // Business entities: strictly tenant-scoped for non-superadmin request contexts.
+        modelBuilder.Entity<Client>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<Fournisseur>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<Produit>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<DevisClient>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<CommandeVente>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<BonLivraison>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<FactureClient>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<CommandeAchat>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<BonReception>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<FactureFournisseur>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
 
         // ── Reference data seed ────────────────────────────────────────────
         modelBuilder.Entity<Devise>().HasData(

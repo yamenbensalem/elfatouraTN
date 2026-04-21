@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Web_T4C_GestCom.Data.Models;
 
 [Table("facturefournisseur")]
-public class FactureFournisseur
+public class FactureFournisseur : ITenantOwned
 {
     [Key]
     [Column("numero_facturefournisseur")]
@@ -20,6 +20,9 @@ public class FactureFournisseur
     [Column("code_fournisseur")]
     [Display(Name = "Fournisseur")]
     public string CodeFournisseur { get; set; } = string.Empty;
+
+    [Column("company_id_facturefournisseur")]
+    public int? CompanyId { get; set; }
 
     [Column("montantHT_facturefournisseur")]
     [Display(Name = "Montant HT")]
@@ -55,6 +58,9 @@ public class FactureFournisseur
     // Navigation
     [ForeignKey(nameof(CodeFournisseur))]
     public Fournisseur? Fournisseur { get; set; }
+
+    [ForeignKey(nameof(CompanyId))]
+    public Company? Company { get; set; }
 
     public ICollection<LigneFactureFournisseur> Lignes { get; set; } = [];
     public ICollection<ReglementFactureFournisseur> Reglements { get; set; } = [];

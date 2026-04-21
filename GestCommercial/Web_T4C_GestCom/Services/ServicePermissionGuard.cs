@@ -17,7 +17,7 @@ internal static class ServicePermissionGuard
 
         await currentUser.EnsureInitializedAsync();
 
-        if (currentUser.IsAdmin)
+        if (currentUser.IsAdmin || currentUser.IsSuperAdmin)
             return;
 
         if (!currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(currentUser.Login))
