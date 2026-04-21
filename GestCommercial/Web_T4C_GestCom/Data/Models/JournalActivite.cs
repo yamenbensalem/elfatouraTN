@@ -32,4 +32,10 @@ public class JournalActivite
     [MaxLength(255)]
     [Column("detail_journal")]
     public string? Detail { get; set; }
+
+    [Column("company_id_journal")]
+    public int? CompanyId { get; set; }
+
+    [ForeignKey(nameof(CompanyId))]
+    public Company? Company { get; set; }
 }

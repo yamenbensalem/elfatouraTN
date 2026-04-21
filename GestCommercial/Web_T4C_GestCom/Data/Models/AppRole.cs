@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Web_T4C_GestCom.Data.Models;
 
 /// <summary>
-/// Rôle RBAC. CompanyId null = rôle global (Admin, Manager, Employé prédéfinis).
+/// Rôle RBAC. CompanyId null = rôle global (Admin, Manager, Employé, SuperAdmin prédéfinis).
 /// Chaque entreprise peut créer ses propres rôles (CompanyId non null).
 /// </summary>
 [Table("app_role")]

@@ -29,6 +29,7 @@
                     @if (!string.IsNullOrWhiteSpace(DisplayRole))
                     {
                         <span class="badge @(DisplayRole switch {
+                            "SuperAdmin" => "bg-dark",
                             "Admin"   => "bg-danger",
                             "Manager" => "bg-warning text-dark",
                             _         => "bg-secondary"
@@ -40,7 +41,7 @@
                 </summary>
 
                 <div class="topbar-user-dropdown">
-                    @if (CurrentUserService.IsAdmin)
+                    @if (CanAccessAdministration)
                     {
                         <a class="topbar-user-dropdown-link" href="/admin/utilisateurs">
                             <i class="bi bi-person-lock"></i>
@@ -127,6 +128,10 @@
         => string.IsNullOrWhiteSpace(DisplayLogin)
             ? "U"
             : DisplayLogin[0].ToString().ToUpperInvariant();
+
+    private bool CanAccessAdministration
+        => CurrentUserService.IsAdmin ||
+           string.Equals(CurrentUserService.Role, RoleNameMapper.SuperAdmin, StringComparison.OrdinalIgnoreCase);
 
     public void Dispose()
         => AuthStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;

@@ -26,6 +26,73 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/compte/connexion";
         options.ExpireTimeSpan  = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnValidatePrincipal = async context =>
+            {
+                var principal = context.Principal;
+                if (principal is null)
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                var userId = principal.GetUserId();
+                if (!userId.HasValue)
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                await using var scope = context.HttpContext.RequestServices.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var user = await db.Utilisateurs
+                    .AsNoTracking()
+                    .Where(u => u.Id == userId.Value)
+                    .Select(u => new
+                    {
+                        u.Actif,
+                        u.Role,
+                        u.CompanyId,
+                        u.IsSuperAdmin,
+                        u.SecurityStamp,
+                        u.PermissionsVersion
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (user is null || !user.Actif)
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                var claimStamp = principal.GetSecurityStamp();
+                var claimPermVersion = principal.GetPermissionsVersion();
+                var claimCompanyId = principal.GetCompanyId();
+
+                var expectedRole = user.IsSuperAdmin
+                    ? RoleNameMapper.SuperAdmin
+                    : RoleNameMapper.NormalizeKnownRoleName(user.Role);
+
+                var roleMismatch = !principal.IsInRole(expectedRole);
+                var stampMismatch = string.IsNullOrWhiteSpace(claimStamp) ||
+                                    !string.Equals(claimStamp, user.SecurityStamp, StringComparison.Ordinal);
+                var permissionVersionMismatch = !claimPermVersion.HasValue || claimPermVersion.Value != user.PermissionsVersion;
+                var tenantMismatch = user.IsSuperAdmin
+                    ? claimCompanyId.HasValue
+                    : !user.CompanyId.HasValue || claimCompanyId != user.CompanyId;
+
+                if (roleMismatch || stampMismatch || permissionVersionMismatch || tenantMismatch)
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                }
+            }
+        };
     });
 builder.Services.AddMemoryCache();
 builder.Services.AddAuthorization();
@@ -92,7 +159,10 @@ using (var scope = app.Services.CreateScope())
                 email_utilisateur        NVARCHAR(100) NULL,
                 role_utilisateur         NVARCHAR(20)  NOT NULL DEFAULT 'Employé',
                 actif_utilisateur        BIT           NOT NULL DEFAULT 1,
-                datecreation_utilisateur DATETIME2     NOT NULL DEFAULT GETDATE()
+                datecreation_utilisateur DATETIME2     NOT NULL DEFAULT GETDATE(),
+                is_superadmin_utilisateur BIT          NOT NULL DEFAULT 0,
+                securitystamp_utilisateur NVARCHAR(64) NOT NULL DEFAULT CONVERT(NVARCHAR(64), NEWID()),
+                permissionsversion_utilisateur INT     NOT NULL DEFAULT 1
             )
         END
         """);
@@ -107,7 +177,8 @@ using (var scope = app.Services.CreateScope())
                 entite_journal       NVARCHAR(50)  NOT NULL,
                 codeentite_journal   NVARCHAR(50)  NULL,
                 dateheure_journal    DATETIME2     NOT NULL DEFAULT GETDATE(),
-                detail_journal       NVARCHAR(255) NULL
+                detail_journal       NVARCHAR(255) NULL,
+                company_id_journal   INT NULL
             )
         END
         """);
@@ -193,12 +264,90 @@ using (var scope = app.Services.CreateScope())
         END
         """);
 
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'journalactivite' AND COLUMN_NAME = 'company_id_journal'
+        )
+        BEGIN
+            ALTER TABLE journalactivite ADD company_id_journal INT NULL
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'utilisateurs' AND COLUMN_NAME = 'is_superadmin_utilisateur'
+        )
+        BEGIN
+            ALTER TABLE utilisateurs ADD is_superadmin_utilisateur BIT NOT NULL DEFAULT 0
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'utilisateurs' AND COLUMN_NAME = 'securitystamp_utilisateur'
+        )
+        BEGIN
+            ALTER TABLE utilisateurs ADD securitystamp_utilisateur NVARCHAR(64) NULL
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'utilisateurs' AND COLUMN_NAME = 'permissionsversion_utilisateur'
+        )
+        BEGIN
+            ALTER TABLE utilisateurs ADD permissionsversion_utilisateur INT NOT NULL DEFAULT 1
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE utilisateurs
+        SET securitystamp_utilisateur = CONVERT(NVARCHAR(64), NEWID())
+        WHERE securitystamp_utilisateur IS NULL OR LTRIM(RTRIM(securitystamp_utilisateur)) = ''
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE utilisateurs
+        SET permissionsversion_utilisateur = 1
+        WHERE permissionsversion_utilisateur IS NULL OR permissionsversion_utilisateur < 1
+        """);
+
     // ── RBAC seed ──────────────────────────────────────────────────────────
     // Default company (let IDENTITY assign the PK — don't specify id_company)
     db.Database.ExecuteSqlRaw("""
         IF NOT EXISTS (SELECT 1 FROM company WHERE slug_company = 'default')
             INSERT INTO company (name_company, slug_company, plan_company)
             VALUES ('Entreprise Défaut', 'default', 'Standard')
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE u
+        SET u.company_id_utilisateur = c.id_company
+        FROM utilisateurs u
+        CROSS APPLY (
+            SELECT TOP 1 id_company
+            FROM company
+            ORDER BY id_company
+        ) c
+        WHERE u.is_superadmin_utilisateur = 0
+          AND u.company_id_utilisateur IS NULL
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE utilisateurs
+        SET is_superadmin_utilisateur = 1
+        WHERE role_utilisateur = 'SuperAdmin'
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE utilisateurs
+        SET role_utilisateur = 'SuperAdmin',
+            company_id_utilisateur = NULL
+        WHERE is_superadmin_utilisateur = 1
         """);
 
     // Permissions (document modules) — seeded as one batch with IDENTITY_INSERT
@@ -234,6 +383,24 @@ using (var scope = app.Services.CreateScope())
         )
         """);
 
+    // Ensure global governance permissions exist (SuperAdmin only).
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO permission (feature_permission, action_permission)
+        SELECT v.feature_permission, v.action_permission
+        FROM (VALUES
+            ('tenants','view'),('tenants','create'),('tenants','update'),('tenants','delete'),
+            ('users-global','view'),('users-global','create'),('users-global','update'),('users-global','delete'),
+            ('roles-global','view'),('roles-global','create'),('roles-global','update'),('roles-global','delete'),
+            ('journal-global','view'),('journal-global','create'),('journal-global','update'),('journal-global','delete')
+        ) AS v(feature_permission, action_permission)
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM permission p
+            WHERE p.feature_permission = v.feature_permission
+              AND p.action_permission = v.action_permission
+        )
+        """);
+
     // System roles
     db.Database.ExecuteSqlRaw("""
         IF NOT EXISTS (SELECT 1 FROM app_role WHERE id_role = 1)
@@ -243,6 +410,14 @@ using (var scope = app.Services.CreateScope())
             INSERT INTO app_role (id_role, name_role, company_id_role) VALUES (2, 'Manager', NULL);
             INSERT INTO app_role (id_role, name_role, company_id_role) VALUES (3, 'Employé', NULL);
             SET IDENTITY_INSERT app_role OFF;
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (SELECT 1 FROM app_role WHERE name_role = 'SuperAdmin' AND company_id_role IS NULL)
+        BEGIN
+            INSERT INTO app_role (name_role, company_id_role)
+            VALUES ('SuperAdmin', NULL)
         END
         """);
 
@@ -297,26 +472,49 @@ using (var scope = app.Services.CreateScope())
           )
         """);
 
-        db.Database.ExecuteSqlRaw("""
-            INSERT INTO role_permission (role_id, permission_id)
-            SELECT 3, p.id_permission
-            FROM permission p
-            WHERE p.action_permission IN ('view', 'create')
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM role_permission rp
-                    WHERE rp.role_id = 3 AND rp.permission_id = p.id_permission
-                )
-            """);
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO role_permission (role_id, permission_id)
+        SELECT 3, p.id_permission
+        FROM permission p
+        WHERE p.feature_permission IN (
+            'clients', 'factures', 'devis', 'commandes-vente', 'bons-livraison',
+            'fournisseurs', 'commandes-achat', 'bons-reception', 'factures-fournisseur', 'produits'
+        )
+          AND p.action_permission IN ('view', 'create')
+          AND NOT EXISTS (
+              SELECT 1
+              FROM role_permission rp
+              WHERE rp.role_id = 3 AND rp.permission_id = p.id_permission
+          )
+        """);
 
-        // Enforce employee policy globally: create allowed, update/delete denied.
-        db.Database.ExecuteSqlRaw("""
-                DELETE rp
-                FROM role_permission rp
-                INNER JOIN permission p ON p.id_permission = rp.permission_id
-                WHERE rp.role_id = 3
-                    AND p.action_permission IN ('update', 'delete')
-                """);
+    // Enforce employee policy: no update/delete and no global governance permissions.
+    db.Database.ExecuteSqlRaw("""
+        DELETE rp
+        FROM role_permission rp
+        INNER JOIN permission p ON p.id_permission = rp.permission_id
+        WHERE rp.role_id = 3
+          AND (
+              p.action_permission IN ('update', 'delete')
+              OR p.feature_permission IN ('tenants', 'users-global', 'roles-global', 'journal-global')
+          )
+        """);
+
+    // SuperAdmin receives governance/global permissions only.
+    db.Database.ExecuteSqlRaw("""
+        INSERT INTO role_permission (role_id, permission_id)
+        SELECT r.id_role, p.id_permission
+        FROM app_role r
+        CROSS JOIN permission p
+        WHERE r.name_role = 'SuperAdmin'
+          AND r.company_id_role IS NULL
+          AND p.feature_permission IN ('tenants', 'users-global', 'roles-global', 'journal-global')
+          AND NOT EXISTS (
+              SELECT 1
+              FROM role_permission rp
+              WHERE rp.role_id = r.id_role AND rp.permission_id = p.id_permission
+          )
+        """);
 
     // Seed: créer admin par défaut si aucun utilisateur n'existe
     if (!db.Utilisateurs.Any())

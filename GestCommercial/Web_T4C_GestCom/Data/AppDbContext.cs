@@ -144,9 +144,22 @@ public class AppDbContext : DbContext
             new Company { Id = 1, Name = "Entreprise Défaut", Slug = "default", Plan = "Standard" }
         );
 
-        // Permissions : 7 modules × 4 actions = 28
-        var modules = new[] { "factures", "devis", "commandes-vente", "bons-livraison",
-                              "commandes-achat", "bons-reception", "factures-fournisseur" };
+        // Permissions: enterprise modules + global superadmin modules.
+        var enterpriseModules = new[]
+        {
+            "clients",
+            "factures",
+            "devis",
+            "commandes-vente",
+            "bons-livraison",
+            "fournisseurs",
+            "commandes-achat",
+            "bons-reception",
+            "factures-fournisseur",
+            "produits"
+        };
+        var superAdminModules = new[] { "tenants", "users-global", "roles-global", "journal-global" };
+        var modules = enterpriseModules.Concat(superAdminModules).ToArray();
         var actions = new[] { "view", "create", "update", "delete" };
         var permissions = new List<Permission>();
         int permId = 1;
@@ -159,22 +172,23 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<AppRole>().HasData(
             new AppRole { Id = 1, Name = "Admin",   CompanyId = null },
             new AppRole { Id = 2, Name = "Manager", CompanyId = null },
-            new AppRole { Id = 3, Name = "Employé", CompanyId = null }
+            new AppRole { Id = 3, Name = "Employé", CompanyId = null },
+            new AppRole { Id = 4, Name = "SuperAdmin", CompanyId = null }
         );
 
         // RolePermissions
         var rp = new List<RolePermission>();
-        // Admin → toutes les 28 permissions
-        for (int i = 1; i <= 28; i++)
-            rp.Add(new RolePermission { RoleId = 1, PermissionId = i });
-        // Manager → view + create + update (pas delete) : ids 1-3, 5-7, 9-11, 13-15, 17-19, 21-23, 25-27
-        for (int m = 0; m < 7; m++)
-            for (int a = 0; a < 3; a++) // view=0, create=1, update=2
-                rp.Add(new RolePermission { RoleId = 2, PermissionId = m * 4 + a + 1 });
-        // Employé → view + create (pas update/delete) : ids 1-2, 5-6, 9-10, 13-14, 17-18, 21-22, 25-26
-        for (int m = 0; m < 7; m++)
-            for (int a = 0; a < 2; a++) // view=0, create=1
-                rp.Add(new RolePermission { RoleId = 3, PermissionId = m * 4 + a + 1 });
+        foreach (var p in permissions.Where(p => enterpriseModules.Contains(p.Feature)))
+            rp.Add(new RolePermission { RoleId = 1, PermissionId = p.Id });
+
+        foreach (var p in permissions.Where(p => enterpriseModules.Contains(p.Feature) && p.Action != "delete"))
+            rp.Add(new RolePermission { RoleId = 2, PermissionId = p.Id });
+
+        foreach (var p in permissions.Where(p => enterpriseModules.Contains(p.Feature) && (p.Action == "view" || p.Action == "create")))
+            rp.Add(new RolePermission { RoleId = 3, PermissionId = p.Id });
+
+        foreach (var p in permissions.Where(p => superAdminModules.Contains(p.Feature)))
+            rp.Add(new RolePermission { RoleId = 4, PermissionId = p.Id });
 
         modelBuilder.Entity<RolePermission>().HasData(rp);
     }

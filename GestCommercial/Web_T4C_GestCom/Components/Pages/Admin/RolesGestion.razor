@@ -1,12 +1,13 @@
 @page "/admin/roles"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @using Microsoft.EntityFrameworkCore
 @using Web_T4C_GestCom.Data
 @using Web_T4C_GestCom.Data.Models
 @using Web_T4C_GestCom.Services
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject IPermissionService PermissionService
+@inject ITenantService TenantService
 
 <PageTitle>Gestion des Rôles – T4C GestCom</PageTitle>
 
@@ -148,6 +149,13 @@ else
     private async Task SaveAsync()
     {
         if (_selectedRole is null) return;
+
+        var currentCompanyId = TenantService.CurrentCompanyId;
+        if (currentCompanyId.HasValue && _selectedRole.CompanyId != currentCompanyId)
+        {
+            _notif?.ShowError("Vous ne pouvez modifier que les rôles de votre entreprise.");
+            return;
+        }
 
         await using var db = await DbFactory.CreateDbContextAsync();
 

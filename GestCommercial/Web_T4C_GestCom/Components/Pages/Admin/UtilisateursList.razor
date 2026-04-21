@@ -1,6 +1,6 @@
 @page "/admin/utilisateurs"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject IUtilisateurService UtilisateurService
 
 <PageTitle>Gestion Utilisateurs – T4C GestCom</PageTitle>

@@ -44,6 +44,16 @@ public class Utilisateur
     [Column("company_id_utilisateur")]
     public int? CompanyId { get; set; }
 
+    [Column("is_superadmin_utilisateur")]
+    public bool IsSuperAdmin { get; set; } = false;
+
+    [Required, MaxLength(64)]
+    [Column("securitystamp_utilisateur")]
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
+
+    [Column("permissionsversion_utilisateur")]
+    public int PermissionsVersion { get; set; } = 1;
+
     [NotMapped]
     public string NomComplet => $"{Prenom} {Nom}";
 
