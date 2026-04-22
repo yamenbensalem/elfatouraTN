@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Web_T4C_GestCom.Data.Models;
 
 [Table("produit")]
-public class Produit
+public class Produit : ITenantOwned
 {
     [Key]
     [Column("code_produit")]
@@ -32,6 +32,9 @@ public class Produit
     [Column("code_fournisseur")]
     [Display(Name = "Fournisseur")]
     public string? CodeFournisseur { get; set; }
+
+    [Column("company_id_produit")]
+    public int? CompanyId { get; set; }
 
     [Column("code_uniteproduit")]
     [Display(Name = "Unité")]
@@ -109,4 +112,7 @@ public class Produit
 
     [ForeignKey(nameof(CodeFournisseur))]
     public Fournisseur? Fournisseur { get; set; }
+
+    [ForeignKey(nameof(CompanyId))]
+    public Company? Company { get; set; }
 }

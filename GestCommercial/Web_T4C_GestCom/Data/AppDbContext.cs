@@ -25,6 +25,26 @@ public class AppDbContext : DbContext
         }
     }
 
+    private bool CurrentIsSuperAdmin
+    {
+        get
+        {
+            return _httpContextAccessor?.HttpContext?.User.IsSuperAdmin() == true;
+        }
+    }
+
+    /// <summary>
+    /// Tenant filters are applied only in real HTTP request scope (not in unit tests/no HttpContext).
+    /// SuperAdmin bypasses tenant filters globally.
+    /// </summary>
+    private bool ShouldApplyTenantFilter
+    {
+        get
+        {
+            return _httpContextAccessor?.HttpContext is not null && !CurrentIsSuperAdmin;
+        }
+    }
+
     // ── Reference data ─────────────────────────────────────────────────────
     public DbSet<Entreprise>        Entreprises         => Set<Entreprise>();
     public DbSet<Devise>            Devises             => Set<Devise>();
@@ -71,6 +91,53 @@ public class AppDbContext : DbContext
     public DbSet<RolePermission> RolePermissions  => Set<RolePermission>();
     public DbSet<FeatureFlag>    FeatureFlags     => Set<FeatureFlag>();
 
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        ApplyTenantOwnershipRules();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        ApplyTenantOwnershipRules();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void ApplyTenantOwnershipRules()
+    {
+        if (!ShouldApplyTenantFilter)
+            return;
+
+        if (!CurrentCompanyId.HasValue)
+            throw new UnauthorizedAccessException("Aucun tenant actif dans le contexte de sécurité.");
+
+        var tenantId = CurrentCompanyId.Value;
+
+        foreach (var entry in ChangeTracker.Entries()
+                     .Where(e => e.Entity is ITenantOwned &&
+                                 (e.State == EntityState.Added ||
+                                  e.State == EntityState.Modified ||
+                                  e.State == EntityState.Deleted)))
+        {
+            var entity = (ITenantOwned)entry.Entity;
+
+            if (entry.State == EntityState.Added)
+            {
+                // Hard-stamp tenant ownership at creation time.
+                entity.CompanyId = tenantId;
+                continue;
+            }
+
+            if (entity.CompanyId != tenantId)
+                throw new UnauthorizedAccessException("Tentative d'accès cross-tenant détectée.");
+
+            if (entry.State == EntityState.Modified)
+                entity.CompanyId = tenantId;
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -99,6 +166,57 @@ public class AppDbContext : DbContext
             .HasQueryFilter(ff =>
                 CurrentCompanyId == null ||
                 ff.CompanyId == CurrentCompanyId);
+
+        // Business entities: strictly tenant-scoped for non-superadmin request contexts.
+        modelBuilder.Entity<Client>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<Fournisseur>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<Produit>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<DevisClient>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<CommandeVente>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<BonLivraison>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<FactureClient>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<CommandeAchat>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<BonReception>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<FactureFournisseur>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
 
         // ── Reference data seed ────────────────────────────────────────────
         modelBuilder.Entity<Devise>().HasData(
@@ -144,9 +262,22 @@ public class AppDbContext : DbContext
             new Company { Id = 1, Name = "Entreprise Défaut", Slug = "default", Plan = "Standard" }
         );
 
-        // Permissions : 7 modules × 4 actions = 28
-        var modules = new[] { "factures", "devis", "commandes-vente", "bons-livraison",
-                              "commandes-achat", "bons-reception", "factures-fournisseur" };
+        // Permissions: enterprise modules + global superadmin modules.
+        var enterpriseModules = new[]
+        {
+            "clients",
+            "factures",
+            "devis",
+            "commandes-vente",
+            "bons-livraison",
+            "fournisseurs",
+            "commandes-achat",
+            "bons-reception",
+            "factures-fournisseur",
+            "produits"
+        };
+        var superAdminModules = new[] { "tenants", "users-global", "roles-global", "journal-global" };
+        var modules = enterpriseModules.Concat(superAdminModules).ToArray();
         var actions = new[] { "view", "create", "update", "delete" };
         var permissions = new List<Permission>();
         int permId = 1;
@@ -159,22 +290,23 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<AppRole>().HasData(
             new AppRole { Id = 1, Name = "Admin",   CompanyId = null },
             new AppRole { Id = 2, Name = "Manager", CompanyId = null },
-            new AppRole { Id = 3, Name = "Employé", CompanyId = null }
+            new AppRole { Id = 3, Name = "Employé", CompanyId = null },
+            new AppRole { Id = 4, Name = "SuperAdmin", CompanyId = null }
         );
 
         // RolePermissions
         var rp = new List<RolePermission>();
-        // Admin → toutes les 28 permissions
-        for (int i = 1; i <= 28; i++)
-            rp.Add(new RolePermission { RoleId = 1, PermissionId = i });
-        // Manager → view + create + update (pas delete) : ids 1-3, 5-7, 9-11, 13-15, 17-19, 21-23, 25-27
-        for (int m = 0; m < 7; m++)
-            for (int a = 0; a < 3; a++) // view=0, create=1, update=2
-                rp.Add(new RolePermission { RoleId = 2, PermissionId = m * 4 + a + 1 });
-        // Employé → view + create (pas update/delete) : ids 1-2, 5-6, 9-10, 13-14, 17-18, 21-22, 25-26
-        for (int m = 0; m < 7; m++)
-            for (int a = 0; a < 2; a++) // view=0, create=1
-                rp.Add(new RolePermission { RoleId = 3, PermissionId = m * 4 + a + 1 });
+        foreach (var p in permissions.Where(p => enterpriseModules.Contains(p.Feature)))
+            rp.Add(new RolePermission { RoleId = 1, PermissionId = p.Id });
+
+        foreach (var p in permissions.Where(p => enterpriseModules.Contains(p.Feature) && p.Action != "delete"))
+            rp.Add(new RolePermission { RoleId = 2, PermissionId = p.Id });
+
+        foreach (var p in permissions.Where(p => enterpriseModules.Contains(p.Feature) && (p.Action == "view" || p.Action == "create")))
+            rp.Add(new RolePermission { RoleId = 3, PermissionId = p.Id });
+
+        foreach (var p in permissions.Where(p => superAdminModules.Contains(p.Feature)))
+            rp.Add(new RolePermission { RoleId = 4, PermissionId = p.Id });
 
         modelBuilder.Entity<RolePermission>().HasData(rp);
     }

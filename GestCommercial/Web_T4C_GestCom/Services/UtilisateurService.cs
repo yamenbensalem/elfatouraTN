@@ -22,15 +22,30 @@ public interface IUtilisateurService
     string HashPassword(string password);
 }
 
-public class UtilisateurService(AppDbContext db, IPermissionService? permissionService = null) : IUtilisateurService
+public class UtilisateurService(
+    AppDbContext db,
+    ITenantService? tenantService = null,
+    IPermissionService? permissionService = null) : IUtilisateurService
 {
     private const string HashPrefixBcryptV1 = "v2$bcrypt$";
 
     public async Task<List<Utilisateur>> GetAllAsync()
-        => await db.Utilisateurs.OrderBy(u => u.Nom).ThenBy(u => u.Prenom).ToListAsync();
+    {
+        var query = db.Utilisateurs.AsQueryable();
+        if (tenantService?.CurrentCompanyId is int companyId)
+            query = query.Where(u => !u.IsSuperAdmin && u.CompanyId == companyId);
+
+        return await query.OrderBy(u => u.Nom).ThenBy(u => u.Prenom).ToListAsync();
+    }
 
     public async Task<Utilisateur?> GetByIdAsync(int id)
-        => await db.Utilisateurs.FindAsync(id);
+    {
+        var query = db.Utilisateurs.Where(u => u.Id == id);
+        if (tenantService?.CurrentCompanyId is int companyId)
+            query = query.Where(u => !u.IsSuperAdmin && u.CompanyId == companyId);
+
+        return await query.FirstOrDefaultAsync();
+    }
 
     public async Task<Utilisateur?> GetByLoginAsync(string login)
         => await db.Utilisateurs.FirstOrDefaultAsync(u => u.Login == login);
@@ -63,9 +78,17 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
 
     public async Task AddAsync(Utilisateur utilisateur, string plainPassword)
     {
-        utilisateur.Role = RoleNameMapper.NormalizeKnownRoleName(utilisateur.Role);
+        await EnsureTenantDefaultsAsync(utilisateur);
+
+        utilisateur.Role = utilisateur.IsSuperAdmin
+            ? RoleNameMapper.SuperAdmin
+            : RoleNameMapper.NormalizeKnownRoleName(utilisateur.Role);
+
         utilisateur.PasswordHash = HashPassword(plainPassword);
         utilisateur.DateCreation = DateTime.Now;
+        utilisateur.SecurityStamp = CreateSecurityStamp();
+        utilisateur.PermissionsVersion = Math.Max(utilisateur.PermissionsVersion, 1);
+
         db.Utilisateurs.Add(utilisateur);
         await db.SaveChangesAsync();
 
@@ -74,7 +97,41 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
 
     public async Task UpdateAsync(Utilisateur utilisateur)
     {
-        utilisateur.Role = RoleNameMapper.NormalizeKnownRoleName(utilisateur.Role);
+        var previous = await db.Utilisateurs
+            .AsNoTracking()
+            .Where(u => u.Id == utilisateur.Id)
+            .Select(u => new
+            {
+                u.Role,
+                u.CompanyId,
+                u.IsSuperAdmin,
+                u.PermissionsVersion
+            })
+            .FirstOrDefaultAsync();
+
+        await EnsureTenantDefaultsAsync(utilisateur);
+
+        utilisateur.Role = utilisateur.IsSuperAdmin
+            ? RoleNameMapper.SuperAdmin
+            : RoleNameMapper.NormalizeKnownRoleName(utilisateur.Role);
+
+        utilisateur.SecurityStamp = string.IsNullOrWhiteSpace(utilisateur.SecurityStamp)
+            ? CreateSecurityStamp()
+            : utilisateur.SecurityStamp;
+
+        utilisateur.PermissionsVersion = Math.Max(utilisateur.PermissionsVersion, 1);
+
+        var authStateChanged = previous is not null &&
+                               (previous.Role != utilisateur.Role ||
+                                previous.CompanyId != utilisateur.CompanyId ||
+                                previous.IsSuperAdmin != utilisateur.IsSuperAdmin);
+
+        if (authStateChanged)
+        {
+            utilisateur.PermissionsVersion = Math.Max(utilisateur.PermissionsVersion, previous!.PermissionsVersion + 1);
+            utilisateur.SecurityStamp = CreateSecurityStamp();
+        }
+
         db.Utilisateurs.Update(utilisateur);
         await db.SaveChangesAsync();
 
@@ -86,6 +143,7 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
         var u = await db.Utilisateurs.FindAsync(id)
             ?? throw new InvalidOperationException("Utilisateur introuvable.");
         u.PasswordHash = HashPassword(newPlainPassword);
+        u.SecurityStamp = CreateSecurityStamp();
         await db.SaveChangesAsync();
     }
 
@@ -94,6 +152,7 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
         var u = await db.Utilisateurs.FindAsync(id)
             ?? throw new InvalidOperationException("Utilisateur introuvable.");
         u.Actif = true;
+        u.SecurityStamp = CreateSecurityStamp();
         await db.SaveChangesAsync();
     }
 
@@ -102,6 +161,7 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
         var u = await db.Utilisateurs.FindAsync(id)
             ?? throw new InvalidOperationException("Utilisateur introuvable.");
         u.Actif = false;
+        u.SecurityStamp = CreateSecurityStamp();
         await db.SaveChangesAsync();
     }
 
@@ -162,9 +222,21 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
 
     private async Task SyncUserRoleMappingAsync(int userId, string? legacyRoleName, bool saveImmediately = true)
     {
-        var roleName = RoleNameMapper.NormalizeKnownRoleName(legacyRoleName);
-        var roleId = await ResolveRoleIdAsync(roleName)
-            ?? await ResolveRoleIdAsync(RoleNameMapper.Employe)
+        var userMeta = await db.Utilisateurs
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.CompanyId, u.IsSuperAdmin })
+            .FirstOrDefaultAsync();
+
+        var companyId = userMeta?.CompanyId;
+        var isSuperAdmin = userMeta?.IsSuperAdmin ?? false;
+
+        var roleName = isSuperAdmin
+            ? RoleNameMapper.SuperAdmin
+            : RoleNameMapper.NormalizeKnownRoleName(legacyRoleName);
+
+        var roleId = await ResolveRoleIdAsync(roleName, companyId)
+            ?? await ResolveRoleIdAsync(RoleNameMapper.Employe, companyId)
             ?? throw new InvalidOperationException("Aucun rôle RBAC valide n'est configuré dans app_role.");
 
         var existingMappings = await db.UserRoles
@@ -185,13 +257,41 @@ public class UtilisateurService(AppDbContext db, IPermissionService? permissionS
         permissionService?.InvalidateUser(userId);
     }
 
-    private async Task<int?> ResolveRoleIdAsync(string roleName)
+    private async Task<int?> ResolveRoleIdAsync(string roleName, int? companyId)
     {
         var id = await db.AppRoles
             .Where(r => r.Name == roleName)
+            .Where(r => r.CompanyId == null || (companyId.HasValue && r.CompanyId == companyId))
+            .OrderBy(r => r.CompanyId == companyId ? 0 : 1)
             .Select(r => (int?)r.Id)
             .FirstOrDefaultAsync();
 
         return id;
     }
+
+    private async Task EnsureTenantDefaultsAsync(Utilisateur utilisateur)
+    {
+        if (utilisateur.IsSuperAdmin)
+        {
+            utilisateur.CompanyId = null;
+            return;
+        }
+
+        if (utilisateur.CompanyId.HasValue)
+            return;
+
+        if (tenantService?.CurrentCompanyId is int currentCompanyId)
+        {
+            utilisateur.CompanyId = currentCompanyId;
+            return;
+        }
+
+        utilisateur.CompanyId = await db.Companies
+            .AsNoTracking()
+            .OrderBy(c => c.Id)
+            .Select(c => (int?)c.Id)
+            .FirstOrDefaultAsync();
+    }
+
+    private static string CreateSecurityStamp() => Guid.NewGuid().ToString("N");
 }

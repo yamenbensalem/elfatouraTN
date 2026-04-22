@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Web_T4C_GestCom.Data.Models;
 
 [Table("factureclient")]
-public class FactureClient
+public class FactureClient : ITenantOwned
 {
     [Key]
     [Column("numero_factureclient")]
@@ -20,6 +20,9 @@ public class FactureClient
     [Column("code_client")]
     [Display(Name = "Client")]
     public string CodeClient { get; set; } = string.Empty;
+
+    [Column("company_id_factureclient")]
+    public int? CompanyId { get; set; }
 
     [Column("montantHT_factureclient")]
     [Display(Name = "Montant HT")]
@@ -67,6 +70,9 @@ public class FactureClient
     // Navigation
     [ForeignKey(nameof(CodeClient))]
     public Client? Client { get; set; }
+
+    [ForeignKey(nameof(CompanyId))]
+    public Company? Company { get; set; }
 
     public ICollection<LigneFactureClient> Lignes { get; set; } = [];
     public ICollection<ReglementFactureClient> Reglements { get; set; } = [];

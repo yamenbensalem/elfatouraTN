@@ -19,7 +19,10 @@ public interface IJournalActiviteService
     Task<List<string>> GetEntitesDistinctesAsync();
 }
 
-public class JournalActiviteService(AppDbContext db, ICurrentUserService currentUser) : IJournalActiviteService
+public class JournalActiviteService(
+    AppDbContext db,
+    ICurrentUserService currentUser,
+    ITenantService? tenantService = null) : IJournalActiviteService
 {
     public async Task EnregistrerAsync(string action, string entite, string? codeEntite = null, string? detail = null)
     {
@@ -32,7 +35,8 @@ public class JournalActiviteService(AppDbContext db, ICurrentUserService current
                 Entite     = entite,
                 CodeEntite = codeEntite,
                 DateHeure  = DateTime.Now,
-                Detail     = detail
+                Detail     = detail,
+                CompanyId  = tenantService?.CurrentCompanyId
             });
             await db.SaveChangesAsync();
         }
@@ -50,6 +54,9 @@ public class JournalActiviteService(AppDbContext db, ICurrentUserService current
     {
         var q = db.JournalActivites.AsQueryable();
 
+        if (tenantService?.CurrentCompanyId is int companyId)
+            q = q.Where(j => j.CompanyId == companyId);
+
         if (!string.IsNullOrWhiteSpace(login))
             q = q.Where(j => j.Login == login);
 
@@ -66,8 +73,20 @@ public class JournalActiviteService(AppDbContext db, ICurrentUserService current
     }
 
     public async Task<List<string>> GetLoginsDistinctsAsync()
-        => await db.JournalActivites.Select(j => j.Login).Distinct().OrderBy(l => l).ToListAsync();
+    {
+        var q = db.JournalActivites.AsQueryable();
+        if (tenantService?.CurrentCompanyId is int companyId)
+            q = q.Where(j => j.CompanyId == companyId);
+
+        return await q.Select(j => j.Login).Distinct().OrderBy(l => l).ToListAsync();
+    }
 
     public async Task<List<string>> GetEntitesDistinctesAsync()
-        => await db.JournalActivites.Select(j => j.Entite).Distinct().OrderBy(e => e).ToListAsync();
+    {
+        var q = db.JournalActivites.AsQueryable();
+        if (tenantService?.CurrentCompanyId is int companyId)
+            q = q.Where(j => j.CompanyId == companyId);
+
+        return await q.Select(j => j.Entite).Distinct().OrderBy(e => e).ToListAsync();
+    }
 }

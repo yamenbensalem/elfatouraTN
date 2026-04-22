@@ -90,6 +90,7 @@ public class ServicePermissionGuardTests
         public string Login { get; private set; } = "système";
         public string Role { get; private set; } = "Employé";
         public bool IsAdmin => string.Equals(Role, RoleNameMapper.Admin, StringComparison.OrdinalIgnoreCase);
+        public bool IsSuperAdmin => string.Equals(Role, RoleNameMapper.SuperAdmin, StringComparison.OrdinalIgnoreCase);
         public bool IsAuthenticated => !string.Equals(Login, "système", StringComparison.OrdinalIgnoreCase);
 
         public Task EnsureInitializedAsync() => _ready.Task;

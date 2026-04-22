@@ -1,7 +1,7 @@
 @page "/admin/utilisateurs/nouveau"
 @page "/admin/utilisateurs/{Id:int}"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject IUtilisateurService UtilisateurService
 @inject NavigationManager Nav
 

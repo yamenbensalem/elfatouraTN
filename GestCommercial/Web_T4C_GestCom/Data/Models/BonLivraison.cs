@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Web_T4C_GestCom.Data.Models;
 
 [Table("bonlivraison")]
-public class BonLivraison
+public class BonLivraison : ITenantOwned
 {
     [Key]
     [Column("numero_bonlivraison")]
@@ -20,6 +20,9 @@ public class BonLivraison
     [Column("code_client")]
     [Display(Name = "Client")]
     public string CodeClient { get; set; } = string.Empty;
+
+    [Column("company_id_bonlivraison")]
+    public int? CompanyId { get; set; }
 
     [MaxLength(20)]
     [Column("numero_commandevente")]
@@ -60,6 +63,9 @@ public class BonLivraison
     // Navigation
     [ForeignKey(nameof(CodeClient))]
     public Client? Client { get; set; }
+
+    [ForeignKey(nameof(CompanyId))]
+    public Company? Company { get; set; }
 
     [ForeignKey(nameof(NumeroCommandeVente))]
     public CommandeVente? CommandeVente { get; set; }

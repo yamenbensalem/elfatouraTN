@@ -13,12 +13,14 @@ public class ConnexionModel(
     IUtilisateurService utilisateurService,
     ILoginProtectionService loginProtectionService,
     IJournalActiviteService journalActiviteService,
+    IConfiguration configuration,
     ILogger<ConnexionModel> logger) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; private set; }
+    public bool AllowPublicSignup { get; } = configuration.GetValue<bool>("Security:AllowPublicSignup");
 
     public IActionResult OnGet(string? returnUrl = null)
     {
@@ -57,16 +59,23 @@ public class ConnexionModel(
 
         loginProtectionService.RegisterSuccess(login, ipAddress);
 
+        var role = user.IsSuperAdmin
+            ? RoleNameMapper.SuperAdmin
+            : RoleNameMapper.NormalizeKnownRoleName(user.Role);
+
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name,      user.Login),
             new(ClaimTypes.GivenName, user.NomComplet),
-            new(ClaimTypes.Role,      RoleNameMapper.NormalizeKnownRoleName(user.Role)),
+            new(ClaimTypes.Role,      role),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new("UserId",             user.Id.ToString())
+            new("UserId",             user.Id.ToString()),
+            new("IsSuperAdmin",       user.IsSuperAdmin ? "1" : "0"),
+            new("SecurityStamp",      user.SecurityStamp),
+            new("PermissionsVersion", user.PermissionsVersion.ToString())
         };
 
-        if (user.CompanyId.HasValue)
+        if (!user.IsSuperAdmin && user.CompanyId.HasValue)
             claims.Add(new Claim("CompanyId", user.CompanyId.Value.ToString()));
 
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

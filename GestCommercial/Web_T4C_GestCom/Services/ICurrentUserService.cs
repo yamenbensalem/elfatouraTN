@@ -14,6 +14,7 @@ public interface ICurrentUserService
     string Login { get; }
     string Role { get; }
     bool IsAdmin { get; }
+    bool IsSuperAdmin { get; }
     bool IsAuthenticated { get; }
     Task EnsureInitializedAsync();
     void SetCurrentUser(string login, string role);
@@ -67,6 +68,7 @@ public class CurrentUserService : ICurrentUserService, IDisposable
     }
 
     public bool IsAdmin => Role == RoleNameMapper.Admin;
+    public bool IsSuperAdmin => Role == RoleNameMapper.SuperAdmin;
 
     public bool IsAuthenticated
     {

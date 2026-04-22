@@ -6,16 +6,22 @@ using Web_T4C_GestCom.Services;
 
 namespace Web_T4C_GestCom.Pages.Compte;
 
-public class InscriptionModel(IUtilisateurService utilisateurService) : PageModel
+public class InscriptionModel(
+    IUtilisateurService utilisateurService,
+    IConfiguration configuration) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; private set; }
     public bool Success { get; private set; }
+    private bool AllowPublicSignup { get; } = configuration.GetValue<bool>("Security:AllowPublicSignup");
 
     public IActionResult OnGet()
     {
+        if (!AllowPublicSignup)
+            return NotFound();
+
         if (User.Identity?.IsAuthenticated == true)
             return LocalRedirect("/");
         return Page();
@@ -23,6 +29,9 @@ public class InscriptionModel(IUtilisateurService utilisateurService) : PageMode
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (!AllowPublicSignup)
+            return NotFound();
+
         if (!ModelState.IsValid) return Page();
 
         if (Input.Password != Input.ConfirmPassword)

@@ -1,6 +1,6 @@
 @page "/admin/journal"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject IJournalActiviteService JournalService
 
 <PageTitle>Journal d'Activité – T4C GestCom</PageTitle>
