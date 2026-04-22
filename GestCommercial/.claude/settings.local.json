@@ -78,7 +78,25 @@
       "Bash(ls \"D:\\\\Entreprise\\\\Projets\\\\GitProjects\\\\T4C_GestComDecembre2024\\\\Web_T4C_GestCom\\\\wwwroot\\\\bootstrap\"\" 2>/dev/null | head -10; find \"D:EntrepriseProjetsGitProjectsT4C_GestComDecembre2024Web_T4C_GestComwwwroot\" -maxdepth 3 -name \"*.css \")",
       "Bash(ls -la \"D:\\\\Entreprise\\\\Projets\\\\GitProjects\\\\T4C_GestComDecembre2024\\\\Web_T4C_GestCom\\\\Data\\\\Migrations\"\" 2>/dev/null | grep -v \"^total\" || echo \"Migrations folder structure: \")",
       "Bash(grep -r [Authorize D:EntrepriseProjetsGitProjectsT4C_GestComDecembre2024Web_T4C_GestCom --include=*.razor --include=*.cs)",
-      "Bash(grep -r \"IUtilisateurService\\\\|ICurrentUserService\" D:EntrepriseProjetsGitProjectsT4C_GestComDecembre2024Web_T4C_GestCom/Components --include=*.razor)"
+      "Bash(grep -r \"IUtilisateurService\\\\|ICurrentUserService\" D:EntrepriseProjetsGitProjectsT4C_GestComDecembre2024Web_T4C_GestCom/Components --include=*.razor)",
+      "Bash(node segmentation_memoire.js)",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('pptxgenjs'\\); console.log\\('ok'\\)\")",
+      "Bash(npm root *)",
+      "Bash(node -e \"console.log\\(require.resolve.paths\\('pptxgenjs'\\)\\)\")",
+      "Bash(NODE_PATH=\"C:\\\\Users\\\\yamen\\\\AppData\\\\Roaming\\\\npm\\\\node_modules\" node segmentation_memoire.js)",
+      "Bash(python scripts/office/soffice.py --headless --convert-to pdf segmentation_memoire.pptx)",
+      "Bash(where python3 *)",
+      "Bash(py scripts/office/soffice.py --headless --convert-to pdf segmentation_memoire.pptx)",
+      "Bash(where soffice *)",
+      "Read(//c/Program Files/LibreOffice/program/**)",
+      "Bash(py -m markitdown segmentation_memoire.pptx)",
+      "Bash(pip install *)",
+      "Bash(py -m pip install \"markitdown[pptx]\" -q)",
+      "Bash(py -m pip install \"markitdown[pptx]\" --upgrade -q)",
+      "Bash(node gestion_memoire.js)",
+      "Bash(py scripts/office/validate.py gestion_memoire_exercices.docx)",
+      "Bash(NODE_PATH=\"C:\\\\Users\\\\yamen\\\\AppData\\\\Roaming\\\\npm\\\\node_modules\" node gestion_fichiers.js)"
     ]
   }
 }
