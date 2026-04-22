@@ -1,5 +1,6 @@
 @page "/entreprise"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
 @inject AppDbContext Db
 @inject NavigationManager Nav
 

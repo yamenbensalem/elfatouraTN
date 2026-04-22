@@ -120,27 +120,30 @@
     </details>
 
     <!-- ── PARAMÈTRES ─────────────────────────── -->
-    <div class="sidebar-group">
-        <button class="sidebar-group-header" type="button"
-                @onclick="ToggleParams"
-                aria-expanded="@_paramsOpen" aria-controls="nav-params">
-            <div class="sidebar-group-title">
-                <i class="bi bi-gear sidebar-icon"></i>
-                <span>Paramètres</span>
-            </div>
-            <i class="bi bi-chevron-down sidebar-chevron"></i>
-        </button>
-        <div id="nav-params" class="sidebar-group-items-wrap" hidden="@(!_paramsOpen)">
-            <div class="sidebar-group-items">
-                <NavLink class="sidebar-link sidebar-link-sub" href="entreprise">
-                    <i class="bi bi-building-gear sidebar-icon"></i> Entreprise
-                </NavLink>
+    @if (CanAccessAdministration)
+    {
+        <div class="sidebar-group">
+            <button class="sidebar-group-header" type="button"
+                    @onclick="ToggleParams"
+                    aria-expanded="@_paramsOpen" aria-controls="nav-params">
+                <div class="sidebar-group-title">
+                    <i class="bi bi-gear sidebar-icon"></i>
+                    <span>Paramètres</span>
+                </div>
+                <i class="bi bi-chevron-down sidebar-chevron"></i>
+            </button>
+            <div id="nav-params" class="sidebar-group-items-wrap" hidden="@(!_paramsOpen)">
+                <div class="sidebar-group-items">
+                    <NavLink class="sidebar-link sidebar-link-sub" href="entreprise">
+                        <i class="bi bi-building-gear sidebar-icon"></i> Entreprise
+                    </NavLink>
+                </div>
             </div>
         </div>
-    </div>
+    }
 
     <!-- ── ADMINISTRATION (Admin only) ───────── -->
-    @if (CurrentUserService.IsAdmin)
+    @if (CanAccessAdministration)
     {
         <div class="sidebar-group">
             <button class="sidebar-group-header" type="button"
@@ -197,6 +200,7 @@
 @code {
     private bool _paramsOpen = true;
     private bool _adminOpen = true;
+    private bool CanAccessAdministration => CurrentUserService.IsAdmin || CurrentUserService.IsSuperAdmin;
 
     protected override void OnInitialized()
     {
