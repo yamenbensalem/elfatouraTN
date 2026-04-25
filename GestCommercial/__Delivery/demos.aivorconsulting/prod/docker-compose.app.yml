@@ -1,0 +1,56 @@
+name: gestcom-demo
+
+services:
+
+  gestcom-app:
+    image: gestcom/demo:prod
+    container_name: gestcom-demo-app
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      # Subpath de l'application (doit correspondre à l'URL nginx)
+      APP_BASE_PATH: /demos/gestionscommercial
+      # Base de données
+      ConnectionStrings__DefaultConnection: >-
+        Server=${DB_SERVER},${DB_PORT};
+        Database=${DB_NAME};
+        User Id=${DB_USER};
+        Password=${DB_USER_PASSWORD};
+        TrustServerCertificate=True;
+        MultipleActiveResultSets=True;
+        Connection Timeout=30;
+      # Demo : seed automatique au démarrage
+      SEED_MOCK_DATA: "true"
+      DEMO_MODE: "true"
+      # Sécurité
+      Security__LoginProtection__MaxFailuresPerLoginWindow: "10"
+      Security__LoginProtection__LoginLockoutSeconds: "300"
+    expose:
+      - "8080"
+    # Port accessible depuis l'hôte (nginx d'aivorconsulting.com proxy vers 127.0.0.1:5200)
+    ports:
+      - "127.0.0.1:${APP_PORT}:8080"
+    networks:
+      - ntw_gestcom_demo
+    depends_on:
+      gestcom-db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/demos/gestionscommercial/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - gestcom_logs:/app/logs
+
+networks:
+  ntw_gestcom_demo:
+    name: ntw_gestcom_demo
+    driver: bridge
+
+volumes:
+  gestcom_logs:
+    name: gestcom_demo_logs

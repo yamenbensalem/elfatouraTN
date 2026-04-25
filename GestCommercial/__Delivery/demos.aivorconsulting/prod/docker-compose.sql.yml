@@ -1,0 +1,76 @@
+name: gestcom-demo
+
+services:
+
+  gestcom-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: gestcom-demo-sqlserver
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD}
+      MSSQL_PID: Express
+    ports:
+      - "127.0.0.1:${DB_EXPOSE_PORT}:1433"
+    volumes:
+      - gestcom_sqldata:/var/opt/mssql
+    networks:
+      - ntw_gestcom_demo
+    healthcheck:
+      test: >
+        /opt/mssql-tools/bin/sqlcmd
+        -S localhost -U sa -P "$$MSSQL_SA_PASSWORD"
+        -Q "SELECT 1" -b -o /dev/null
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+  gestcom-db-init:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: gestcom-demo-db-init
+    restart: "no"
+    depends_on:
+      gestcom-sqlserver:
+        condition: service_healthy
+    environment:
+      SA_PASSWORD: ${SA_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_USER_PASSWORD: ${DB_USER_PASSWORD}
+    volumes:
+      - ./sql-init:/sql-init:ro
+      - db_init_status:/init-status
+    command: >
+      bash -c "
+        if [ -f /init-status/done ]; then
+          echo '[db-init] Base deja initialisee, skip.';
+          exit 0;
+        fi;
+        echo '[db-init] Initialisation en cours...';
+        /opt/mssql-tools/bin/sqlcmd
+          -S gestcom-sqlserver -U sa -P \"$$SA_PASSWORD\"
+          -v DB_NAME=\"$$DB_NAME\" DB_USER=\"$$DB_USER\" DB_USER_PASSWORD=\"$$DB_USER_PASSWORD\"
+          -i /sql-init/init-demo.sql -b;
+        if [ $$? -eq 0 ]; then
+          touch /init-status/done;
+          echo '[db-init] OK';
+        else
+          echo '[db-init] ERREUR';
+          exit 1;
+        fi
+      "
+    networks:
+      - ntw_gestcom_demo
+
+networks:
+  ntw_gestcom_demo:
+    name: ntw_gestcom_demo
+    driver: bridge
+    external: true
+
+volumes:
+  gestcom_sqldata:
+    name: gestcom_demo_sqldata
+  db_init_status:
+    name: gestcom_demo_db_init_status
