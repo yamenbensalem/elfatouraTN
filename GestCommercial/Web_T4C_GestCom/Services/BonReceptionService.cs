@@ -43,12 +43,21 @@ public class BonReceptionService(
         bon.NumeroBonReception = await numService.NextBonReceptionAsync();
         RecalculateTotals(bon, lignes);
         bon.Lignes = lignes;
-        db.BonsReception.Add(bon);
-        await db.SaveChangesAsync();
 
-        // Incrémenter le stock (marchandises reçues)
-        foreach (var l in lignes)
-            await UpdateStockAsync(l.CodeProduit, +l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            db.BonsReception.Add(bon);
+            foreach (var l in lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
         await journal.EnregistrerAsync("Ajout", "BonReception", bon.NumeroBonReception, bon.CodeFournisseur);
         return bon;
@@ -63,28 +72,35 @@ public class BonReceptionService(
             .FirstOrDefaultAsync(b => b.NumeroBonReception == bon.NumeroBonReception)
             ?? throw new InvalidOperationException("Bon de réception introuvable.");
 
-        // 1. Restituer l'ancien stock
-        foreach (var l in existing.Lignes)
-            await UpdateStockAsync(l.CodeProduit, -l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var l in existing.Lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
+            db.LignesBonReception.RemoveRange(existing.Lignes);
+            await db.SaveChangesAsync();
 
-        db.LignesBonReception.RemoveRange(existing.Lignes);
-        await db.SaveChangesAsync();
+            existing.DateBonReception = bon.DateBonReception;
+            existing.CodeFournisseur = bon.CodeFournisseur;
+            existing.NumeroCommandeAchat = bon.NumeroCommandeAchat;
+            existing.EtatBonReception = bon.EtatBonReception;
+            existing.EtatFacture = bon.EtatFacture;
+            existing.Note = bon.Note;
 
-        existing.DateBonReception = bon.DateBonReception;
-        existing.CodeFournisseur = bon.CodeFournisseur;
-        existing.NumeroCommandeAchat = bon.NumeroCommandeAchat;
-        existing.EtatBonReception = bon.EtatBonReception;
-        existing.EtatFacture = bon.EtatFacture;
-        existing.Note = bon.Note;
+            foreach (var l in lignes) l.Id = 0;
+            RecalculateTotals(existing, lignes);
+            existing.Lignes = lignes;
 
-        foreach (var l in lignes) l.Id = 0;
-        RecalculateTotals(existing, lignes);
-        existing.Lignes = lignes;
-        await db.SaveChangesAsync();
-
-        // 2. Incrémenter avec les nouvelles lignes
-        foreach (var l in lignes)
-            await UpdateStockAsync(l.CodeProduit, +l.Quantite);
+            foreach (var l in lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
         await journal.EnregistrerAsync("Modification", "BonReception", existing.NumeroBonReception, existing.CodeFournisseur);
         return existing;
@@ -99,13 +115,22 @@ public class BonReceptionService(
             .FirstOrDefaultAsync(b => b.NumeroBonReception == numero)
             ?? throw new InvalidOperationException("Bon de réception introuvable.");
 
-        // Restituer le stock (annuler la réception)
-        foreach (var l in bon.Lignes)
-            await UpdateStockAsync(l.CodeProduit, -l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var l in bon.Lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
+            db.LignesBonReception.RemoveRange(bon.Lignes);
+            db.BonsReception.Remove(bon);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
-        db.LignesBonReception.RemoveRange(bon.Lignes);
-        db.BonsReception.Remove(bon);
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Suppression", "BonReception", numero);
     }
 
@@ -139,23 +164,31 @@ public class BonReceptionService(
 
         RecalculateTotals(clone, lignes);
         clone.Lignes = lignes;
-        db.BonsReception.Add(clone);
-        await db.SaveChangesAsync();
 
-        // Incrémenter le stock pour le clone
-        foreach (var l in lignes)
-            await UpdateStockAsync(l.CodeProduit, +l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            db.BonsReception.Add(clone);
+            foreach (var l in lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
         await journal.EnregistrerAsync("Clone", "BonReception", clone.NumeroBonReception, $"cloné depuis {numero}");
         return clone;
     }
 
-    private async Task UpdateStockAsync(string codeProduit, double delta)
+    private async Task ApplyStockDeltaAsync(string codeProduit, double delta)
     {
         var produit = await db.Produits.FindAsync(codeProduit)
             ?? throw new InvalidOperationException($"Produit {codeProduit} introuvable.");
         produit.Quantite += delta;
-        await db.SaveChangesAsync();
     }
 
     private static void RecalculateTotals(BonReception doc, List<LigneBonReception> lignes)

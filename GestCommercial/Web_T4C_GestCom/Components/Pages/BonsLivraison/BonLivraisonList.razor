@@ -36,39 +36,39 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var b in _bons)
-                    {
-                        <tr>
-                            <td><a href="bons-livraison/@b.NumeroBonLivraison">@b.NumeroBonLivraison</a></td>
-                            <td>@b.DateBonLivraison.ToString("dd/MM/yyyy")</td>
-                            <td>@b.Client?.NomClient</td>
-                            <td>@(b.NumeroCommandeVente ?? "-")</td>
-                            <td class="text-end">@b.MontantHT.ToString("0.###")</td>
-                            <td class="text-end">@b.MontantTVA.ToString("0.###")</td>
-                            <td class="text-end fw-bold">@b.MontantTTC.ToString("0.###")</td>
-                            <td><span class="badge bg-secondary">@b.EtatBonLivraison</span></td>
-                            <td><span class="badge @GetFactureBadge(b.EtatFacture)">@b.EtatFacture</span></td>
-                            <td class="text-end">
-                                <PermissionGuard Permission="bons-livraison.update">
-                                    <a href="bons-livraison/@b.NumeroBonLivraison" class="btn btn-sm btn-outline-primary me-1">
-                                        <i class="bi bi-pencil me-1"></i>Modifier
-                                    </a>
-                                </PermissionGuard>
-                                <button class="btn btn-sm btn-outline-info me-1" @onclick="() => CloneBon(b.NumeroBonLivraison)">
-                                    <i class="bi bi-copy me-1"></i>Cloner
-                                </button>
-                                <PermissionGuard Permission="bons-livraison.delete">
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(b)">
-                                        <i class="bi bi-trash me-1"></i>Supprimer
+                    <Virtualize Items="_bons" Context="b">
+                        <ItemContent>
+                            <tr>
+                                <td><a href="bons-livraison/@b.NumeroBonLivraison">@b.NumeroBonLivraison</a></td>
+                                <td>@b.DateBonLivraison.ToString("dd/MM/yyyy")</td>
+                                <td>@b.Client?.NomClient</td>
+                                <td>@(b.NumeroCommandeVente ?? "-")</td>
+                                <td class="text-end">@b.MontantHT.ToString("0.###")</td>
+                                <td class="text-end">@b.MontantTVA.ToString("0.###")</td>
+                                <td class="text-end fw-bold">@b.MontantTTC.ToString("0.###")</td>
+                                <td><span class="badge bg-secondary">@b.EtatBonLivraison</span></td>
+                                <td><span class="badge @GetFactureBadge(b.EtatFacture)">@b.EtatFacture</span></td>
+                                <td class="text-end">
+                                    <PermissionGuard Permission="bons-livraison.update">
+                                        <a href="bons-livraison/@b.NumeroBonLivraison" class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-pencil me-1"></i>Modifier
+                                        </a>
+                                    </PermissionGuard>
+                                    <button class="btn btn-sm btn-outline-info me-1" @onclick="() => CloneBon(b.NumeroBonLivraison)">
+                                        <i class="bi bi-copy me-1"></i>Cloner
                                     </button>
-                                </PermissionGuard>
-                            </td>
-                        </tr>
-                    }
-                    @if (!_bons.Any())
-                    {
-                        <tr><td colspan="10" class="text-center text-muted py-4">Aucun bon de livraison trouvé.</td></tr>
-                    }
+                                    <PermissionGuard Permission="bons-livraison.delete">
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(b)">
+                                            <i class="bi bi-trash me-1"></i>Supprimer
+                                        </button>
+                                    </PermissionGuard>
+                                </td>
+                            </tr>
+                        </ItemContent>
+                        <EmptyContent>
+                            <tr><td colspan="10" class="text-center text-muted py-4">Aucun bon de livraison trouvé.</td></tr>
+                        </EmptyContent>
+                    </Virtualize>
                 </tbody>
             </table>
         }

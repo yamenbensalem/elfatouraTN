@@ -42,7 +42,7 @@ public class PermissionService : IPermissionService
         var userMetadata = await db.Utilisateurs
             .AsNoTracking()
             .Where(u => u.Id == userId && u.Actif)
-            .Select(u => new { u.CompanyId, u.Role, u.IsSuperAdmin })
+            .Select(u => new { u.CompanyId, u.IsSuperAdmin })
             .FirstOrDefaultAsync();
 
         if (userMetadata is null)
@@ -60,39 +60,17 @@ public class PermissionService : IPermissionService
                 return Array.Empty<string>();
         }
 
-        var perms = await db.UserRoles
-            .Where(ur => ur.UserId == userId)
-            .Where(ur => ur.Role != null &&
-                         (ur.Role.CompanyId == null ||
-                          (effectiveCompanyId.HasValue && ur.Role.CompanyId == effectiveCompanyId)))
-            .SelectMany(ur => ur.Role!.RolePermissions)
-            .Select(rp => rp.Permission!.Feature + "." + rp.Permission.Action)
-            .Distinct()
-            .ToListAsync();
-
-        if (perms.Count == 0)
-        {
-            var legacyRole = await db.Utilisateurs
-                .Where(u => u.Id == userId)
-                .Select(u => u.Role)
-                .FirstOrDefaultAsync();
-
-            if (!string.IsNullOrWhiteSpace(legacyRole))
-            {
-                var normalizedRole = userMetadata.IsSuperAdmin
-                    ? RoleNameMapper.SuperAdmin
-                    : RoleNameMapper.NormalizeKnownRoleName(legacyRole);
-
-                perms = await db.AppRoles
-                    .Where(r => r.Name == normalizedRole)
-                    .Where(r => r.CompanyId == null ||
-                                (effectiveCompanyId.HasValue && r.CompanyId == effectiveCompanyId))
-                    .SelectMany(r => r.RolePermissions)
-                    .Select(rp => rp.Permission!.Feature + "." + rp.Permission.Action)
-                    .Distinct()
-                    .ToListAsync();
-            }
-        }
+        var perms = await (
+            from ur in db.UserRoles
+            join r  in db.AppRoles       on ur.RoleId        equals r.Id
+            join rp in db.RolePermissions on r.Id             equals rp.RoleId
+            join p  in db.Permissions    on rp.PermissionId  equals p.Id
+            where ur.UserId == userId
+            where r.CompanyId == null ||
+                  !effectiveCompanyId.HasValue ||
+                  r.CompanyId == effectiveCompanyId
+            select p.Feature + "." + p.Action
+        ).Distinct().ToListAsync();
 
         _cache.Set(key, (IEnumerable<string>)perms, CacheTtl);
         return perms;

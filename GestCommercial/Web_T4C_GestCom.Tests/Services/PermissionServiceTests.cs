@@ -165,9 +165,9 @@ public class PermissionServiceTests
 
         public InMemoryDbContextFactory(string dbName)
         {
-            _opts = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(dbName)
-                .Options;
+            // Reuse the same options instance as DbContextFactory.Create() so that
+            // both contexts are routed to the same EF Core InMemory store.
+            _opts = DbContextFactory.GetOrCreateOptions(dbName);
         }
 
         public AppDbContext CreateDbContext() => new AppDbContext(_opts);

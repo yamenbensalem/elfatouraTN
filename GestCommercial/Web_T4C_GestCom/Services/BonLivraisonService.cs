@@ -48,15 +48,25 @@ public class BonLivraisonService(
         bon.NumeroBonLivraison = await numService.NextBonLivraisonAsync();
         RecalculateTotals(bon, lignes);
 
-        db.BonsLivraison.Add(bon);
-        foreach (var ligne in lignes)
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
         {
-            ligne.NumeroBonLivraison = bon.NumeroBonLivraison;
-            db.LignesBonLivraison.Add(ligne);
-            await produitService.UpdateStockAsync(ligne.CodeProduit, -ligne.Quantite);
+            db.BonsLivraison.Add(bon);
+            foreach (var ligne in lignes)
+            {
+                ligne.NumeroBonLivraison = bon.NumeroBonLivraison;
+                db.LignesBonLivraison.Add(ligne);
+                await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, -ligne.Quantite);
+            }
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
         }
 
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Ajout", "BonLivraison", bon.NumeroBonLivraison, bon.CodeClient);
         return bon;
     }
@@ -73,40 +83,49 @@ public class BonLivraisonService(
             .Where(l => l.NumeroBonLivraison == bon.NumeroBonLivraison)
             .ToListAsync();
 
-        foreach (var old in oldLignes)
-            await produitService.UpdateStockAsync(old.CodeProduit, old.Quantite);
-
-        db.LignesBonLivraison.RemoveRange(oldLignes);
-        await db.SaveChangesAsync();
-
-        existing.DateBonLivraison = bon.DateBonLivraison;
-        existing.CodeClient = bon.CodeClient;
-        existing.NumeroCommandeVente = bon.NumeroCommandeVente;
-        existing.Remise = bon.Remise;
-        existing.Note = bon.Note;
-        existing.EtatBonLivraison = bon.EtatBonLivraison;
-        existing.EtatFacture = bon.EtatFacture;
-
-        var nouvellesLignes = lignes.Select(l => new LigneBonLivraison
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
         {
-            NumeroBonLivraison = existing.NumeroBonLivraison,
-            CodeProduit = l.CodeProduit,
-            Quantite = l.Quantite,
-            PrixUnitaire = l.PrixUnitaire,
-            Remise = l.Remise,
-            Tva = l.Tva,
-            MontantHT = l.MontantHT
-        }).ToList();
+            foreach (var old in oldLignes)
+                await produitService.ApplyStockDeltaAsync(old.CodeProduit, old.Quantite);
+            db.LignesBonLivraison.RemoveRange(oldLignes);
+            await db.SaveChangesAsync();
 
-        RecalculateTotals(existing, nouvellesLignes);
+            existing.DateBonLivraison = bon.DateBonLivraison;
+            existing.CodeClient = bon.CodeClient;
+            existing.NumeroCommandeVente = bon.NumeroCommandeVente;
+            existing.Remise = bon.Remise;
+            existing.Note = bon.Note;
+            existing.EtatBonLivraison = bon.EtatBonLivraison;
+            existing.EtatFacture = bon.EtatFacture;
 
-        foreach (var ligne in nouvellesLignes)
+            var nouvellesLignes = lignes.Select(l => new LigneBonLivraison
+            {
+                NumeroBonLivraison = existing.NumeroBonLivraison,
+                CodeProduit = l.CodeProduit,
+                Quantite = l.Quantite,
+                PrixUnitaire = l.PrixUnitaire,
+                Remise = l.Remise,
+                Tva = l.Tva,
+                MontantHT = l.MontantHT
+            }).ToList();
+
+            RecalculateTotals(existing, nouvellesLignes);
+
+            foreach (var ligne in nouvellesLignes)
+            {
+                db.LignesBonLivraison.Add(ligne);
+                await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, -ligne.Quantite);
+            }
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
         {
-            db.LignesBonLivraison.Add(ligne);
-            await produitService.UpdateStockAsync(ligne.CodeProduit, -ligne.Quantite);
+            await tx.RollbackAsync();
+            throw;
         }
 
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Modification", "BonLivraison", existing.NumeroBonLivraison, existing.CodeClient);
     }
 
@@ -120,12 +139,22 @@ public class BonLivraisonService(
 
         if (bon is null) return;
 
-        foreach (var ligne in bon.Lignes)
-            await produitService.UpdateStockAsync(ligne.CodeProduit, ligne.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var ligne in bon.Lignes)
+                await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, ligne.Quantite);
+            db.LignesBonLivraison.RemoveRange(bon.Lignes);
+            db.BonsLivraison.Remove(bon);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
-        db.LignesBonLivraison.RemoveRange(bon.Lignes);
-        db.BonsLivraison.Remove(bon);
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Suppression", "BonLivraison", numero);
     }
 
@@ -161,12 +190,22 @@ public class BonLivraisonService(
 
         RecalculateTotals(clone, lignesClone);
 
-        db.BonsLivraison.Add(clone);
-        db.LignesBonLivraison.AddRange(lignesClone);
-        foreach (var l in lignesClone)
-            await produitService.UpdateStockAsync(l.CodeProduit, -l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            db.BonsLivraison.Add(clone);
+            db.LignesBonLivraison.AddRange(lignesClone);
+            foreach (var l in lignesClone)
+                await produitService.ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Clone", "BonLivraison", clone.NumeroBonLivraison, $"cloné depuis {numero}");
         return clone;
     }

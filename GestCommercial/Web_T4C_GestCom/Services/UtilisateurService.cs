@@ -18,6 +18,8 @@ public interface IUtilisateurService
     Task ChangePasswordAsync(int id, string newPlainPassword);
     Task ActiverAsync(int id);
     Task DesactiverAsync(int id);
+    Task<string> GetPrimaryRoleNameAsync(int userId, bool isSuperAdmin);
+    [Obsolete("UserRole/AppRole is now the authoritative source. This method will be removed once all deployments have been migrated.")]
     Task SynchronizeLegacyRolesAsync();
     string HashPassword(string password);
 }
@@ -165,6 +167,21 @@ public class UtilisateurService(
         await db.SaveChangesAsync();
     }
 
+    public async Task<string> GetPrimaryRoleNameAsync(int userId, bool isSuperAdmin)
+    {
+        if (isSuperAdmin)
+            return RoleNameMapper.SuperAdmin;
+
+        var roleName = await db.UserRoles
+            .Where(ur => ur.UserId == userId && ur.Role != null)
+            .OrderBy(ur => ur.Role!.CompanyId == null ? 0 : 1)
+            .Select(ur => ur.Role!.Name)
+            .FirstOrDefaultAsync();
+
+        return RoleNameMapper.NormalizeKnownRoleName(roleName);
+    }
+
+    [Obsolete("UserRole/AppRole is now the authoritative source. This method will be removed once all deployments have been migrated.")]
     public async Task SynchronizeLegacyRolesAsync()
     {
         var users = await db.Utilisateurs

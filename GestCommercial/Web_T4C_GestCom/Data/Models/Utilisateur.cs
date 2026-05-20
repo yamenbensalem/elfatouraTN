@@ -30,6 +30,7 @@ public class Utilisateur
     [Column("email_utilisateur")]
     public string? Email { get; set; }
 
+    [Obsolete("Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.")]
     [Required, MaxLength(20)]
     [Column("role_utilisateur")]
     public string Role { get; set; } = "Employé";

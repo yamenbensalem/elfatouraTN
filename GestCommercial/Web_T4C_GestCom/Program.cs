@@ -55,11 +55,15 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                     .Select(u => new
                     {
                         u.Actif,
-                        u.Role,
                         u.CompanyId,
                         u.IsSuperAdmin,
                         u.SecurityStamp,
-                        u.PermissionsVersion
+                        u.PermissionsVersion,
+                        PrimaryRoleName = u.UserRoles
+                            .Where(ur => ur.Role != null)
+                            .OrderBy(ur => ur.Role!.CompanyId == null ? 0 : 1)
+                            .Select(ur => ur.Role!.Name)
+                            .FirstOrDefault()
                     })
                     .FirstOrDefaultAsync();
 
@@ -76,7 +80,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
                 var expectedRole = user.IsSuperAdmin
                     ? RoleNameMapper.SuperAdmin
-                    : RoleNameMapper.NormalizeKnownRoleName(user.Role);
+                    : RoleNameMapper.NormalizeKnownRoleName(user.PrimaryRoleName);
 
                 var roleMismatch = !principal.IsInRole(expectedRole);
                 var stampMismatch = string.IsNullOrWhiteSpace(claimStamp) ||
@@ -98,6 +102,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IExecutionContext, HttpExecutionContext>();
 builder.Services.Configure<LoginProtectionOptions>(builder.Configuration.GetSection("Security:LoginProtection"));
 builder.Services.AddSingleton<ILoginProtectionService, LoginProtectionService>();
 

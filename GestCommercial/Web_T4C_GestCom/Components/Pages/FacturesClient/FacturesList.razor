@@ -38,43 +38,43 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var f in _factures)
-                    {
-                        <tr>
-                            <td><a href="@(_isAvoir ? "avoirs" : "factures-client")/@f.NumeroFactureClient">@f.NumeroFactureClient</a></td>
-                            <td>@f.DateFactureClient.ToString("dd/MM/yyyy")</td>
-                            <td>@f.Client?.NomClient</td>
-                            <td class="text-end">@f.MontantHT.ToString("0.###")</td>
-                            <td class="text-end">@f.MontantTVA.ToString("0.###")</td>
-                            <td class="text-end">@f.Timbre.ToString("0.###")</td>
-                            <td class="text-end fw-bold">@((f.MontantTTC + f.Timbre).ToString("0.###"))</td>
-                            <td><span class="badge bg-secondary">@f.EtatFacture</span></td>
-                            <td>
-                                <span class="badge @GetReglementBadge(f.EtatReglement)">@f.EtatReglement</span>
-                            </td>
-                            <td class="text-end">
-                                <PermissionGuard Permission="factures.update">
-                                    <a href="@(_isAvoir ? "avoirs" : "factures-client")/@f.NumeroFactureClient"
-                                       class="btn btn-sm btn-outline-primary me-1">
-                                        <i class="bi bi-pencil me-1"></i>Modifier
-                                    </a>
-                                </PermissionGuard>
-                                <button class="btn btn-sm btn-outline-info me-1"
-                                        @onclick="() => CloneFacture(f.NumeroFactureClient)">
-                                    <i class="bi bi-copy me-1"></i>Cloner
-                                </button>
-                                <PermissionGuard Permission="factures.delete">
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(f)">
-                                        <i class="bi bi-trash me-1"></i>Supprimer
+                    <Virtualize Items="_factures" Context="f">
+                        <ItemContent>
+                            <tr>
+                                <td><a href="@(_isAvoir ? "avoirs" : "factures-client")/@f.NumeroFactureClient">@f.NumeroFactureClient</a></td>
+                                <td>@f.DateFactureClient.ToString("dd/MM/yyyy")</td>
+                                <td>@f.Client?.NomClient</td>
+                                <td class="text-end">@f.MontantHT.ToString("0.###")</td>
+                                <td class="text-end">@f.MontantTVA.ToString("0.###")</td>
+                                <td class="text-end">@f.Timbre.ToString("0.###")</td>
+                                <td class="text-end fw-bold">@((f.MontantTTC + f.Timbre).ToString("0.###"))</td>
+                                <td><span class="badge bg-secondary">@f.EtatFacture</span></td>
+                                <td>
+                                    <span class="badge @GetReglementBadge(f.EtatReglement)">@f.EtatReglement</span>
+                                </td>
+                                <td class="text-end">
+                                    <PermissionGuard Permission="factures.update">
+                                        <a href="@(_isAvoir ? "avoirs" : "factures-client")/@f.NumeroFactureClient"
+                                           class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-pencil me-1"></i>Modifier
+                                        </a>
+                                    </PermissionGuard>
+                                    <button class="btn btn-sm btn-outline-info me-1"
+                                            @onclick="() => CloneFacture(f.NumeroFactureClient)">
+                                        <i class="bi bi-copy me-1"></i>Cloner
                                     </button>
-                                </PermissionGuard>
-                            </td>
-                        </tr>
-                    }
-                    @if (!_factures.Any())
-                    {
-                        <tr><td colspan="10" class="text-center text-muted py-4">Aucune facture trouvée.</td></tr>
-                    }
+                                    <PermissionGuard Permission="factures.delete">
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(f)">
+                                            <i class="bi bi-trash me-1"></i>Supprimer
+                                        </button>
+                                    </PermissionGuard>
+                                </td>
+                            </tr>
+                        </ItemContent>
+                        <EmptyContent>
+                            <tr><td colspan="10" class="text-center text-muted py-4">Aucune facture trouvée.</td></tr>
+                        </EmptyContent>
+                    </Virtualize>
                 </tbody>
             </table>
         }

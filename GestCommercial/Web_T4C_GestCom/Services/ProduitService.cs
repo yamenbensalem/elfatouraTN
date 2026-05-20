@@ -12,6 +12,8 @@ public interface IProduitService
     Task UpdateAsync(Produit produit);
     Task DeleteAsync(string code);
     Task UpdateStockAsync(string codeProduit, double delta);
+    /// <summary>Applique un delta de stock sur l'entité trackée sans appeler SaveChangesAsync. Le caller est responsable de la persistance.</summary>
+    Task ApplyStockDeltaAsync(string codeProduit, double delta);
     Task<List<Produit>> GetStockAlerteAsync();
 }
 
@@ -95,6 +97,13 @@ public class ProduitService(
             produit.Quantite += delta;
             await db.SaveChangesAsync();
         }
+    }
+
+    public async Task ApplyStockDeltaAsync(string codeProduit, double delta)
+    {
+        var produit = await db.Produits.FindAsync(codeProduit);
+        if (produit is not null)
+            produit.Quantite += delta;
     }
 
     public async Task<List<Produit>> GetStockAlerteAsync()

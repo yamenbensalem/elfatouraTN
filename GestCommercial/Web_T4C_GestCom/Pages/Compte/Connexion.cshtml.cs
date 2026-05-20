@@ -59,9 +59,7 @@ public class ConnexionModel(
 
         loginProtectionService.RegisterSuccess(login, ipAddress);
 
-        var role = user.IsSuperAdmin
-            ? RoleNameMapper.SuperAdmin
-            : RoleNameMapper.NormalizeKnownRoleName(user.Role);
+        var role = await utilisateurService.GetPrimaryRoleNameAsync(user.Id, user.IsSuperAdmin);
 
         var claims = new List<Claim>
         {

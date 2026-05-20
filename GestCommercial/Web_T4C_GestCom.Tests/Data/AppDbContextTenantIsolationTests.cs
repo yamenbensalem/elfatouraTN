@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Web_T4C_GestCom.Auth;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
 using Xunit;
@@ -124,8 +125,9 @@ public class AppDbContextTenantIsolationTests
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "Tests"));
         var httpContext = new DefaultHttpContext { User = principal };
         var accessor = new HttpContextAccessor { HttpContext = httpContext };
+        var executionContext = new HttpExecutionContext(accessor);
 
-        var context = new AppDbContext(options, accessor);
+        var context = new AppDbContext(options, executionContext);
         context.Database.EnsureCreated();
         return context;
     }

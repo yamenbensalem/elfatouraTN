@@ -44,12 +44,21 @@ public class FactureFournisseurService(
         facture.NumeroFactureFournisseur = await numService.NextFactureFournisseurAsync();
         RecalculateTotals(facture, lignes);
         facture.Lignes = lignes;
-        db.FacturesFournisseur.Add(facture);
-        await db.SaveChangesAsync();
 
-        // Incrémenter le stock (marchandises facturées reçues)
-        foreach (var l in lignes)
-            await UpdateStockAsync(l.CodeProduit, +l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            db.FacturesFournisseur.Add(facture);
+            foreach (var l in lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
         await journal.EnregistrerAsync("Ajout", "FactureFournisseur", facture.NumeroFactureFournisseur, facture.CodeFournisseur);
         return facture;
@@ -64,27 +73,34 @@ public class FactureFournisseurService(
             .FirstOrDefaultAsync(f => f.NumeroFactureFournisseur == facture.NumeroFactureFournisseur)
             ?? throw new InvalidOperationException("Facture fournisseur introuvable.");
 
-        // 1. Restituer l'ancien stock
-        foreach (var l in existing.Lignes)
-            await UpdateStockAsync(l.CodeProduit, -l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var l in existing.Lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
+            db.LignesFactureFournisseur.RemoveRange(existing.Lignes);
+            await db.SaveChangesAsync();
 
-        db.LignesFactureFournisseur.RemoveRange(existing.Lignes);
-        await db.SaveChangesAsync();
+            existing.DateFactureFournisseur = facture.DateFactureFournisseur;
+            existing.CodeFournisseur = facture.CodeFournisseur;
+            existing.Timbre = facture.Timbre;
+            existing.EtatFacture = facture.EtatFacture;
+            existing.Note = facture.Note;
 
-        existing.DateFactureFournisseur = facture.DateFactureFournisseur;
-        existing.CodeFournisseur = facture.CodeFournisseur;
-        existing.Timbre = facture.Timbre;
-        existing.EtatFacture = facture.EtatFacture;
-        existing.Note = facture.Note;
+            foreach (var l in lignes) l.Id = 0;
+            RecalculateTotals(existing, lignes);
+            existing.Lignes = lignes;
 
-        foreach (var l in lignes) l.Id = 0;
-        RecalculateTotals(existing, lignes);
-        existing.Lignes = lignes;
-        await db.SaveChangesAsync();
-
-        // 2. Incrémenter avec les nouvelles lignes
-        foreach (var l in lignes)
-            await UpdateStockAsync(l.CodeProduit, +l.Quantite);
+            foreach (var l in lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
         await journal.EnregistrerAsync("Modification", "FactureFournisseur", existing.NumeroFactureFournisseur, existing.CodeFournisseur);
         return existing;
@@ -100,14 +116,23 @@ public class FactureFournisseurService(
             .FirstOrDefaultAsync(f => f.NumeroFactureFournisseur == numero)
             ?? throw new InvalidOperationException("Facture fournisseur introuvable.");
 
-        // Restituer le stock
-        foreach (var l in facture.Lignes)
-            await UpdateStockAsync(l.CodeProduit, -l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var l in facture.Lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
+            db.ReglementsFactureFournisseur.RemoveRange(facture.Reglements);
+            db.LignesFactureFournisseur.RemoveRange(facture.Lignes);
+            db.FacturesFournisseur.Remove(facture);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
-        db.ReglementsFactureFournisseur.RemoveRange(facture.Reglements);
-        db.LignesFactureFournisseur.RemoveRange(facture.Lignes);
-        db.FacturesFournisseur.Remove(facture);
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Suppression", "FactureFournisseur", numero);
     }
 
@@ -141,12 +166,21 @@ public class FactureFournisseurService(
 
         RecalculateTotals(clone, lignes);
         clone.Lignes = lignes;
-        db.FacturesFournisseur.Add(clone);
-        await db.SaveChangesAsync();
 
-        // Incrémenter le stock pour le clone
-        foreach (var l in lignes)
-            await UpdateStockAsync(l.CodeProduit, +l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            db.FacturesFournisseur.Add(clone);
+            foreach (var l in lignes)
+                await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
         await journal.EnregistrerAsync("Clone", "FactureFournisseur", clone.NumeroFactureFournisseur, $"cloné depuis {numero}");
         return clone;
@@ -172,12 +206,11 @@ public class FactureFournisseurService(
         return Math.Round(facture.MontantTTC + facture.Timbre - totalRegle, 3);
     }
 
-    private async Task UpdateStockAsync(string codeProduit, double delta)
+    private async Task ApplyStockDeltaAsync(string codeProduit, double delta)
     {
         var produit = await db.Produits.FindAsync(codeProduit)
             ?? throw new InvalidOperationException($"Produit {codeProduit} introuvable.");
         produit.Quantite += delta;
-        await db.SaveChangesAsync();
     }
 
     private async Task UpdateEtatReglementAsync(string numero)

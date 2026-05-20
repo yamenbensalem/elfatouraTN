@@ -169,16 +169,9 @@ else
 
         await db.SaveChangesAsync();
 
-        // Invalidate cache for all users carrying this role, including legacy string-based role mapping.
-        var normalizedRoleName = RoleNameMapper.NormalizeKnownRoleName(_selectedRole.Name);
         var affectedUsers = await db.UserRoles
             .Where(ur => ur.RoleId == _selectedRole.Id)
             .Select(ur => ur.UserId)
-            .Union(
-                db.Utilisateurs
-                    .Where(u => u.Role == _selectedRole.Name || u.Role == normalizedRoleName)
-                    .Select(u => u.Id)
-            )
             .Distinct()
             .ToListAsync();
         foreach (var uid in affectedUsers)

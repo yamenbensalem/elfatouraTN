@@ -55,16 +55,25 @@ public class FactureClientService(
         facture.Timbre = config.TimbreFiscal;
         RecalculateTotals(facture, lignes, config);
 
-        db.FacturesClient.Add(facture);
-        foreach (var ligne in lignes)
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
         {
-            ligne.NumeroFactureClient = facture.NumeroFactureClient;
-            db.LignesFactureClient.Add(ligne);
-            // Decrease stock on invoice creation
-            await produitService.UpdateStockAsync(ligne.CodeProduit, -ligne.Quantite);
+            db.FacturesClient.Add(facture);
+            foreach (var ligne in lignes)
+            {
+                ligne.NumeroFactureClient = facture.NumeroFactureClient;
+                db.LignesFactureClient.Add(ligne);
+                await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, -ligne.Quantite);
+            }
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
         }
 
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Ajout", "FactureClient", facture.NumeroFactureClient, facture.CodeClient);
         return facture;
     }
@@ -77,49 +86,57 @@ public class FactureClientService(
             .FirstOrDefaultAsync(f => f.NumeroFactureClient == facture.NumeroFactureClient)
             ?? throw new InvalidOperationException("Facture introuvable.");
 
-        // Restore stock from old lines before replacing
         var oldLignes = await db.LignesFactureClient
             .Where(l => l.NumeroFactureClient == facture.NumeroFactureClient)
             .ToListAsync();
 
-        foreach (var old in oldLignes)
-            await produitService.UpdateStockAsync(old.CodeProduit, old.Quantite);
-
-        db.LignesFactureClient.RemoveRange(oldLignes);
-        await db.SaveChangesAsync();
-
-        existing.DateFactureClient = facture.DateFactureClient;
-        existing.CodeClient = facture.CodeClient;
-        existing.Remise = facture.Remise;
-        existing.Timbre = facture.Timbre;
-        existing.Note = facture.Note;
-        existing.EtatFacture = facture.EtatFacture;
-        existing.EtatReglement = facture.EtatReglement;
-        existing.IsAvoir = facture.IsAvoir;
-        existing.MontantHT = facture.MontantHT;
-        existing.Fodec = facture.Fodec;
-        existing.MontantTVA = facture.MontantTVA;
-        existing.MontantTTC = facture.MontantTTC;
-
-        var nouvellesLignes = lignes.Select(l => new LigneFactureClient
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
         {
-            NumeroFactureClient = existing.NumeroFactureClient,
-            CodeProduit = l.CodeProduit,
-            Quantite = l.Quantite,
-            PrixUnitaire = l.PrixUnitaire,
-            Remise = l.Remise,
-            Tva = l.Tva,
-            Fodec = l.Fodec,
-            MontantHT = l.MontantHT
-        }).ToList();
+            foreach (var old in oldLignes)
+                await produitService.ApplyStockDeltaAsync(old.CodeProduit, old.Quantite);
+            db.LignesFactureClient.RemoveRange(oldLignes);
+            await db.SaveChangesAsync();
 
-        foreach (var ligne in nouvellesLignes)
+            existing.DateFactureClient = facture.DateFactureClient;
+            existing.CodeClient = facture.CodeClient;
+            existing.Remise = facture.Remise;
+            existing.Timbre = facture.Timbre;
+            existing.Note = facture.Note;
+            existing.EtatFacture = facture.EtatFacture;
+            existing.EtatReglement = facture.EtatReglement;
+            existing.IsAvoir = facture.IsAvoir;
+            existing.MontantHT = facture.MontantHT;
+            existing.Fodec = facture.Fodec;
+            existing.MontantTVA = facture.MontantTVA;
+            existing.MontantTTC = facture.MontantTTC;
+
+            var nouvellesLignes = lignes.Select(l => new LigneFactureClient
+            {
+                NumeroFactureClient = existing.NumeroFactureClient,
+                CodeProduit = l.CodeProduit,
+                Quantite = l.Quantite,
+                PrixUnitaire = l.PrixUnitaire,
+                Remise = l.Remise,
+                Tva = l.Tva,
+                Fodec = l.Fodec,
+                MontantHT = l.MontantHT
+            }).ToList();
+
+            foreach (var ligne in nouvellesLignes)
+            {
+                db.LignesFactureClient.Add(ligne);
+                await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, -ligne.Quantite);
+            }
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
         {
-            db.LignesFactureClient.Add(ligne);
-            await produitService.UpdateStockAsync(ligne.CodeProduit, -ligne.Quantite);
+            await tx.RollbackAsync();
+            throw;
         }
 
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Modification", "FactureClient", existing.NumeroFactureClient, existing.CodeClient);
     }
 
@@ -134,14 +151,23 @@ public class FactureClientService(
 
         if (facture is null) return;
 
-        // Restore stock
-        foreach (var ligne in facture.Lignes)
-            await produitService.UpdateStockAsync(ligne.CodeProduit, ligne.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var ligne in facture.Lignes)
+                await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, ligne.Quantite);
+            db.ReglementsFactureClient.RemoveRange(facture.Reglements);
+            db.LignesFactureClient.RemoveRange(facture.Lignes);
+            db.FacturesClient.Remove(facture);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
-        db.ReglementsFactureClient.RemoveRange(facture.Reglements);
-        db.LignesFactureClient.RemoveRange(facture.Lignes);
-        db.FacturesClient.Remove(facture);
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Suppression", "FactureClient", numero);
     }
 
@@ -206,12 +232,22 @@ public class FactureClientService(
         var remiseMontant = clone.MontantHT * clone.Remise / 100;
         clone.MontantTTC = clone.MontantHT - remiseMontant + clone.Fodec + clone.MontantTVA;
 
-        db.FacturesClient.Add(clone);
-        db.LignesFactureClient.AddRange(lignesClone);
-        foreach (var l in lignesClone)
-            await produitService.UpdateStockAsync(l.CodeProduit, -l.Quantite);
+        await using var tx = await db.Database.BeginTransactionAsync();
+        try
+        {
+            db.FacturesClient.Add(clone);
+            db.LignesFactureClient.AddRange(lignesClone);
+            foreach (var l in lignesClone)
+                await produitService.ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
 
-        await db.SaveChangesAsync();
         await journal.EnregistrerAsync("Clone", "FactureClient", clone.NumeroFactureClient, $"cloné depuis {numero}");
         return clone;
     }

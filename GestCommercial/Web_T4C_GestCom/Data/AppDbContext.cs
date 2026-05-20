@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Web_T4C_GestCom.Auth;
 using Web_T4C_GestCom.Data.Models;
@@ -7,43 +6,28 @@ namespace Web_T4C_GestCom.Data;
 
 public class AppDbContext : DbContext
 {
-    private readonly IHttpContextAccessor? _httpContextAccessor;
-
-    /// <summary>Constructeur DI principal (injection de IHttpContextAccessor pour le filtre tenant).</summary>
-    public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor? httpContextAccessor = null)
-        : base(options)
-    {
-        _httpContextAccessor = httpContextAccessor;
-    }
-
-    /// <summary>ID de l'entreprise courante, résolu depuis le claim "CompanyId" du cookie.</summary>
-    private int? CurrentCompanyId
-    {
-        get
-        {
-            return _httpContextAccessor?.HttpContext?.User.GetCompanyId();
-        }
-    }
-
-    private bool CurrentIsSuperAdmin
-    {
-        get
-        {
-            return _httpContextAccessor?.HttpContext?.User.IsSuperAdmin() == true;
-        }
-    }
+    private readonly IExecutionContext? _executionContext;
 
     /// <summary>
-    /// Tenant filters are applied only in real HTTP request scope (not in unit tests/no HttpContext).
-    /// SuperAdmin bypasses tenant filters globally.
+    /// Primary DI constructor. Receives IExecutionContext so that tenant isolation works in
+    /// both HTTP request scope (HttpExecutionContext) and background tasks
+    /// (BackgroundExecutionContext).  Null = no active context = filters disabled (used in tests).
+    /// </summary>
+    public AppDbContext(DbContextOptions<AppDbContext> options, IExecutionContext? executionContext = null)
+        : base(options)
+    {
+        _executionContext = executionContext;
+    }
+
+    private int?  CurrentCompanyId     => _executionContext?.CurrentCompanyId;
+    private bool  CurrentIsSuperAdmin  => _executionContext?.IsSuperAdmin == true;
+
+    /// <summary>
+    /// Tenant filters engage only when there is an active execution context and the principal
+    /// is not a SuperAdmin.  Null context (unit tests, migrations) disables all filters.
     /// </summary>
     private bool ShouldApplyTenantFilter
-    {
-        get
-        {
-            return _httpContextAccessor?.HttpContext is not null && !CurrentIsSuperAdmin;
-        }
-    }
+        => (_executionContext?.HasActiveContext == true) && !CurrentIsSuperAdmin;
 
     // ── Reference data ─────────────────────────────────────────────────────
     public DbSet<Entreprise>        Entreprises         => Set<Entreprise>();
