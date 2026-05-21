@@ -1,51 +1,13 @@
 # ================================================================
-# Infrastructure — nginx-proxy + Let's Encrypt ACME companion
-# Gère le reverse-proxy SSL pour gestioncom.tijaraflow.fr
+# Infrastructure gestcom — réseau Docker uniquement
+#
+# Le reverse-proxy nginx-proxy et l'ACME companion sont des ressources
+# GLOBALES du VPS (partagées avec les autres sites).
+# Ce fichier crée uniquement le réseau applicatif ntw_gestcom_prod.
+#
+# Le script deploy_to_vps.ps1 (action setup-network) se charge de
+# connecter le container nginx-proxy existant à ce réseau.
 # ================================================================
-
-services:
-
-  nginx-proxy:
-    image: nginxproxy/nginx-proxy:1.6
-    container_name: gestcom-nginx-proxy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - certs:/etc/nginx/certs:ro
-      - vhost:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    networks:
-      - ntw_gestcom_prod
-
-  acme-companion:
-    image: nginxproxy/acme-companion:2.4
-    container_name: gestcom-letsencrypt
-    restart: unless-stopped
-    depends_on:
-      - nginx-proxy
-    volumes_from:
-      - nginx-proxy
-    volumes:
-      - certs:/etc/nginx/certs:rw
-      - acme:/etc/acme.sh
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL}
-    networks:
-      - ntw_gestcom_prod
-
-volumes:
-  certs:
-    name: gestcom_certs
-  vhost:
-    name: gestcom_vhost
-  html:
-    name: gestcom_html
-  acme:
-    name: gestcom_acme
 
 networks:
   ntw_gestcom_prod:

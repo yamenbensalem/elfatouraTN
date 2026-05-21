@@ -3,7 +3,7 @@
 # ================================================================
 
 param(
-    [ValidateSet('fix-ssh','build-image','push-images','setup-network','deploy-db','deploy-app','deploy-all','status','logs','stop','restart','cleanup','reset-all','syncFile')]
+    [ValidateSet('fix-ssh','build-image','push-images','setup-network','deploy-db','deploy-app','deploy-all','status','logs','stop','restart','cleanup','reset-all','syncFile','fix-vhost')]
     [string]$Action = "deploy-all",
 
     [string]$RemoteHost = "vps-bf0b3440.vps.ovh.net",
@@ -206,13 +206,11 @@ function Sync-ConfigFiles {
         }
     }
 
-    # Copy vhost.d volume on VPS (nginx-proxy reads from Docker volume, not bind mount)
-    # Mount the vhost file into the named volume via a temporary container
-    Write-Status "Injecting vhost override into gestcom_vhost volume..." "Info"
-    $vhostContent = Get-Content $vhostFile -Raw -ErrorAction SilentlyContinue
-    if ($vhostContent) {
-        $escaped = $vhostContent -replace "'", "'\"'\"'"
-        Invoke-Docker "sh -c 'docker run --rm -v gestcom_vhost:/vhost alpine sh -c ""mkdir -p /vhost && printf ''$escaped'' > /vhost/$AppDomain""'" -IgnoreError
+    # Inject vhost override into the nginx-proxy vhost volume.
+    # The volume name is resolved dynamically from the running nginx-proxy container
+    # so this works whether the proxy is global (shared VPS) or dedicated.
+    if (Test-Path $vhostFile) {
+        Inject-VhostOverride $vhostFile
     }
 
     Write-Status "Config sync complete`n" "Success"
@@ -311,23 +309,123 @@ function Check-Certificates {
     Write-Status "" "Info"
 }
 
-# ===================== STEP 2: SETUP NETWORK + INFRA =====================
+# ===================== VHOST INJECT HELPER =====================
+
+function Get-NginxProxyContainer {
+    # Returns the name of the running nginx-proxy container (any provider/name).
+    $name = Invoke-Docker "docker ps --filter 'ancestor=nginxproxy/nginx-proxy' --format '{{.Names}}'" -IgnoreError
+    if (-not $name) {
+        $name = Invoke-Docker "docker ps --format '{{.Names}}' | grep -i proxy | head -1" -IgnoreError
+    }
+    return ($name -replace "`n","").Trim()
+}
+
+function Assert-VhostFileSafe {
+    param([string]$LocalVhostFile)
+    # Refuse d'injecter un fichier vhost contenant $connection_upgrade :
+    # cette variable n'est définie que sur certaines versions de nginx-proxy
+    # et provoque un crash nginx [emerg] à l'injection.
+    $content = Get-Content $LocalVhostFile -Raw -ErrorAction SilentlyContinue
+    if ($content -match '\$connection_upgrade') {
+        Write-Status "ERREUR — vhost file uses `$connection_upgrade` which crashes older nginx-proxy!" "Error"
+        Write-Status "  Replace: proxy_set_header Connection `$connection_upgrade;" "Warning"
+        Write-Status "  With:    proxy_set_header Connection `$http_upgrade;"     "Warning"
+        Write-Status "  File: $LocalVhostFile" "Warning"
+        exit 1
+    }
+}
+
+function Inject-VhostOverride {
+    param([string]$LocalVhostFile)
+
+    Write-Status "Injecting nginx vhost override (SignalR/WebSocket config)..." "Info"
+
+    # Safety check — prevent injecting a config that will crash nginx
+    Assert-VhostFileSafe $LocalVhostFile
+
+    $proxyContainer = Get-NginxProxyContainer
+    if (-not $proxyContainer) {
+        Write-Status "No running nginx-proxy found - vhost override skipped" "Warning"
+        Write-Status "  WARNING: SignalR timeouts will cause Blazor circuit drops after ~60s!" "Warning"
+        return
+    }
+    Write-Status "  nginx-proxy container: $proxyContainer" "Info"
+
+    # docker cp works regardless of whether vhost.d is a named volume or a bind mount
+    $remoteTmp = "/tmp/gestcom-vhost-override"
+    Copy-ToRemote $LocalVhostFile $remoteTmp | Out-Null
+    Invoke-Docker "docker cp $remoteTmp ${proxyContainer}:/etc/nginx/vhost.d/$AppDomain" -IgnoreError
+    Invoke-RemoteCommand "rm -f $remoteTmp"
+
+    # Reload nginx to pick up the new config without dropping connections
+    Invoke-Docker "docker kill --signal=HUP $proxyContainer" -IgnoreError
+    Write-Status "vhost override injected — nginx reloaded" "Success"
+}
+
+function Fix-Vhost {
+    Write-Status "=== FIX VHOST (re-inject + nginx reload) ===" "Info"
+    $vhostFile = "$LocalDeployPath\vhost.d\$AppDomain"
+    if (-not (Test-Path $vhostFile)) {
+        Write-Status "vhost file not found: $vhostFile" "Error"; exit 1
+    }
+    Inject-VhostOverride $vhostFile
+    Write-Status "Done — test: curl -I http://$AppDomain" "Success"
+}
+
+# ===================== STEP 2: SETUP NETWORK =====================
 
 function Setup-Network {
-    Write-Status "=== STEP 2: SETUP NETWORK + NGINX PROXY ===" "Info"
+    Write-Status "=== STEP 2: SETUP DOCKER NETWORK ===" "Info"
 
-    $check = Invoke-Docker "docker network ls --filter name=$NetworkName --format {{.Name}}" -IgnoreError
-    if ($check -match $NetworkName) {
-        Write-Status "Network $NetworkName already exists - recreating infra..." "Warning"
-        Invoke-Docker "docker compose -f $VpsPath/docker-compose.infra.yml down" -IgnoreError
+    # 1. Create ntw_gestcom_prod if it doesn't exist (compose file is network-only)
+    $netCheck = Invoke-Docker "docker network ls --filter name=$NetworkName --format '{{.Name}}'" -IgnoreError
+    if ($netCheck -match $NetworkName) {
+        Write-Status "Network $NetworkName already exists" "Success"
+    } else {
+        Invoke-Docker "docker compose -f $VpsPath/docker-compose.infra.yml up -d" -IgnoreError
+        $netCheck2 = Invoke-Docker "docker network ls --filter name=$NetworkName --format '{{.Name}}'" -IgnoreError
+        if ($netCheck2 -match $NetworkName) {
+            Write-Status "Network $NetworkName created" "Success"
+        } else {
+            Write-Status "Failed to create network $NetworkName" "Error"
+            exit 1
+        }
     }
 
-    Invoke-Docker "docker compose -f $VpsPath/docker-compose.infra.yml --env-file $VpsPath/.env up -d"
-    if ($LASTEXITCODE -eq 0) {
-        Write-Status "Network + nginx-proxy + acme-companion started" "Success"
+    # 2. Connect the global nginx-proxy to the gestcom network
+    $proxyContainer = Get-NginxProxyContainer
+    if ($proxyContainer) {
+        Write-Status "Connecting $proxyContainer to $NetworkName..." "Info"
+        $already = Invoke-Docker "docker network inspect $NetworkName --format '{{range .Containers}}{{.Name}} {{end}}'" -IgnoreError
+        if ($already -match $proxyContainer) {
+            Write-Status "  $proxyContainer already connected to $NetworkName" "Success"
+        } else {
+            Invoke-Docker "docker network connect $NetworkName $proxyContainer" -IgnoreError
+            Write-Status "  Connected $proxyContainer to $NetworkName" "Success"
+        }
+
+        # 3. Connect acme-companion too (so it can issue certs for gestcom).
+        # The tunisiaauto companion is named 'nginx-letsencrypt' — search by image AND by name.
+        $acme = Invoke-Docker "docker ps --filter 'ancestor=nginxproxy/acme-companion' --format '{{.Names}}'" -IgnoreError
+        $acme = ($acme -replace "`n","").Trim()
+        if (-not $acme) {
+            # Fallback: search by common names used for acme-companion containers
+            $acme = Invoke-Docker "docker ps --format '{{.Names}}' | grep -iE 'letsencrypt|acme' | head -1" -IgnoreError
+            $acme = ($acme -replace "`n","").Trim()
+        }
+        if ($acme) {
+            $alreadyAcme = Invoke-Docker "docker network inspect $NetworkName --format '{{range .Containers}}{{.Name}} {{end}}'" -IgnoreError
+            if ($alreadyAcme -match $acme) {
+                Write-Status "  $acme already connected to $NetworkName" "Success"
+            } else {
+                Invoke-Docker "docker network connect $NetworkName $acme" -IgnoreError
+                Write-Status "  Connected $acme ($NetworkName) — SSL cert will be issued for $AppDomain" "Success"
+            }
+        } else {
+            Write-Status "No acme-companion found - SSL cert will NOT be auto-issued for $AppDomain" "Warning"
+        }
     } else {
-        Write-Status "Failed to start infra stack" "Error"
-        exit 1
+        Write-Status "No nginx-proxy found on VPS - deploy your own proxy first" "Warning"
     }
 
     Write-Status "" "Info"
@@ -548,6 +646,7 @@ switch ($Action) {
         if (-not $SkipImagePush) { Build-Image; Push-ImagesToVPS }
         Deploy-Database; Deploy-Application; Verify-Deployment
     }
+    "fix-vhost" { Fix-Vhost }
     "status"    { Show-Status }
     "syncFile"  { Sync-ConfigFiles }
     "logs"      { Show-Logs "gestcom-app" }
@@ -568,6 +667,7 @@ ACTIONS:
   deploy-db      Demarrer SQL Server uniquement
   deploy-app     Deployer l'application Blazor uniquement
   deploy-all     Deploiement complet (defaut) - build + push + infra + db + app
+  fix-vhost      Re-injecter le vhost override SignalR dans nginx-proxy + reload
   status         Etat containers + espace disque
   logs           Logs du container gestcom-app
   syncFile       Synchroniser les fichiers de config vers le VPS

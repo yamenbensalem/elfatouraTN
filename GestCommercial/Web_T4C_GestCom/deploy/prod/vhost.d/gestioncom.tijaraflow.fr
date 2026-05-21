@@ -1,9 +1,12 @@
 # nginx vhost overrides — gestioncom.tijaraflow.fr
 # Blazor Server utilise SignalR (WebSocket) — timeout et upgrade obligatoires.
+# $connection_upgrade n'est disponible que sur nginx-proxy >= 1.4 avec map activée.
+# On utilise $http_upgrade directement : universel et correct pour WebSocket.
 
 # WebSocket upgrade (SignalR)
+proxy_http_version 1.1;
 proxy_set_header Upgrade $http_upgrade;
-proxy_set_header Connection $connection_upgrade;
+proxy_set_header Connection $http_upgrade;
 
 # Timeouts longs pour les circuits Blazor Server
 proxy_read_timeout  3600s;
