@@ -1,0 +1,32 @@
+# ================================================================
+# Application Blazor Server — gestioncom.tijaraflow.fr
+# nginx-proxy détecte VIRTUAL_HOST et route le trafic HTTPS → port 8080
+# ================================================================
+
+services:
+
+  gestcom-app:
+    image: gestcom/app:prod
+    container_name: gestcom-app
+    restart: unless-stopped
+    environment:
+      # ASP.NET Core
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+
+      # Connexion SQL Server (remplace appsettings.json)
+      - ConnectionStrings__DefaultConnection=Server=gestcom-sqlserver;Database=${DB_NAME};User Id=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=True;Connect Timeout=30
+
+      # nginx-proxy : domaine + port interne
+      - VIRTUAL_HOST=${APP_DOMAIN}
+      - VIRTUAL_PORT=8080
+
+      # Let's Encrypt
+      - LETSENCRYPT_HOST=${APP_DOMAIN}
+    networks:
+      - ntw_gestcom_prod
+
+networks:
+  ntw_gestcom_prod:
+    name: ntw_gestcom_prod
+    external: true

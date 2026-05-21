@@ -1,0 +1,13 @@
+# nginx vhost overrides — gestioncom.tijaraflow.fr
+# Blazor Server utilise SignalR (WebSocket) — timeout et upgrade obligatoires.
+
+# WebSocket upgrade (SignalR)
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection $connection_upgrade;
+
+# Timeouts longs pour les circuits Blazor Server
+proxy_read_timeout  3600s;
+proxy_send_timeout  3600s;
+
+# Taille max du body (upload logo, etc.)
+client_max_body_size 10m;

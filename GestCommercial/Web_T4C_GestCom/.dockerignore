@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+**/.git/
+**/deploy/
+**/*.user
+**/appsettings.Development.json
+**/appsettings.Development.*
+**/.vs/
