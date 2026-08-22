@@ -14,7 +14,10 @@ namespace T4C_GestCom_Desktop.Forms;
 
 public class MainForm : Form
 {
+    private static readonly TimeSpan LicenseRecheckInterval = TimeSpan.FromMinutes(15);
+
     private readonly Dictionary<object, Form> _openChildren = [];
+    private readonly System.Windows.Forms.Timer _licenseRecheckTimer;
 
     public MainForm()
     {
@@ -64,6 +67,33 @@ public class MainForm : Form
         var status = new StatusStrip();
         status.Items.Add(new ToolStripStatusLabel($"Connecté : {AppHost.Session.Login} ({AppHost.Session.Role})"));
         Controls.Add(status);
+
+        // Re-validates the license during the session — catches a license file deleted or
+        // tampered with after startup (the one-time check in Program.cs only covers launch time).
+        _licenseRecheckTimer = new System.Windows.Forms.Timer { Interval = (int)LicenseRecheckInterval.TotalMilliseconds };
+        _licenseRecheckTimer.Tick += (_, _) => RecheckLicense();
+        _licenseRecheckTimer.Start();
+    }
+
+    private void RecheckLicense()
+    {
+        var result = LicenseGate.Validate();
+        if (result.IsValid)
+            return;
+
+        _licenseRecheckTimer.Stop();
+        MessageBox.Show(this, LicenseGate.DescribeFailure(result.Status), LicenseGate.DialogTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        Application.Exit();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _licenseRecheckTimer.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 
     /// <summary>

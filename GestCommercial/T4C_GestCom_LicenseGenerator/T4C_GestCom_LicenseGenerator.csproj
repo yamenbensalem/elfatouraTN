@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>T4C_GestCom_LicenseGenerator</RootNamespace>
+    <AssemblyName>T4C_GestCom_LicenseGenerator</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\T4C_GestCom_Desktop.Licensing\T4C_GestCom_Desktop.Licensing.csproj" />
+  </ItemGroup>
+
+</Project>

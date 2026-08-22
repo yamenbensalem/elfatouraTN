@@ -7,3 +7,11 @@ Obfuscar.generated.xml
 # The de-obfuscation key. If this ever ends up in git history, the obfuscation is worthless —
 # treat it like a secret, not a build artifact.
 mapping-archive/
+
+# The RSA private key used to sign client licenses. IRREPLACEABLE — if this is lost, no future
+# license can ever be issued that validates against public keys already embedded in apps shipped
+# to clients. Never commit it, never email it unencrypted, back it up somewhere outside git.
+keys/
+
+# Packaged client handoffs assembled by build-client-package.ps1 — regenerated on demand.
+client-package/

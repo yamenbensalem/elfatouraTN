@@ -25,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\T4C_GestCom_Desktop\T4C_GestCom_Desktop.csproj" />
     <ProjectReference Include="..\Web_T4C_GestCom.Core\Web_T4C_GestCom.Core.csproj" />
+    <ProjectReference Include="..\T4C_GestCom_Desktop.Licensing\T4C_GestCom_Desktop.Licensing.csproj" />
   </ItemGroup>
 
 </Project>

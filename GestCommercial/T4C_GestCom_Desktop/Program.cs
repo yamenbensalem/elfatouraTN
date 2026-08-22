@@ -9,6 +9,15 @@ internal static class Program
     {
         ApplicationConfiguration.Initialize();
 
+        // Gate on license validity BEFORE AppHost.Initialize() — an invalid/missing/tampered
+        // license must never reach the database or show the login form.
+        var licenseResult = LicenseGate.Validate();
+        if (!licenseResult.IsValid)
+        {
+            MessageBox.Show(LicenseGate.DescribeFailure(licenseResult.Status), LicenseGate.DialogTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
         AppHost.Initialize();
 
         using var login = new LoginForm();
