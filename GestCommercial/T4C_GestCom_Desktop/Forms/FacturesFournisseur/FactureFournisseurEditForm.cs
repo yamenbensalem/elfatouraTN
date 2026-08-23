@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
@@ -10,6 +11,8 @@ namespace T4C_GestCom_Desktop.Forms.FacturesFournisseur;
 /// <summary>Desktop equivalent of Components/Pages/FacturesFournisseur/FactureFournisseurForm.razor.</summary>
 public class FactureFournisseurEditForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<FactureFournisseurEditForm>();
+
     private readonly string? _numero;
     private readonly bool _isNew;
     private double _timbreFiscal;
@@ -155,6 +158,7 @@ public class FactureFournisseurEditForm : Form
             var facture = await factureService.GetByNumeroAsync(_numero!);
             if (facture is null)
             {
+                Logger.Warning("Facture fournisseur {Numero} introuvable à l'ouverture de l'éditeur.", _numero);
                 MessageBox.Show(this, "Facture introuvable.", "Facture Fournisseur", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -253,6 +257,7 @@ public class FactureFournisseurEditForm : Form
         _btnSave.Enabled = false;
         try
         {
+            Logger.Debug("Enregistrement de la facture fournisseur {Numero} (nouveau={IsNew}, {Count} lignes).", _numero, _isNew, lignes.Count);
             using var scope = AppHost.CreateScope();
             var factureService = scope.ServiceProvider.GetRequiredService<IFactureFournisseurService>();
 
@@ -261,11 +266,13 @@ public class FactureFournisseurEditForm : Form
             else
                 await factureService.UpdateAsync(facture, lignes);
 
+            Logger.Debug("Facture fournisseur {Numero} enregistrée.", facture.NumeroFactureFournisseur);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'enregistrement de la facture fournisseur {Numero}.", _numero);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally
@@ -296,17 +303,20 @@ public class FactureFournisseurEditForm : Form
         _btnAddReglement.Enabled = false;
         try
         {
+            Logger.Debug("Ajout d'un règlement de {Montant} sur la facture fournisseur {Numero}.", reglement.Montant, _numero);
             using var scope = AppHost.CreateScope();
             var factureService = scope.ServiceProvider.GetRequiredService<IFactureFournisseurService>();
 
             await factureService.AddReglementAsync(reglement);
             await ReloadReglementsAsync(factureService);
 
+            Logger.Debug("Règlement ajouté sur la facture fournisseur {Numero}.", _numero);
             _numReglementMontant.Value = 0;
             _txtReglementReference.Text = string.Empty;
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'ajout du règlement sur la facture fournisseur {Numero}.", _numero);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Règlement", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
@@ -370,6 +380,7 @@ public class FactureFournisseurEditForm : Form
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'impression de la facture fournisseur {Numero}.", _numero);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Impression", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally

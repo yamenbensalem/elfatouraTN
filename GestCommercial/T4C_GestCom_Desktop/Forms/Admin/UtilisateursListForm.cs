@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -7,6 +8,8 @@ namespace T4C_GestCom_Desktop.Forms.Admin;
 /// <summary>Desktop equivalent of Components/Pages/Admin/UtilisateursList.razor.</summary>
 public class UtilisateursListForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<UtilisateursListForm>();
+
     private readonly Button _btnNew = new() { Left = 10, Top = 9, Width = 130, Text = "Nouvel Utilisateur" };
     private readonly Button _btnEdit = new() { Left = 145, Top = 9, Width = 90, Text = "Modifier" };
     private readonly Button _btnToggleActif = new() { Left = 245, Top = 9, Width = 130, Text = "Activer/Désactiver" };
@@ -70,10 +73,13 @@ public class UtilisateursListForm : Form
         List<Utilisateur> utilisateurs;
         try
         {
+            Logger.Debug("Chargement de la liste des utilisateurs.");
             utilisateurs = await utilisateurService.GetAllAsync();
+            Logger.Debug("Liste des utilisateurs chargée : {Count} résultats.", utilisateurs.Count);
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du chargement de la liste des utilisateurs.");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Utilisateurs", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -124,6 +130,7 @@ public class UtilisateursListForm : Form
         var utilisateurService = scope.ServiceProvider.GetRequiredService<IUtilisateurService>();
         try
         {
+            Logger.Debug("Changement d'état de l'utilisateur {Id} (actif={NouvelEtat}).", id, !isActif);
             if (isActif)
                 await utilisateurService.DesactiverAsync(id.Value);
             else
@@ -133,6 +140,7 @@ public class UtilisateursListForm : Form
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du changement d'état de l'utilisateur {Id}.", id);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Utilisateurs", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

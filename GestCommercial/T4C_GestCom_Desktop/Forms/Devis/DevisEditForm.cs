@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
@@ -10,6 +11,8 @@ namespace T4C_GestCom_Desktop.Forms.Devis;
 /// <summary>Desktop equivalent of Components/Pages/Devis/DevisForm.razor.</summary>
 public class DevisEditForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<DevisEditForm>();
+
     private readonly string? _numero;
     private readonly bool _isNew;
     private double _timbre;
@@ -107,6 +110,7 @@ public class DevisEditForm : Form
             var devis = await devisService.GetByNumeroAsync(_numero!);
             if (devis is null)
             {
+                Logger.Warning("Devis {Numero} introuvable à l'ouverture de l'éditeur.", _numero);
                 MessageBox.Show(this, "Devis introuvable.", "Devis", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -181,6 +185,7 @@ public class DevisEditForm : Form
         _btnSave.Enabled = false;
         try
         {
+            Logger.Debug("Enregistrement du devis {Numero} (nouveau={IsNew}, {Count} lignes).", _numero, _isNew, lignes.Count);
             using var scope = AppHost.CreateScope();
             var devisService = scope.ServiceProvider.GetRequiredService<IDevisClientService>();
             var config = scope.ServiceProvider.GetRequiredService<AppConfigService>();
@@ -190,11 +195,13 @@ public class DevisEditForm : Form
             else
                 await devisService.UpdateAsync(devis, lignes);
 
+            Logger.Debug("Devis {Numero} enregistré.", devis.NumeroDevis);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'enregistrement du devis {Numero}.", _numero);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally
@@ -251,6 +258,7 @@ public class DevisEditForm : Form
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'impression du devis {Numero}.", _numero);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Impression", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally

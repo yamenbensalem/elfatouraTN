@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -7,6 +8,8 @@ namespace T4C_GestCom_Desktop.Forms.Admin;
 /// <summary>Desktop equivalent of Components/Pages/Admin/UtilisateurForm.razor.</summary>
 public class UtilisateurEditForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<UtilisateurEditForm>();
+
     private readonly int? _id;
     private readonly bool _isNew;
 
@@ -97,6 +100,7 @@ public class UtilisateurEditForm : Form
         var utilisateur = await utilisateurService.GetByIdAsync(_id!.Value);
         if (utilisateur is null)
         {
+            Logger.Warning("Utilisateur {Id} introuvable à l'ouverture de l'éditeur.", _id);
             MessageBox.Show(this, "Utilisateur introuvable.", "Utilisateur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             DialogResult = DialogResult.Cancel;
             Close();
@@ -125,6 +129,8 @@ public class UtilisateurEditForm : Form
         _btnSave.Enabled = false;
         try
         {
+            // Jamais le mot de passe dans le log — voir GestCommercial/.claude/rules/security.md.
+            Logger.Debug("Enregistrement de l'utilisateur {Login} (nouveau={IsNew}).", _txtLogin.Text.Trim(), _isNew);
             using var scope = AppHost.CreateScope();
             var utilisateurService = scope.ServiceProvider.GetRequiredService<IUtilisateurService>();
 
@@ -179,11 +185,13 @@ public class UtilisateurEditForm : Form
                 await utilisateurService.UpdateAsync(utilisateur);
             }
 
+            Logger.Debug("Utilisateur {Login} enregistré.", _txtLogin.Text.Trim());
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'enregistrement de l'utilisateur {Login}.", _txtLogin.Text.Trim());
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally
@@ -211,16 +219,20 @@ public class UtilisateurEditForm : Form
         _btnChangePassword.Enabled = false;
         try
         {
+            // Jamais le mot de passe dans le log — voir GestCommercial/.claude/rules/security.md.
+            Logger.Debug("Changement de mot de passe pour l'utilisateur {Id}.", _id);
             using var scope = AppHost.CreateScope();
             var utilisateurService = scope.ServiceProvider.GetRequiredService<IUtilisateurService>();
             await utilisateurService.ChangePasswordAsync(_id!.Value, _txtNewPassword.Text);
 
+            Logger.Debug("Mot de passe modifié pour l'utilisateur {Id}.", _id);
             _txtNewPassword.Text = string.Empty;
             _txtConfirmNewPassword.Text = string.Empty;
             _lblPasswordInfo.Text = "Mot de passe modifié.";
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du changement de mot de passe pour l'utilisateur {Id}.", _id);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally

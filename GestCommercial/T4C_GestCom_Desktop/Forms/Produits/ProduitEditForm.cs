@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -9,6 +10,8 @@ namespace T4C_GestCom_Desktop.Forms.Produits;
 /// <summary>Desktop equivalent of Components/Pages/Produits/ProduitForm.razor.</summary>
 public class ProduitEditForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<ProduitEditForm>();
+
     private readonly string? _code;
     private readonly bool _isNew;
     private List<TvaProduit> _tvas = [];
@@ -114,6 +117,7 @@ public class ProduitEditForm : Form
             var produit = await produitService.GetByCodeAsync(_code!);
             if (produit is null)
             {
+                Logger.Warning("Produit {Code} introuvable à l'ouverture de l'éditeur.", _code);
                 MessageBox.Show(this, "Produit introuvable.", "Produit", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -173,6 +177,7 @@ public class ProduitEditForm : Form
         _btnSave.Enabled = false;
         try
         {
+            Logger.Debug("Enregistrement du produit {Code} (nouveau={IsNew}).", _code, _isNew);
             using var scope = AppHost.CreateScope();
             var produitService = scope.ServiceProvider.GetRequiredService<IProduitService>();
 
@@ -208,11 +213,13 @@ public class ProduitEditForm : Form
             else
                 await produitService.UpdateAsync(produit);
 
+            Logger.Debug("Produit {Code} enregistré.", produit.CodeProduit);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'enregistrement du produit {Code}.", _code);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally

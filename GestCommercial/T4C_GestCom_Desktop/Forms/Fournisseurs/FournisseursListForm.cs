@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -8,6 +9,8 @@ namespace T4C_GestCom_Desktop.Forms.Fournisseurs;
 /// <summary>Desktop equivalent of Components/Pages/Fournisseurs/FournisseursList.razor.</summary>
 public class FournisseursListForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<FournisseursListForm>();
+
     private readonly TextBox _txtSearch = new() { Left = 10, Top = 10, Width = 250 };
     private readonly Button _btnSearch = new() { Left = 265, Top = 9, Width = 90, Text = "Rechercher" };
     private readonly Button _btnNew = new() { Left = 365, Top = 9, Width = 90, Text = "Nouveau" };
@@ -70,10 +73,13 @@ public class FournisseursListForm : Form
         List<Fournisseur> fournisseurs;
         try
         {
+            Logger.Debug("Chargement de la liste des fournisseurs (recherche={Recherche}).", _txtSearch.Text.Trim());
             fournisseurs = await fournisseurService.GetAllAsync(_txtSearch.Text.Trim() is { Length: > 0 } s ? s : null);
+            Logger.Debug("Liste des fournisseurs chargée : {Count} résultats.", fournisseurs.Count);
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du chargement de la liste des fournisseurs.");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Fournisseurs", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -123,11 +129,14 @@ public class FournisseursListForm : Form
         var fournisseurService = scope.ServiceProvider.GetRequiredService<IFournisseurService>();
         try
         {
+            Logger.Debug("Suppression du fournisseur {Code}.", code);
             await fournisseurService.DeleteAsync(code);
+            Logger.Debug("Fournisseur {Code} supprimé.", code);
             await LoadAsync();
         }
         catch (Exception ex)
         {
+            Logger.Warning(ex, "Échec de la suppression du fournisseur {Code}.", code);
             var message = DeleteErrorMessageHelper.Build(ex,
                 "Ce fournisseur ne peut pas etre supprime car il est lie a des factures, commandes ou bons de reception. Supprimez d'abord les documents lies, puis reessayez.");
             MessageBox.Show(this, message, "Suppression impossible", MessageBoxButtons.OK, MessageBoxIcon.Error);

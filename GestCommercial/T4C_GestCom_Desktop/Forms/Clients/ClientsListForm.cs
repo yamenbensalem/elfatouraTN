@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -8,6 +9,8 @@ namespace T4C_GestCom_Desktop.Forms.Clients;
 /// <summary>Desktop equivalent of Components/Pages/Clients/ClientsList.razor.</summary>
 public class ClientsListForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<ClientsListForm>();
+
     private readonly TextBox _txtSearch = new() { Left = 10, Top = 10, Width = 250 };
     private readonly Button _btnSearch = new() { Left = 265, Top = 9, Width = 90, Text = "Rechercher" };
     private readonly Button _btnNew = new() { Left = 365, Top = 9, Width = 90, Text = "Nouveau" };
@@ -71,10 +74,13 @@ public class ClientsListForm : Form
         List<Client> clients;
         try
         {
+            Logger.Debug("Chargement de la liste des clients (recherche={Recherche}).", _txtSearch.Text.Trim());
             clients = await clientService.GetAllAsync(_txtSearch.Text.Trim() is { Length: > 0 } s ? s : null);
+            Logger.Debug("Liste des clients chargée : {Count} résultats.", clients.Count);
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du chargement de la liste des clients.");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Clients", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -124,11 +130,14 @@ public class ClientsListForm : Form
         var clientService = scope.ServiceProvider.GetRequiredService<IClientService>();
         try
         {
+            Logger.Debug("Suppression du client {Code}.", code);
             await clientService.DeleteAsync(code);
+            Logger.Debug("Client {Code} supprimé.", code);
             await LoadAsync();
         }
         catch (Exception ex)
         {
+            Logger.Warning(ex, "Échec de la suppression du client {Code}.", code);
             var message = DeleteErrorMessageHelper.Build(ex,
                 "Ce client ne peut pas etre supprime car il est lie a des factures ou d'autres documents. Supprimez d'abord les documents lies, puis reessayez.");
             MessageBox.Show(this, message, "Suppression impossible", MessageBoxButtons.OK, MessageBoxIcon.Error);

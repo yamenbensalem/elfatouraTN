@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -7,6 +8,8 @@ namespace T4C_GestCom_Desktop.Forms.Devis;
 /// <summary>Desktop equivalent of Components/Pages/Devis/DevisList.razor.</summary>
 public class DevisListForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<DevisListForm>();
+
     private readonly Button _btnNew = new() { Left = 10, Top = 9, Width = 120, Text = "Nouveau Devis" };
     private readonly Button _btnEdit = new() { Left = 140, Top = 9, Width = 90, Text = "Modifier" };
     private readonly Button _btnClone = new() { Left = 240, Top = 9, Width = 90, Text = "Cloner" };
@@ -70,10 +73,13 @@ public class DevisListForm : Form
         List<DevisClient> devis;
         try
         {
+            Logger.Debug("Chargement de la liste des devis.");
             devis = await devisService.GetAllAsync();
+            Logger.Debug("Liste des devis chargée : {Count} résultats.", devis.Count);
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du chargement de la liste des devis.");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Devis", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -126,12 +132,15 @@ public class DevisListForm : Form
         var devisService = scope.ServiceProvider.GetRequiredService<IDevisClientService>();
         try
         {
+            Logger.Debug("Clonage du devis {Numero}.", numero);
             var clone = await devisService.CloneAsync(numero);
+            Logger.Debug("Devis {Numero} cloné en {NouveauNumero}.", numero, clone.NumeroDevis);
             await LoadAsync();
             OpenEditor(clone.NumeroDevis);
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du clonage du devis {Numero}.", numero);
             MessageBox.Show(this, $"Erreur lors du clonage : {ex.Message}", "Devis", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -153,11 +162,14 @@ public class DevisListForm : Form
         var devisService = scope.ServiceProvider.GetRequiredService<IDevisClientService>();
         try
         {
+            Logger.Debug("Suppression du devis {Numero}.", numero);
             await devisService.DeleteAsync(numero);
+            Logger.Debug("Devis {Numero} supprimé.", numero);
             await LoadAsync();
         }
         catch (Exception ex)
         {
+            Logger.Warning(ex, "Échec de la suppression du devis {Numero}.", numero);
             MessageBox.Show(this, $"Erreur de suppression : {ex.Message}", "Devis", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

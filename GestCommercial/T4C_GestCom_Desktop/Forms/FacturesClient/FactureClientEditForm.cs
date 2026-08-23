@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
@@ -10,6 +11,8 @@ namespace T4C_GestCom_Desktop.Forms.FacturesClient;
 /// <summary>Desktop equivalent of Components/Pages/FacturesClient/FactureForm.razor (handles both factures and avoirs).</summary>
 public class FactureClientEditForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<FactureClientEditForm>();
+
     private readonly string? _numero;
     private readonly bool _isNew;
     private readonly bool _isAvoir;
@@ -288,6 +291,7 @@ public class FactureClientEditForm : Form
             var facture = await factureService.GetByNumeroAsync(_numero!);
             if (facture is null)
             {
+                Logger.Warning("Facture/avoir {Numero} introuvable à l'ouverture de l'éditeur.", _numero);
                 MessageBox.Show(this, _isAvoir ? "Avoir introuvable." : "Facture introuvable.", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -413,6 +417,7 @@ public class FactureClientEditForm : Form
         _btnSave.Enabled = false;
         try
         {
+            Logger.Debug("Enregistrement du {DocLabel} {Numero} (nouveau={IsNew}, {Count} lignes).", _isAvoir ? "avoir" : "facture", _numero, _isNew, lignes.Count);
             using var scope = AppHost.CreateScope();
             var factureService = scope.ServiceProvider.GetRequiredService<IFactureClientService>();
             var config = scope.ServiceProvider.GetRequiredService<AppConfigService>();
@@ -422,11 +427,13 @@ public class FactureClientEditForm : Form
             else
                 await factureService.UpdateAsync(facture, lignes);
 
+            Logger.Debug("{DocLabel} {Numero} enregistrée.", _isAvoir ? "Avoir" : "Facture", facture.NumeroFactureClient);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'enregistrement du {DocLabel} {Numero}.", _isAvoir ? "avoir" : "facture", _numero);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally
@@ -457,17 +464,20 @@ public class FactureClientEditForm : Form
         _btnAddReglement.Enabled = false;
         try
         {
+            Logger.Debug("Ajout d'un règlement de {Montant} sur la facture {Numero}.", reglement.Montant, _numero);
             using var scope = AppHost.CreateScope();
             var factureService = scope.ServiceProvider.GetRequiredService<IFactureClientService>();
 
             await factureService.AddReglementAsync(reglement);
             await ReloadReglementsAsync(factureService);
 
+            Logger.Debug("Règlement ajouté sur la facture {Numero}.", _numero);
             _numReglementMontant.Value = 0;
             _txtReglementReference.Text = string.Empty;
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'ajout du règlement sur la facture {Numero}.", _numero);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Règlement", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
@@ -545,6 +555,7 @@ public class FactureClientEditForm : Form
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'impression de la facture {Numero}.", _numero);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Impression", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally

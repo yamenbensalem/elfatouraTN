@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
@@ -10,6 +11,8 @@ namespace T4C_GestCom_Desktop.Forms.CommandesAchat;
 /// <summary>Desktop equivalent of Components/Pages/CommandesAchat/CommandeAchatForm.razor.</summary>
 public class CommandeAchatEditForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<CommandeAchatEditForm>();
+
     private readonly string? _numero;
     private readonly bool _isNew;
 
@@ -106,6 +109,7 @@ public class CommandeAchatEditForm : Form
             var commande = await commandeService.GetByNumeroAsync(_numero!);
             if (commande is null)
             {
+                Logger.Warning("Commande achat {Numero} introuvable à l'ouverture de l'éditeur.", _numero);
                 MessageBox.Show(this, "Commande introuvable.", "Commande Achat", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -177,6 +181,7 @@ public class CommandeAchatEditForm : Form
         _btnSave.Enabled = false;
         try
         {
+            Logger.Debug("Enregistrement de la commande achat {Numero} (nouveau={IsNew}, {Count} lignes).", _numero, _isNew, lignes.Count);
             using var scope = AppHost.CreateScope();
             var commandeService = scope.ServiceProvider.GetRequiredService<ICommandeAchatService>();
 
@@ -185,11 +190,13 @@ public class CommandeAchatEditForm : Form
             else
                 await commandeService.UpdateAsync(commande, lignes);
 
+            Logger.Debug("Commande achat {Numero} enregistrée.", commande.NumeroCommandeAchat);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'enregistrement de la commande achat {Numero}.", _numero);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally
@@ -246,6 +253,7 @@ public class CommandeAchatEditForm : Form
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec de l'impression de la commande achat {Numero}.", _numero);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Impression", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally

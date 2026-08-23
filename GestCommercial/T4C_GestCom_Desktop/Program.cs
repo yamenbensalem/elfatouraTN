@@ -16,9 +16,15 @@ internal static class Program
     [STAThread]
     static void Main()
     {
+        // Debug : les écrans (Forms/**) tracent leurs opérations (chargement, enregistrement,
+        // suppression) à ce niveau — il doit rester activé pour que ces logs remontent au fichier.
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
-            .WriteTo.File(Path.Combine(LogDirectory, "app-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14)
+            .MinimumLevel.Debug()
+            .WriteTo.File(
+                Path.Combine(LogDirectory, "app-.log"),
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 14,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
 
         // Sans ces deux handlers, une exception non gérée tue le process .NET en silence (aucune

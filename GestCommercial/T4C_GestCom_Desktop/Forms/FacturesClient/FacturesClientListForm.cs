@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -11,6 +12,8 @@ namespace T4C_GestCom_Desktop.Forms.FacturesClient;
 /// </summary>
 public class FacturesClientListForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<FacturesClientListForm>();
+
     private readonly bool _isAvoir;
     private readonly string _docLabel;
 
@@ -83,10 +86,13 @@ public class FacturesClientListForm : Form
         List<Web_T4C_GestCom.Data.Models.FactureClient> factures;
         try
         {
+            Logger.Debug("Chargement de la liste des {DocLabel}s (avoirsOnly={IsAvoir}).", _docLabel, _isAvoir);
             factures = await factureService.GetAllAsync(avoirsOnly: _isAvoir);
+            Logger.Debug("Liste des {DocLabel}s chargée : {Count} résultats.", _docLabel, factures.Count);
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du chargement de la liste des {DocLabel}s.", _docLabel);
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -141,12 +147,15 @@ public class FacturesClientListForm : Form
         var factureService = scope.ServiceProvider.GetRequiredService<IFactureClientService>();
         try
         {
+            Logger.Debug("Clonage du {DocLabel} {Numero}.", _docLabel, numero);
             var clone = await factureService.CloneAsync(numero, _isAvoir);
+            Logger.Debug("{DocLabel} {Numero} clonée en {NouveauNumero}.", _docLabel, numero, clone.NumeroFactureClient);
             await LoadAsync();
             OpenEditor(clone.NumeroFactureClient);
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du clonage du {DocLabel} {Numero}.", _docLabel, numero);
             MessageBox.Show(this, $"Erreur lors du clonage : {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -168,11 +177,14 @@ public class FacturesClientListForm : Form
         var factureService = scope.ServiceProvider.GetRequiredService<IFactureClientService>();
         try
         {
+            Logger.Debug("Suppression du {DocLabel} {Numero}.", _docLabel, numero);
             await factureService.DeleteAsync(numero);
+            Logger.Debug("{DocLabel} {Numero} supprimée.", _docLabel, numero);
             await LoadAsync();
         }
         catch (Exception ex)
         {
+            Logger.Warning(ex, "Échec de la suppression du {DocLabel} {Numero}.", _docLabel, numero);
             MessageBox.Show(this, $"Erreur de suppression : {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -8,6 +9,8 @@ namespace T4C_GestCom_Desktop.Forms.Produits;
 /// <summary>Desktop equivalent of Components/Pages/Produits/ProduitsList.razor.</summary>
 public class ProduitsListForm : Form
 {
+    private static readonly ILogger Logger = Log.ForContext<ProduitsListForm>();
+
     private readonly TextBox _txtSearch = new() { Left = 10, Top = 10, Width = 250 };
     private readonly Button _btnSearch = new() { Left = 265, Top = 9, Width = 90, Text = "Rechercher" };
     private readonly Button _btnNew = new() { Left = 365, Top = 9, Width = 90, Text = "Nouveau" };
@@ -73,10 +76,13 @@ public class ProduitsListForm : Form
         List<Produit> produits;
         try
         {
+            Logger.Debug("Chargement de la liste des produits (recherche={Recherche}).", _txtSearch.Text.Trim());
             produits = await produitService.GetAllAsync(_txtSearch.Text.Trim() is { Length: > 0 } s ? s : null);
+            Logger.Debug("Liste des produits chargée : {Count} résultats.", produits.Count);
         }
         catch (Exception ex)
         {
+            Logger.Error(ex, "Échec du chargement de la liste des produits.");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Produits", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -137,11 +143,14 @@ public class ProduitsListForm : Form
         var produitService = scope.ServiceProvider.GetRequiredService<IProduitService>();
         try
         {
+            Logger.Debug("Suppression du produit {Code}.", code);
             await produitService.DeleteAsync(code);
+            Logger.Debug("Produit {Code} supprimé.", code);
             await LoadAsync();
         }
         catch (Exception ex)
         {
+            Logger.Warning(ex, "Échec de la suppression du produit {Code}.", code);
             var message = DeleteErrorMessageHelper.Build(ex,
                 "Ce produit ne peut pas etre supprime car il est utilise dans des lignes de devis, commandes, bons ou factures. Supprimez d'abord les documents lies, puis reessayez.");
             MessageBox.Show(this, message, "Suppression impossible", MessageBoxButtons.OK, MessageBoxIcon.Error);
