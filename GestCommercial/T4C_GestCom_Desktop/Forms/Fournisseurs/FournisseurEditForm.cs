@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -101,7 +102,7 @@ public class FournisseurEditForm : Form
             var fournisseur = await fournisseurService.GetByCodeAsync(_code!);
             if (fournisseur is null)
             {
-                Logger.Warning("Fournisseur {Code} introuvable à l'ouverture de l'éditeur.", _code);
+                Logger.WarningNotFound("Fournisseur", _code);
                 MessageBox.Show(this, "Fournisseur introuvable.", "Fournisseur", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -148,7 +149,7 @@ public class FournisseurEditForm : Form
         _btnSave.Enabled = false;
         try
         {
-            Logger.Debug("Enregistrement du fournisseur {Code} (nouveau={IsNew}).", _code, _isNew);
+            Logger.DebugSaving("fournisseur", _code, _isNew);
             using var scope = AppHost.CreateScope();
             var fournisseurService = scope.ServiceProvider.GetRequiredService<IFournisseurService>();
 
@@ -182,13 +183,13 @@ public class FournisseurEditForm : Form
             else
                 await fournisseurService.UpdateAsync(fournisseur);
 
-            Logger.Debug("Fournisseur {Code} enregistré.", fournisseur.CodeFournisseur);
+            Logger.DebugSaved("Fournisseur", fournisseur.CodeFournisseur);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec de l'enregistrement du fournisseur {Code}.", _code);
+            Logger.ErrorSaveFailed(ex, "fournisseur", _code);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally

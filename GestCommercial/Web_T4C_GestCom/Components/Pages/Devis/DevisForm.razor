@@ -264,16 +264,18 @@
     private void RecalculerLigne(int idx)
     {
         var l = _lignes[idx];
-        l.MontantHT = Math.Round(l.Quantite * l.PrixUnitaire * (1 - l.Remise / 100), 3);
+        l.MontantHT = LineCalculator.LineMontantHT(l.Quantite, l.PrixUnitaire, l.Remise);
         RecalculerTotaux();
     }
 
     private void RecalculerTotaux()
     {
-        _totalHT = Math.Round(_lignes.Sum(l => l.MontantHT), 3);
-        _totalTVA = Math.Round(_lignes.Sum(l => l.Tva * l.MontantHT / 100), 3);
-        var remise = _totalHT * _devis.Remise / 100;
-        _totalTTC = Math.Round(_totalHT - remise + _totalTVA, 3);
+        var totals = LineCalculator.CalculateDocumentTotals(
+            _lignes.Select(l => new LineCalculator.LineAmounts(l.MontantHT, l.Tva, Fodec: 0)),
+            _devis.Remise);
+        _totalHT = totals.TotalHT;
+        _totalTVA = totals.TotalTva;
+        _totalTTC = totals.TotalTTC;
     }
 
     private async Task SaveAsync()

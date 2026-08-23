@@ -43,12 +43,8 @@ else
                 <div>
                     <div class="print-party-label">Reçu de</div>
                     <div class="print-party-name">@_bon.Fournisseur?.NomFournisseur</div>
-                    @if (!string.IsNullOrWhiteSpace(_bon.Fournisseur?.MatriculeFiscale))
-                    { <div>MF : @_bon.Fournisseur.MatriculeFiscale</div> }
-                    @if (!string.IsNullOrWhiteSpace(_bon.Fournisseur?.Adresse))
-                    { <div>@_bon.Fournisseur.Adresse</div> }
-                    @if (!string.IsNullOrWhiteSpace(_bon.Fournisseur?.Tel))
-                    { <div>Tél : @_bon.Fournisseur.Tel</div> }
+                    @foreach (var line in PartyDetailsHelper.ForFournisseur(_bon.Fournisseur))
+                    { <div>@line</div> }
                 </div>
                 <div class="text-end">
                     <div class="print-party-label">État facturation</div>

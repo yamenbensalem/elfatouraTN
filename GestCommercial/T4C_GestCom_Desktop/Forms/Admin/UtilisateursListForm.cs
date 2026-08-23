@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -73,13 +74,13 @@ public class UtilisateursListForm : Form
         List<Utilisateur> utilisateurs;
         try
         {
-            Logger.Debug("Chargement de la liste des utilisateurs.");
+            Logger.DebugLoadingList("utilisateurs");
             utilisateurs = await utilisateurService.GetAllAsync();
-            Logger.Debug("Liste des utilisateurs chargée : {Count} résultats.", utilisateurs.Count);
+            Logger.DebugListLoaded("utilisateurs", utilisateurs.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du chargement de la liste des utilisateurs.");
+            Logger.ErrorListLoadFailed(ex, "utilisateurs");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Utilisateurs", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }

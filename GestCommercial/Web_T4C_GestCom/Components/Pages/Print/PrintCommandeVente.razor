@@ -43,12 +43,8 @@ else
                 <div>
                     <div class="print-party-label">Client</div>
                     <div class="print-party-name">@_commande.Client?.NomClient</div>
-                    @if (!string.IsNullOrWhiteSpace(_commande.Client?.MatriculeFiscale))
-                    { <div>MF : @_commande.Client.MatriculeFiscale</div> }
-                    @if (!string.IsNullOrWhiteSpace(_commande.Client?.Adresse))
-                    { <div>@_commande.Client.Adresse</div> }
-                    @if (!string.IsNullOrWhiteSpace(_commande.Client?.Tel))
-                    { <div>Tél : @_commande.Client.Tel</div> }
+                    @foreach (var line in PartyDetailsHelper.ForClient(_commande.Client))
+                    { <div>@line</div> }
                 </div>
                 <div class="text-end">
                     <div class="print-party-label">État livraison</div>

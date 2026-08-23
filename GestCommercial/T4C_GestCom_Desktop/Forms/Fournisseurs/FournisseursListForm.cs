@@ -73,13 +73,13 @@ public class FournisseursListForm : Form
         List<Fournisseur> fournisseurs;
         try
         {
-            Logger.Debug("Chargement de la liste des fournisseurs (recherche={Recherche}).", _txtSearch.Text.Trim());
+            Logger.DebugLoadingList("fournisseurs", $"recherche={_txtSearch.Text.Trim()}");
             fournisseurs = await fournisseurService.GetAllAsync(_txtSearch.Text.Trim() is { Length: > 0 } s ? s : null);
-            Logger.Debug("Liste des fournisseurs chargée : {Count} résultats.", fournisseurs.Count);
+            Logger.DebugListLoaded("fournisseurs", fournisseurs.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du chargement de la liste des fournisseurs.");
+            Logger.ErrorListLoadFailed(ex, "fournisseurs");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Fournisseurs", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -129,14 +129,14 @@ public class FournisseursListForm : Form
         var fournisseurService = scope.ServiceProvider.GetRequiredService<IFournisseurService>();
         try
         {
-            Logger.Debug("Suppression du fournisseur {Code}.", code);
+            Logger.DebugDeleting("fournisseur", code);
             await fournisseurService.DeleteAsync(code);
-            Logger.Debug("Fournisseur {Code} supprimé.", code);
+            Logger.DebugDeleted("Fournisseur", code);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            Logger.Warning(ex, "Échec de la suppression du fournisseur {Code}.", code);
+            Logger.WarningDeleteFailed(ex, "fournisseur", code);
             var message = DeleteErrorMessageHelper.Build(ex,
                 "Ce fournisseur ne peut pas etre supprime car il est lie a des factures, commandes ou bons de reception. Supprimez d'abord les documents lies, puis reessayez.");
             MessageBox.Show(this, message, "Suppression impossible", MessageBoxButtons.OK, MessageBoxIcon.Error);

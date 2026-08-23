@@ -109,7 +109,7 @@ public class CommandeAchatEditForm : Form
             var commande = await commandeService.GetByNumeroAsync(_numero!);
             if (commande is null)
             {
-                Logger.Warning("Commande achat {Numero} introuvable à l'ouverture de l'éditeur.", _numero);
+                Logger.WarningNotFound("Commande achat", _numero);
                 MessageBox.Show(this, "Commande introuvable.", "Commande Achat", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -181,7 +181,7 @@ public class CommandeAchatEditForm : Form
         _btnSave.Enabled = false;
         try
         {
-            Logger.Debug("Enregistrement de la commande achat {Numero} (nouveau={IsNew}, {Count} lignes).", _numero, _isNew, lignes.Count);
+            Logger.DebugSaving("commande achat", _numero, _isNew, lignes.Count);
             using var scope = AppHost.CreateScope();
             var commandeService = scope.ServiceProvider.GetRequiredService<ICommandeAchatService>();
 
@@ -190,13 +190,13 @@ public class CommandeAchatEditForm : Form
             else
                 await commandeService.UpdateAsync(commande, lignes);
 
-            Logger.Debug("Commande achat {Numero} enregistrée.", commande.NumeroCommandeAchat);
+            Logger.DebugSaved("Commande achat", commande.NumeroCommandeAchat);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec de l'enregistrement de la commande achat {Numero}.", _numero);
+            Logger.ErrorSaveFailed(ex, "commande achat", _numero);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally
@@ -253,7 +253,7 @@ public class CommandeAchatEditForm : Form
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec de l'impression de la commande achat {Numero}.", _numero);
+            Logger.ErrorPrintFailed(ex, "commande achat", _numero);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Impression", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally

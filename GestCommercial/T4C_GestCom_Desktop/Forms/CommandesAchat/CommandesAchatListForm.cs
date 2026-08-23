@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -74,13 +75,13 @@ public class CommandesAchatListForm : Form
         List<CommandeAchat> commandes;
         try
         {
-            Logger.Debug("Chargement de la liste des commandes achat.");
+            Logger.DebugLoadingList("commandes achat");
             commandes = await commandeService.GetAllAsync();
-            Logger.Debug("Liste des commandes achat chargée : {Count} résultats.", commandes.Count);
+            Logger.DebugListLoaded("commandes achat", commandes.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du chargement de la liste des commandes achat.");
+            Logger.ErrorListLoadFailed(ex, "commandes achat");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Commandes Achat", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -134,15 +135,15 @@ public class CommandesAchatListForm : Form
         var commandeService = scope.ServiceProvider.GetRequiredService<ICommandeAchatService>();
         try
         {
-            Logger.Debug("Clonage de la commande achat {Numero}.", numero);
+            Logger.DebugCloning("commande achat", numero);
             var clone = await commandeService.CloneAsync(numero);
-            Logger.Debug("Commande achat {Numero} clonée en {NouveauNumero}.", numero, clone.NumeroCommandeAchat);
+            Logger.DebugCloned("Commande achat", numero, clone.NumeroCommandeAchat);
             await LoadAsync();
             OpenEditor(clone.NumeroCommandeAchat);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du clonage de la commande achat {Numero}.", numero);
+            Logger.ErrorCloneFailed(ex, "commande achat", numero);
             MessageBox.Show(this, $"Erreur lors du clonage : {ex.Message}", "Commandes Achat", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -164,14 +165,14 @@ public class CommandesAchatListForm : Form
         var commandeService = scope.ServiceProvider.GetRequiredService<ICommandeAchatService>();
         try
         {
-            Logger.Debug("Suppression de la commande achat {Numero}.", numero);
+            Logger.DebugDeleting("commande achat", numero);
             await commandeService.DeleteAsync(numero);
-            Logger.Debug("Commande achat {Numero} supprimée.", numero);
+            Logger.DebugDeleted("Commande achat", numero);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            Logger.Warning(ex, "Échec de la suppression de la commande achat {Numero}.", numero);
+            Logger.WarningDeleteFailed(ex, "commande achat", numero);
             MessageBox.Show(this, $"Erreur de suppression : {ex.Message}", "Commandes Achat", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

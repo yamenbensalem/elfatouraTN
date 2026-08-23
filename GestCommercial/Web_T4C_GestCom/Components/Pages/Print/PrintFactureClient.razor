@@ -47,14 +47,8 @@ else
                 <div>
                     <div class="print-party-label">Facturé à</div>
                     <div class="print-party-name">@_facture.Client?.NomClient</div>
-                    @if (!string.IsNullOrWhiteSpace(_facture.Client?.MatriculeFiscale))
-                    { <div>MF : @_facture.Client.MatriculeFiscale</div> }
-                    @if (!string.IsNullOrWhiteSpace(_facture.Client?.Adresse))
-                    { <div>@_facture.Client.Adresse</div> }
-                    @if (!string.IsNullOrWhiteSpace(_facture.Client?.Ville))
-                    { <div>@_facture.Client.CodePostal @_facture.Client.Ville</div> }
-                    @if (!string.IsNullOrWhiteSpace(_facture.Client?.Tel))
-                    { <div>Tél : @_facture.Client.Tel</div> }
+                    @foreach (var line in PartyDetailsHelper.ForClient(_facture.Client))
+                    { <div>@line</div> }
                 </div>
                 <div class="text-end">
                     <div class="print-party-label">État règlement</div>

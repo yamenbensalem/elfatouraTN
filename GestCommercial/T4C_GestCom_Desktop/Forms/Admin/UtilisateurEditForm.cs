@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -100,7 +101,7 @@ public class UtilisateurEditForm : Form
         var utilisateur = await utilisateurService.GetByIdAsync(_id!.Value);
         if (utilisateur is null)
         {
-            Logger.Warning("Utilisateur {Id} introuvable à l'ouverture de l'éditeur.", _id);
+            Logger.WarningNotFound("Utilisateur", _id?.ToString());
             MessageBox.Show(this, "Utilisateur introuvable.", "Utilisateur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             DialogResult = DialogResult.Cancel;
             Close();
@@ -130,7 +131,7 @@ public class UtilisateurEditForm : Form
         try
         {
             // Jamais le mot de passe dans le log — voir GestCommercial/.claude/rules/security.md.
-            Logger.Debug("Enregistrement de l'utilisateur {Login} (nouveau={IsNew}).", _txtLogin.Text.Trim(), _isNew);
+            Logger.DebugSaving("utilisateur", _txtLogin.Text.Trim(), _isNew);
             using var scope = AppHost.CreateScope();
             var utilisateurService = scope.ServiceProvider.GetRequiredService<IUtilisateurService>();
 
@@ -185,13 +186,13 @@ public class UtilisateurEditForm : Form
                 await utilisateurService.UpdateAsync(utilisateur);
             }
 
-            Logger.Debug("Utilisateur {Login} enregistré.", _txtLogin.Text.Trim());
+            Logger.DebugSaved("Utilisateur", _txtLogin.Text.Trim());
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec de l'enregistrement de l'utilisateur {Login}.", _txtLogin.Text.Trim());
+            Logger.ErrorSaveFailed(ex, "utilisateur", _txtLogin.Text.Trim());
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally

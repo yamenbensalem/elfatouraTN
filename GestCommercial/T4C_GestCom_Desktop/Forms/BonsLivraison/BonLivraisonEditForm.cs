@@ -136,7 +136,7 @@ public class BonLivraisonEditForm : Form
             var bon = await bonService.GetByNumeroAsync(_numero!);
             if (bon is null)
             {
-                Logger.Warning("Bon de livraison {Numero} introuvable à l'ouverture de l'éditeur.", _numero);
+                Logger.WarningNotFound("Bon de livraison", _numero);
                 MessageBox.Show(this, "Bon de livraison introuvable.", "Bon de Livraison", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -214,7 +214,7 @@ public class BonLivraisonEditForm : Form
         _btnSave.Enabled = false;
         try
         {
-            Logger.Debug("Enregistrement du bon de livraison {Numero} (nouveau={IsNew}, {Count} lignes).", _numero, _isNew, lignes.Count);
+            Logger.DebugSaving("bon de livraison", _numero, _isNew, lignes.Count);
             using var scope = AppHost.CreateScope();
             var bonService = scope.ServiceProvider.GetRequiredService<IBonLivraisonService>();
 
@@ -223,13 +223,13 @@ public class BonLivraisonEditForm : Form
             else
                 await bonService.UpdateAsync(bon, lignes);
 
-            Logger.Debug("Bon de livraison {Numero} enregistré.", bon.NumeroBonLivraison);
+            Logger.DebugSaved("Bon de livraison", bon.NumeroBonLivraison);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec de l'enregistrement du bon de livraison {Numero}.", _numero);
+            Logger.ErrorSaveFailed(ex, "bon de livraison", _numero);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally
@@ -290,7 +290,7 @@ public class BonLivraisonEditForm : Form
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec de l'impression du bon de livraison {Numero}.", _numero);
+            Logger.ErrorPrintFailed(ex, "bon de livraison", _numero);
             MessageBox.Show(this, $"Erreur : {ex.Message}", "Impression", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
