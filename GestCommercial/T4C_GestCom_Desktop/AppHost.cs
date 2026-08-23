@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using T4C_GestCom_Desktop.Session;
 using Web_T4C_GestCom.Auth;
 using Web_T4C_GestCom.Data;
@@ -28,17 +29,22 @@ public static class AppHost
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
             .Build();
 
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        // Pas de secret dans cette chaîne (Trusted_Connection=True) — sûr à logger, et ça permet de
+        // repérer immédiatement un "Server=" mal configuré pour la machine cible sans deviner.
+        Log.Information("Chaîne de connexion configurée : {ConnectionString}", connectionString);
+
         var services = new ServiceCollection();
 
         services.AddSingleton<IConfiguration>(configuration);
         services.AddMemoryCache();
 
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(connectionString));
         // PermissionService and FeatureFlagService take IDbContextFactory<AppDbContext> directly
         // (see Web_T4C_GestCom's Program.cs) — without this they fail to resolve at runtime.
         services.AddDbContextFactory<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")),
+            options.UseSqlServer(connectionString),
             ServiceLifetime.Scoped);
 
         services.AddSingleton<UserSession>();

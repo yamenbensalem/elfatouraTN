@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using Web_T4C_GestCom.Services;
 
 namespace T4C_GestCom_Desktop.Forms;
@@ -51,6 +52,8 @@ public class LoginForm : Form
             var user = await utilisateurs.AuthentifierAsync(login, password);
             if (user is null)
             {
+                // Jamais le mot de passe dans le log — voir GestCommercial/.claude/rules/security.md.
+                Log.Warning("Tentative de connexion échouée (identifiants invalides) pour {Login}", login);
                 _lblError.Text = "Identifiant ou mot de passe incorrect.";
                 return;
             }
@@ -63,6 +66,10 @@ public class LoginForm : Form
         }
         catch (Exception ex)
         {
+            // ex.ToString() (pas juste .Message) dans le journal : la pile d'appel et l'exception
+            // interne sont indispensables pour diagnostiquer, contrairement au label UI ci-dessous
+            // qui reste court et lisible pour l'utilisateur.
+            Log.Error(ex, "Échec de connexion pour {Login}", login);
             _lblError.Text = $"Erreur de connexion : {ex.Message}";
         }
         finally

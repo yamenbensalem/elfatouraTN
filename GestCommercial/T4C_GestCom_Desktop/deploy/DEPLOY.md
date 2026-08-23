@@ -294,6 +294,21 @@ normalement. Si un message d'erreur de licence apparaît, vérifier :
 L'application revalide la licence toutes les 15 minutes pendant la session ; si le fichier est
 supprimé ou modifié en cours d'utilisation, l'app affiche le message d'erreur et se ferme.
 
+### Journal de l'application (logs)
+
+Toute erreur (démarrage, licence, connexion base, authentification) est journalisée dans :
+
+```
+%ProgramData%\T4C_GestCom\logs\app-<date>.log
+```
+
+Si ce dossier n'est pas inscriptible par le compte Windows qui exécute l'app (cas du compte
+applicatif à droits minimaux, voir §8.2), l'app bascule automatiquement sur
+`%LOCALAPPDATA%\T4C_GestCom\logs\` — regarder les deux emplacements si le premier est vide. Un
+fichier par jour, conservé 14 jours. C'est le premier réflexe en cas de comportement inattendu
+chez un client (écran qui ne s'affiche pas, erreur de connexion, etc.) — avant toute manipulation
+plus lourde (Journal d'événements Windows, débogage à distance).
+
 ## Ce que la licence protège réellement
 
 Verrouillage machine (MachineGuid + MAC + nom de PC + ID CPU) signé RSA-3072 — sans ta clé privée,

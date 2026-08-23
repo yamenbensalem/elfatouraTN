@@ -1,3 +1,4 @@
+using Serilog;
 using T4C_GestCom_Desktop.Forms.Admin;
 using T4C_GestCom_Desktop.Forms.BonsLivraison;
 using T4C_GestCom_Desktop.Forms.BonsReception;
@@ -81,6 +82,7 @@ public class MainForm : Form
         if (result.IsValid)
             return;
 
+        Log.Warning("Revalidation de licence échouée en session : {Status}", result.Status);
         _licenseRecheckTimer.Stop();
         MessageBox.Show(this, LicenseGate.DescribeFailure(result.Status), LicenseGate.DialogTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
         Application.Exit();
