@@ -49,7 +49,7 @@ public class UtilisateurService(
         return await query.FirstOrDefaultAsync();
     }
 
-    public async Task<Utilisateur?> GetByLoginAsync(string login)
+    public async Task<Utilisateur?> GetByLoginAsync(string login) 
         => await db.Utilisateurs.FirstOrDefaultAsync(u => u.Login == login);
 
     public async Task<Utilisateur?> AuthentifierAsync(string login, string password)

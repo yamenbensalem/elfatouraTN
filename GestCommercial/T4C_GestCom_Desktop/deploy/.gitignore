@@ -15,3 +15,10 @@ keys/
 
 # Packaged client handoffs assembled by build-client-package.ps1 — regenerated on demand.
 client-package/
+
+# The template database backup (.bak) produced by sql/prepare-template-database.ps1 by literally
+# running Web_T4C_GestCom's own startup migrations against an empty DB and backing up the result —
+# a regeneratable build artifact, not source. A SQL Server .bak is also a binary blob (tens of MB)
+# that doesn't belong in git history — re-run prepare-template-database.ps1 whenever the schema
+# changes instead of trying to diff/version this file.
+db-template/

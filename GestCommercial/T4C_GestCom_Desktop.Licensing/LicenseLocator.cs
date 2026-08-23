@@ -4,7 +4,7 @@ namespace T4C_GestCom_Desktop.Licensing;
 /// Resolves where the license file lives on disk. <see cref="ProgramDataPath"/> is the real
 /// install location; <see cref="ExeDirectoryPath"/> is a convenience fallback so Yamen can drop
 /// <c>license.lic</c> straight next to <c>T4C_GestCom_Desktop.exe</c> during a first install,
-/// before ProgramData is set up — see deploy/INSTALL.md.
+/// before ProgramData is set up — see deploy/DEPLOY.md, section 7.
 /// </summary>
 public static class LicenseLocator
 {
