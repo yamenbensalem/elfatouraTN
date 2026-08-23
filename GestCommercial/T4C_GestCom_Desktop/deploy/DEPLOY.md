@@ -44,8 +44,8 @@ Yamen                              Client
 
 | Outil | Pourquoi | Remarque |
 |---|---|---|
-| **.NET 8 Desktop Runtime (x64)** | Fait tourner `T4C_GestCom_Desktop.exe` et `T4C_GestCom_LicenseGenerator.exe` — le build est framework-dependent, pas autonome | Runtime seul, pas le SDK. S'il manque, Windows affiche lui-même un lien de téléchargement Microsoft au lancement — pas besoin de le pré-télécharger |
-| **SQL Server Express** | Héberge la base en local sur le même poste (choix d'archi retenu) | Édition **Express** (gratuite, jusqu'à 10 Go/base) — jamais Developer Edition pour un client réel, licence non autorisée en production |
+| **.NET 8 Desktop Runtime (x64)** | (https://dotnet.microsoft.com/en-us/download/dotnet/8.0 -- windows x64)Fait tourner `T4C_GestCom_Desktop.exe` et `T4C_GestCom_LicenseGenerator.exe` — le build est framework-dependent, pas autonome | Runtime seul, pas le SDK. S'il manque, Windows affiche lui-même un lien de téléchargement Microsoft au lancement — pas besoin de le pré-télécharger |
+| **SQL Server Express** | Héberge la base en local sur le même poste (choix d'archi retenu) (https://www.microsoft.com/fr-fr/download/details.aspx?id=104781) | Édition **Express** (gratuite, jusqu'à 10 Go/base) — jamais Developer Edition pour un client réel, licence non autorisée en production |
 | **SSMS** (ou `sqlcmd`, fourni avec SQL Server) | Restaurer la base initiale et lancer `create-app-login.sql` | Optionnel *sur le poste client* si tu fais cette étape toi-même à distance (RDP/AnyDesk) plutôt que sur place |
 
 SQL Server Configuration Manager (pour désactiver TCP/IP, voir section 8.3 ci-dessous) est fourni
