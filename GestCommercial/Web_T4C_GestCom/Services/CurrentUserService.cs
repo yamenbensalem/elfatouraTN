@@ -8,19 +8,10 @@ namespace Web_T4C_GestCom.Services;
 /// Service scopé qui maintient l'identité de l'utilisateur courant pour toute la durée du circuit Blazor.
 /// S'initialise automatiquement depuis AuthenticationStateProvider et reste compatible
 /// avec une synchronisation explicite depuis MainLayout via SetCurrentUser().
+/// L'interface <see cref="ICurrentUserService"/> vient de Web_T4C_GestCom.Core (partagée avec
+/// T4C_GestCom_Desktop, qui fournit sa propre implémentation non-HTTP) — seule cette implémentation
+/// liée à AuthenticationStateProvider/HttpContext reste ici.
 /// </summary>
-public interface ICurrentUserService
-{
-    string Login { get; }
-    string Role { get; }
-    bool IsAdmin { get; }
-    bool IsSuperAdmin { get; }
-    bool IsAuthenticated { get; }
-    Task EnsureInitializedAsync();
-    void SetCurrentUser(string login, string role);
-    void Clear();
-}
-
 public class CurrentUserService : ICurrentUserService, IDisposable
 {
     private readonly AuthenticationStateProvider _authStateProvider;

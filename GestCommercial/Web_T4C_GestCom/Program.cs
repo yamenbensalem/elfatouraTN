@@ -10,12 +10,9 @@ using Web_T4C_GestCom.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// EF Core – SQL Server (pool factory for services that need CreateDbContextAsync)
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
-    ServiceLifetime.Scoped);
+// EF Core, and every service shared with T4C_GestCom_Desktop's AppHost.cs — see
+// AddT4CGestComServices's own doc comment for what's shared vs. host-specific.
+builder.Services.AddT4CGestComServices(builder.Configuration.GetConnectionString("DefaultConnection"));
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -104,12 +101,9 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IExecutionContext, HttpExecutionContext>();
 builder.Services.Configure<LoginProtectionOptions>(builder.Configuration.GetSection("Security:LoginProtection"));
-builder.Services.AddSingleton<ILoginProtectionService, LoginProtectionService>();
 
-// RBAC
-builder.Services.AddScoped<ITenantService,      TenantService>();
-builder.Services.AddScoped<IPermissionService,  PermissionService>();
-builder.Services.AddScoped<IFeatureFlagService, FeatureFlagService>();
+// RBAC — host-specific implementation; PermissionService/FeatureFlagService came from AddT4CGestComServices above.
+builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler,          PermissionAuthorizationHandler>();
 builder.Services.AddScoped<IClaimsTransformation,          PermissionClaimsTransformation>();
@@ -117,22 +111,8 @@ builder.Services.AddScoped<IClaimsTransformation,          PermissionClaimsTrans
 // RazorPages (for Login/Logout pages)
 builder.Services.AddRazorPages();
 
-// Application services
-builder.Services.AddSingleton<AppConfigService>();
-builder.Services.AddScoped<DocumentNumberService>();
+// Host-specific current-user implementation; everything else came from AddT4CGestComServices above.
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<IUtilisateurService, UtilisateurService>();
-builder.Services.AddScoped<IJournalActiviteService, JournalActiviteService>();
-builder.Services.AddScoped<IClientService, ClientService>();
-builder.Services.AddScoped<IProduitService, ProduitService>();
-builder.Services.AddScoped<IFournisseurService, FournisseurService>();
-builder.Services.AddScoped<IFactureClientService, FactureClientService>();
-builder.Services.AddScoped<IDevisClientService, DevisClientService>();
-builder.Services.AddScoped<ICommandeVenteService, CommandeVenteService>();
-builder.Services.AddScoped<IBonLivraisonService, BonLivraisonService>();
-builder.Services.AddScoped<ICommandeAchatService, CommandeAchatService>();
-builder.Services.AddScoped<IBonReceptionService, BonReceptionService>();
-builder.Services.AddScoped<IFactureFournisseurService, FactureFournisseurService>();
 
 // Blazor
 builder.Services.AddRazorComponents()
