@@ -36,6 +36,7 @@ public class CommandeAchatService(
     public async Task<CommandeAchat> CreateAsync(CommandeAchat commande, List<LigneCommandeAchat> lignes)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-achat.create");
+        LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
 
         commande.NumeroCommandeAchat = await numService.NextCommandeAchatAsync();
         RecalculateTotals(commande, lignes);
@@ -48,6 +49,7 @@ public class CommandeAchatService(
     public async Task<CommandeAchat> UpdateAsync(CommandeAchat commande, List<LigneCommandeAchat> lignes)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-achat.update");
+        LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
 
         var existing = await db.CommandesAchat
             .Include(c => c.Lignes)

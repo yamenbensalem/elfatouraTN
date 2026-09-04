@@ -44,6 +44,7 @@ public class BonLivraisonService(
     public async Task<BonLivraison> CreateAsync(BonLivraison bon, List<LigneBonLivraison> lignes)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-livraison.create");
+        LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
 
         bon.NumeroBonLivraison = await numService.NextBonLivraisonAsync();
         RecalculateTotals(bon, lignes);
@@ -74,6 +75,7 @@ public class BonLivraisonService(
     public async Task UpdateAsync(BonLivraison bon, List<LigneBonLivraison> lignes)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-livraison.update");
+        LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
 
         var existing = await db.BonsLivraison
             .FirstOrDefaultAsync(b => b.NumeroBonLivraison == bon.NumeroBonLivraison)

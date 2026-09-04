@@ -11,6 +11,18 @@ public static class LineCalculator
     public static double LineMontantHT(double quantite, double prixUnitaire, double remise)
         => Math.Round(quantite * prixUnitaire * (1 - remise / 100), 3);
 
+    /// <summary>
+    /// Guard shared by every document service (Devis, Commandes, Bons, Factures) so a negative
+    /// quantité or prix unitaire can never reach SaveChangesAsync, regardless of which UI (Web or
+    /// Desktop) produced the line. Throws InvalidOperationException — the same "business rule
+    /// violation" convention already used across these services (ex. "Facture introuvable").
+    /// </summary>
+    public static void EnsureNoNegativeAmounts<T>(IEnumerable<T> lignes, Func<T, double> quantite, Func<T, double> prixUnitaire)
+    {
+        if (lignes.Any(l => quantite(l) < 0 || prixUnitaire(l) < 0))
+            throw new InvalidOperationException("La quantité et le prix unitaire d'une ligne ne peuvent pas être négatifs.");
+    }
+
     public readonly record struct LineAmounts(double MontantHT, double Tva, double Fodec);
 
     public readonly record struct DocumentTotals(double TotalHT, double TotalFodec, double TotalTva, double TotalTTC);

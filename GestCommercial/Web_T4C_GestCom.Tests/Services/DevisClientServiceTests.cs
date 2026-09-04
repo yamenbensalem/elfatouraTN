@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -9,6 +10,24 @@ namespace Web_T4C_GestCom.Tests.Services;
 
 public class DevisClientServiceTests
 {
+    [Fact]
+    public async Task CreateAsync_LineWithNegativeQuantite_Throws()
+    {
+        var db = DbContextFactory.Create();
+        db.Clients.Add(new Client { CodeClient = "CL00001", NomClient = "Client Test", CodeDevise = 1 });
+        await db.SaveChangesAsync();
+
+        var service = new DevisClientService(db, new DocumentNumberService(db));
+        var devis = new DevisClient { CodeClient = "CL00001", DateDevis = DateTime.Today };
+        var lignes = new List<LigneDevisClient>
+        {
+            new() { CodeProduit = "PR00001", Quantite = -1, PrixUnitaire = 10, MontantHT = -10 }
+        };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.CreateAsync(devis, lignes, new AppConfigService(new ConfigurationBuilder().Build())));
+    }
+
     [Fact]
     public async Task UpdateAsync_ReplacesPreviousLines_InsteadOfKeepingOldOnes()
     {

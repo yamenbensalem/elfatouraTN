@@ -125,12 +125,12 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <InputNumber class="form-control form-control-sm"
+                                    <InputNumber class="form-control form-control-sm" min="0"
                                                  @bind-Value="_lignes[idx].Quantite"
                                                  @bind-Value:after="() => RecalculerLigne(idx)" />
                                 </td>
                                 <td>
-                                    <InputNumber class="form-control form-control-sm"
+                                    <InputNumber class="form-control form-control-sm" min="0"
                                                  @bind-Value="_lignes[idx].PrixUnitaire"
                                                  @bind-Value:after="() => RecalculerLigne(idx)" />
                                 </td>

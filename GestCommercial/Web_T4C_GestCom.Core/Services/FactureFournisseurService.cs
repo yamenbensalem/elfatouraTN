@@ -40,6 +40,7 @@ public class FactureFournisseurService(
     public async Task<FactureFournisseur> CreateAsync(FactureFournisseur facture, List<LigneFactureFournisseur> lignes)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.create");
+        LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
 
         facture.NumeroFactureFournisseur = await numService.NextFactureFournisseurAsync();
         RecalculateTotals(facture, lignes);
@@ -67,6 +68,7 @@ public class FactureFournisseurService(
     public async Task<FactureFournisseur> UpdateAsync(FactureFournisseur facture, List<LigneFactureFournisseur> lignes)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.update");
+        LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
 
         var existing = await db.FacturesFournisseur
             .Include(f => f.Lignes)

@@ -75,6 +75,16 @@ public class FactureClientServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_LineWithNegativePrixUnitaire_Throws()
+    {
+        var (svc, db, config) = CreateService();
+        await SeedBasicData(db);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 2, -100)], config));
+    }
+
+    [Fact]
     public async Task CreateAsync_DecreasesProductStock()
     {
         var (svc, db, config) = CreateService();

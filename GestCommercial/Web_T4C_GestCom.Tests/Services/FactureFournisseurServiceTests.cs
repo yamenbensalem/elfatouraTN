@@ -54,6 +54,16 @@ public class FactureFournisseurServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_LineWithNegativeQuantite_Throws()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", -1, 50)]));
+    }
+
+    [Fact]
     public async Task CreateAsync_RecalculatesTotalsCorrectly()
     {
         var (svc, db) = CreateService();

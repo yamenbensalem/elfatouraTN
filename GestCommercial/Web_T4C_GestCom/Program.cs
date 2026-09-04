@@ -401,6 +401,46 @@ using (var scope = app.Services.CreateScope())
         WHERE permissionsversion_utilisateur IS NULL OR permissionsversion_utilisateur < 1
         """);
 
+    // Allow deleting a CommandeVente/CommandeAchat that already has a BonLivraison/BonReception
+    // linked to it, without having to delete the bon first: the optional traceability FK is set
+    // to NULL instead of blocking the delete (DeleteBehavior.Restrict everywhere else is kept —
+    // see AppDbContext.OnModelCreating). Idempotent: only alters the constraint if it isn't
+    // already ON DELETE SET NULL (delete_referential_action = 2), so this is safe to run on every
+    // startup, both for existing client databases and fresh installs seeded before this change.
+    db.Database.ExecuteSqlRaw("""
+        DECLARE @fkName NVARCHAR(128);
+        SELECT @fkName = fk.name
+        FROM sys.foreign_keys fk
+        JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
+        JOIN sys.columns c ON c.object_id = fkc.parent_object_id AND c.column_id = fkc.parent_column_id
+        WHERE fk.parent_object_id = OBJECT_ID('bonlivraison')
+          AND c.name = 'numero_commandevente'
+          AND fk.delete_referential_action <> 2;
+
+        IF @fkName IS NOT NULL
+        BEGIN
+            EXEC('ALTER TABLE bonlivraison DROP CONSTRAINT [' + @fkName + ']');
+            EXEC('ALTER TABLE bonlivraison ADD CONSTRAINT [' + @fkName + '] FOREIGN KEY (numero_commandevente) REFERENCES commandevente(numero_commandevente) ON DELETE SET NULL');
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        DECLARE @fkName NVARCHAR(128);
+        SELECT @fkName = fk.name
+        FROM sys.foreign_keys fk
+        JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
+        JOIN sys.columns c ON c.object_id = fkc.parent_object_id AND c.column_id = fkc.parent_column_id
+        WHERE fk.parent_object_id = OBJECT_ID('bonreception')
+          AND c.name = 'numero_commandeachat'
+          AND fk.delete_referential_action <> 2;
+
+        IF @fkName IS NOT NULL
+        BEGIN
+            EXEC('ALTER TABLE bonreception DROP CONSTRAINT [' + @fkName + ']');
+            EXEC('ALTER TABLE bonreception ADD CONSTRAINT [' + @fkName + '] FOREIGN KEY (numero_commandeachat) REFERENCES commandeachat(numero_commandeachat) ON DELETE SET NULL');
+        END
+        """);
+
     // ── RBAC seed ──────────────────────────────────────────────────────────
     // Default company (let IDENTITY assign the PK — don't specify id_company)
     db.Database.ExecuteSqlRaw("""

@@ -50,6 +50,7 @@ public class FactureClientService(
     public async Task<FactureClient> CreateAsync(FactureClient facture, List<LigneFactureClient> lignes, AppConfigService config)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.create");
+        LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
 
         facture.NumeroFactureClient = await numService.NextFactureClientAsync();
         facture.Timbre = config.TimbreFiscal;
@@ -81,6 +82,7 @@ public class FactureClientService(
     public async Task UpdateAsync(FactureClient facture, List<LigneFactureClient> lignes)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.update");
+        LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
 
         var existing = await db.FacturesClient
             .FirstOrDefaultAsync(f => f.NumeroFactureClient == facture.NumeroFactureClient)

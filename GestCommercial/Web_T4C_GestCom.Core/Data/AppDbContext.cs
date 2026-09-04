@@ -130,6 +130,25 @@ public class AppDbContext : DbContext
         foreach (var fk in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
             fk.DeleteBehavior = DeleteBehavior.Restrict;
 
+        // Exceptions to the global Restrict above: these two FKs are purely informational
+        // traceability links (which order a delivery/receipt note was generated from), not a
+        // financial record like a line item. Deleting a fulfilled CommandeVente/CommandeAchat
+        // should not be blocked just because a BonLivraison/BonReception still references it —
+        // the link is cleared (SET NULL) instead. Must come after the loop above, which would
+        // otherwise overwrite this back to Restrict. Matching raw-SQL migration in Program.cs
+        // updates the constraint on already-deployed (EnsureCreated) databases.
+        modelBuilder.Entity<BonLivraison>()
+            .HasOne(b => b.CommandeVente)
+            .WithMany(c => c.BonsLivraison)
+            .HasForeignKey(b => b.NumeroCommandeVente)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<BonReception>()
+            .HasOne(b => b.CommandeAchat)
+            .WithMany(c => c.BonsReception)
+            .HasForeignKey(b => b.NumeroCommandeAchat)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // ── Composite PKs ──────────────────────────────────────────────────
         modelBuilder.Entity<UserRole>()
             .HasKey(ur => new { ur.UserId, ur.RoleId });

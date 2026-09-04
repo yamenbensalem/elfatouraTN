@@ -41,6 +41,16 @@ public class CommandeVenteServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_LineWithNegativePrixUnitaire_Throws()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.CreateAsync(MakeCommande(), [MakeLigne("PR00001", 2, -100)]));
+    }
+
+    [Fact]
     public async Task CreateAsync_RecalculatesTotalsCorrectly()
     {
         var (svc, db) = CreateService();

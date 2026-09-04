@@ -58,6 +58,16 @@ public class BonLivraisonServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_LineWithNegativeQuantite_Throws()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.CreateAsync(MakeBon(), [MakeLigne("PR00001", -1, 100)]));
+    }
+
+    [Fact]
     public async Task CreateAsync_DecreasesProductStock()
     {
         var (svc, db) = CreateService();

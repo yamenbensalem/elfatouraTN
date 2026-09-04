@@ -181,6 +181,42 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       `DeleteErrorMessageHelper`, `PartyDetailsHelper`, `RoleNameMapper`, `AppConfigService` (déjà
       couvert), `TenantService`/`CurrentUserService` (dépendent de `HttpContext`/état Blazor, mieux
       couverts en intégration que via un mock).
-- [ ] Valider les montants négatifs dans les formulaires (quantité, prix)
-- [ ] Ajouter une migration pour tout changement de schéma futur
-- [ ] Revoir le `DeleteBehavior.Restrict` global — certaines suppressions pourraient nécessiter des règles plus fines
+- [x] Valider les montants négatifs dans les formulaires (quantité, prix) — `LineCalculator.EnsureNoNegativeAmounts()`
+      (Core, partagé Web+Desktop) rejette toute ligne à quantité ou prix unitaire négatif, appelé en
+      tête de `CreateAsync`/`UpdateAsync` dans les 7 services document (Devis, CommandeVente,
+      CommandeAchat, BonLivraison, BonReception, FactureClient, FactureFournisseur) — c'est le point
+      unique qui garantit qu'aucune valeur négative n'atteint `SaveChangesGuardedAsync`, quelle que
+      soit l'UI (les deux affichent déjà `ex.Message` dans leurs blocs catch génériques, donc le
+      message "La quantité et le prix unitaire d'une ligne ne peuvent pas être négatifs." remonte
+      sans changement supplémentaire côté UI). En plus, `min="0"` ajouté sur les 14 `<InputNumber>`
+      Quantité/Prix des 7 formulaires Web (petit garde-fou navigateur, pas suffisant seul puisque
+      HTML `min` n'empêche pas la saisie manuelle — d'où le garde côté service). Pas de changement
+      côté Desktop (`ProductLinesEditor`) : FluentValidation et `ObjectGraphDataAnnotationsValidator`
+      ne sont pas utilisés dans ce projet et n'auraient de toute façon pas aidé ici (le
+      `DataAnnotationsValidator` de Blazor ne valide que le modèle racine de l'`EditForm`, pas la
+      liste `_lignes` séparée) ; dupliquer un garde-clause par formulaire aurait été redondant avec
+      le message déjà clair renvoyé par le service. 12 nouveaux tests (`LineCalculatorTests` + un
+      test de câblage par service confirmant qu'une ligne négative lève bien l'exception). Suite
+      complète : 234/234 tests verts, build 0 erreur (Web + Desktop).
+- [x] Revoir le `DeleteBehavior.Restrict` global — décision utilisateur : passer les 2 FK optionnelles
+      de traçabilité (`BonLivraison.NumeroCommandeVente`, `BonReception.NumeroCommandeAchat`) en
+      `SetNull`, pour pouvoir supprimer une Commande déjà livrée/reçue sans devoir d'abord supprimer
+      son BL/BR. Toutes les autres FK restent `Restrict` (aucune ligne/document financier ne doit
+      être orphelin ou supprimé en cascade) — vérifié par un test qui inspecte le modèle EF
+      (`AppDbContextDeleteBehaviorTests`, 3 tests : les 2 FK concernées + un spot-check que
+      `BonLivraison→Client` et `LigneFactureClient→FactureClient` restent `Restrict`). Deux volets :
+      1) `AppDbContext.OnModelCreating` (`Web_T4C_GestCom.Core/Data/AppDbContext.cs`) déclare
+         explicitement `.OnDelete(DeleteBehavior.SetNull)` sur ces 2 relations, après la boucle
+         globale Restrict (sinon écrasé) — s'applique à toute nouvelle base créée via
+         `EnsureCreated()`.
+      2) `Program.cs` ajoute un bloc SQL brut idempotent (cherche la contrainte FK existante via
+         `sys.foreign_keys`/`sys.foreign_key_columns`, ne la recrée que si elle n'est pas déjà
+         `ON DELETE SET NULL`) pour mettre à jour les bases déjà déployées chez les clients, en
+         suivant le même pattern `IF NOT EXISTS` que toutes les autres migrations de schéma de ce
+         fichier.
+- [x] Ajouter une migration pour tout changement de schéma futur — clarifié : ce projet n'utilise pas
+      EF Core Migrations, seulement `EnsureCreated()` + des blocs SQL brut idempotents dans
+      `Program.cs` (voir `Web_T4C_GestCom/CLAUDE.md`). La convention "migration" ici = suivre ce
+      pattern (`IF NOT EXISTS` / vérifier l'état actuel avant d'altérer) pour tout futur changement
+      de schéma, comme démontré par le point DeleteBehavior ci-dessus. Rien à ajouter tant qu'aucun
+      changement de schéma n'est en attente — ce n'était pas une tâche actionnable isolément.

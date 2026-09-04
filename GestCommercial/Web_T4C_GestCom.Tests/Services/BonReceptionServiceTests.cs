@@ -53,6 +53,16 @@ public class BonReceptionServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_LineWithNegativePrixUnitaire_Throws()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => svc.CreateAsync(MakeBon(), [MakeLigne("PR00001", 1, -50)]));
+    }
+
+    [Fact]
     public async Task DeleteAsync_RestoresStockDownAndRemovesBon()
     {
         var (svc, db) = CreateService();
