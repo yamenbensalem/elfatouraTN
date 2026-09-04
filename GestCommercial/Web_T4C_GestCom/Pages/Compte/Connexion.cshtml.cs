@@ -87,6 +87,16 @@ public class ConnexionModel(
         };
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, props);
+
+        // SignInAsync pose le cookie pour la PROCHAINE requête mais ne met pas à jour
+        // HttpContext.User pour le reste de CETTE requête — sans cette ligne, le prochain appel
+        // qui dépend du tenant courant (ex. journalActiviteService.EnregistrerAsync, qui écrit une
+        // entité liée à l'entreprise) verrait encore un contexte non authentifié et
+        // AppDbContext.ApplyTenantOwnershipRules() lèverait "Aucun tenant actif".
+        HttpContext.User = principal;
+
+        await journalActiviteService.EnregistrerAsync("Connexion", "Authentification", user.Login, $"ip={ipAddress}");
+
         return LocalRedirect(Input.ReturnUrl ?? "/");
     }
 

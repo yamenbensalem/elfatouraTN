@@ -24,4 +24,7 @@ public sealed class NoOpJournalActiviteService : IJournalActiviteService
 
     public Task<List<string>> GetEntitesDistinctesAsync()
         => Task.FromResult(new List<string>());
+
+    public Task<int> PurgeAsync(int olderThanMonths)
+        => Task.FromResult(0);
 }

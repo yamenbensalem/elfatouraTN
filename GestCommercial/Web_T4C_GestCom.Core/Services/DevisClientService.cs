@@ -17,6 +17,7 @@ public interface IDevisClientService
 public class DevisClientService(
     AppDbContext db,
     DocumentNumberService numService,
+    IJournalActiviteService journal,
     ICurrentUserService? currentUser = null,
     IPermissionService? permissionService = null) : IDevisClientService
 {
@@ -55,6 +56,7 @@ public class DevisClientService(
         }
 
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Ajout", "Devis", devis.NumeroDevis, devis.CodeClient);
         return devis;
     }
 
@@ -101,6 +103,7 @@ public class DevisClientService(
         db.LignesDevisClient.AddRange(nouvellesLignes);
 
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Modification", "Devis", existing.NumeroDevis, existing.CodeClient);
     }
 
     public async Task DeleteAsync(string numero)
@@ -118,6 +121,7 @@ public class DevisClientService(
         db.LignesDevisClient.RemoveRange(devis.Lignes);
         db.DevisClient.Remove(devis);
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Suppression", "Devis", numero);
     }
 
     public async Task<DevisClient> CloneAsync(string numero)
@@ -154,6 +158,7 @@ public class DevisClientService(
         db.DevisClient.Add(clone);
         db.LignesDevisClient.AddRange(lignesClone);
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Clone", "Devis", clone.NumeroDevis, $"cloné depuis {numero}");
         return clone;
     }
 

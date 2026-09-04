@@ -17,6 +17,7 @@ public interface ICommandeVenteService
 public class CommandeVenteService(
     AppDbContext db,
     DocumentNumberService numService,
+    IJournalActiviteService journal,
     ICurrentUserService? currentUser = null,
     IPermissionService? permissionService = null) : ICommandeVenteService
 {
@@ -54,6 +55,7 @@ public class CommandeVenteService(
         }
 
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Ajout", "CommandeVente", commande.NumeroCommandeVente, commande.CodeClient);
         return commande;
     }
 
@@ -98,6 +100,7 @@ public class CommandeVenteService(
         db.LignesCommandeVente.AddRange(nouvellesLignes);
 
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Modification", "CommandeVente", existing.NumeroCommandeVente, existing.CodeClient);
     }
 
     public async Task DeleteAsync(string numero)
@@ -114,6 +117,7 @@ public class CommandeVenteService(
         db.LignesCommandeVente.RemoveRange(commande.Lignes);
         db.CommandesVente.Remove(commande);
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Suppression", "CommandeVente", numero);
     }
 
     public async Task<CommandeVente> CloneAsync(string numero)
@@ -150,6 +154,7 @@ public class CommandeVenteService(
         db.CommandesVente.Add(clone);
         db.LignesCommandeVente.AddRange(lignesClone);
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Clone", "CommandeVente", clone.NumeroCommandeVente, $"cloné depuis {numero}");
         return clone;
     }
 

@@ -143,14 +143,37 @@ Fonctionnalités restantes à implémenter, classées par priorité.
 - [x] Journal d'activité automatique sur les 7 services prioritaires
 - [x] Gestion des utilisateurs (Admin)
 
-### À compléter — Journal d'activité
+### À compléter — Journal d'activité ✅
 
-- [ ] Ajouter la traçabilité sur les services restants :
-  - `DevisClientService`
-  - `CommandeVenteService`
-  - `CommandeAchatService`
-- [ ] Ajouter l'entrée "Connexion" dans le journal depuis la page login
-- [ ] Permettre à l'administrateur de **purger** le journal (ancien de N mois)
+- [x] Ajouter la traçabilité sur les services restants :
+  - `DevisClientService`, `CommandeVenteService`, `CommandeAchatService` — `IJournalActiviteService`
+    injecté, Ajout/Modification/Suppression/Clone journalisés (même convention que les autres
+    services document). 3 nouveaux tests service qui vérifient qu'une vraie entrée est écrite
+    (pas juste que le mock est appelé).
+- [x] Ajouter l'entrée "Connexion" dans le journal depuis la page login
+      — **bug trouvé et corrigé en le faisant** : `journalActiviteService.EnregistrerAsync(...)`
+      appelé juste après `SignInAsync()` levait silencieusement `UnauthorizedAccessException:
+      Aucun tenant actif dans le contexte de sécurité` (`AppDbContext.ApplyTenantOwnershipRules`),
+      car `SignInAsync()` pose le cookie pour la *prochaine* requête mais ne met pas à jour
+      `HttpContext.User` pour le reste de la requête courante — le contexte d'exécution voyait
+      donc encore un utilisateur non authentifié. Corrigé en réaffectant explicitement
+      `HttpContext.User = principal` juste après `SignInAsync()`, avant l'écriture du journal.
+      **Ce même problème affecte aussi silencieusement `EmitSecurityAlertsAsync`** (les alertes
+      "AlerteSecurite" sur tentatives de connexion échouées/bloquées, qui s'exécutent avant toute
+      authentification et n'ont donc jamais de tenant résolu) — probablement cassé depuis
+      l'introduction du guard multi-tenant, **pas corrigé ici** : la correction est plus délicate
+      (pas de principal à assigner puisque l'auth a échoué ; il faudrait résoudre le tenant
+      autrement, ex. via le login tenté plutôt que via les claims) et touche un guard de sécurité,
+      donc hors scope de ce point précis. À reprendre séparément.
+- [x] Permettre à l'administrateur de **purger** le journal (ancien de N mois)
+      — `IJournalActiviteService.PurgeAsync(int olderThanMonths)` (Core), respecte l'isolation
+      multi-tenant, écrit une entrée "Purge" après coup (hors de la sélection supprimée) pour
+      garder une trace de qui a purgé et combien d'entrées. UI dans `JournalActiviteList.razor` :
+      champ nombre de mois + bouton + `ConfirmDialog` (action irréversible). 4 nouveaux tests
+      service. Vérifié de bout en bout dans le navigateur (bouton, dialogue de confirmation,
+      rafraîchissement de la liste après purge — "Aucune entrée à purger" correctement renvoyé
+      quand rien ne dépasse le seuil).
+      Suite complète : 256/256 tests verts, build 0 erreur (Web + Desktop).
 
 ### Retenues à la source
 

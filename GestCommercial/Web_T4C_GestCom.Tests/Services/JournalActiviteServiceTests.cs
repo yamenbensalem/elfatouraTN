@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using Web_T4C_GestCom.Data;
+using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 using Web_T4C_GestCom.Tests.Helpers;
 using Xunit;
@@ -106,15 +108,55 @@ public class JournalActiviteServiceTests
         Assert.Equal(["Client", "Produit"], entites);
     }
 
-    private sealed class StubCurrentUserService(string login) : ICurrentUserService
+    // ── Purge ────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task PurgeAsync_RemovesOnlyEntriesOlderThanThreshold()
     {
-        public string Login { get; } = login;
-        public string Role => "Employé";
-        public bool IsAdmin => false;
-        public bool IsSuperAdmin => false;
-        public bool IsAuthenticated => true;
-        public Task EnsureInitializedAsync() => Task.CompletedTask;
-        public void SetCurrentUser(string login, string role) { }
-        public void Clear() { }
+        var (svc, db) = CreateService();
+        db.JournalActivites.Add(new JournalActivite { Login = "admin", Action = "Ajout", Entite = "Client", DateHeure = DateTime.Now.AddMonths(-13) });
+        db.JournalActivites.Add(new JournalActivite { Login = "admin", Action = "Ajout", Entite = "Client", DateHeure = DateTime.Now.AddMonths(-1) });
+        await db.SaveChangesAsync();
+
+        var deleted = await svc.PurgeAsync(12);
+
+        Assert.Equal(1, deleted);
+        var remaining = await db.JournalActivites.Where(j => j.Action == "Ajout").ToListAsync();
+        Assert.Single(remaining);
+    }
+
+    [Fact]
+    public async Task PurgeAsync_RecordsPurgeJournalEntry()
+    {
+        var (svc, db) = CreateService();
+        db.JournalActivites.Add(new JournalActivite { Login = "admin", Action = "Ajout", Entite = "Client", DateHeure = DateTime.Now.AddMonths(-13) });
+        await db.SaveChangesAsync();
+
+        await svc.PurgeAsync(12);
+
+        var purgeEntries = await db.JournalActivites.Where(j => j.Action == "Purge").ToListAsync();
+        Assert.Single(purgeEntries);
+        Assert.Contains("1 entrée", purgeEntries[0].Detail);
+    }
+
+    [Fact]
+    public async Task PurgeAsync_NoOldEntries_ReturnsZeroAndWritesNoPurgeEntry()
+    {
+        var (svc, db) = CreateService();
+        db.JournalActivites.Add(new JournalActivite { Login = "admin", Action = "Ajout", Entite = "Client", DateHeure = DateTime.Now.AddDays(-1) });
+        await db.SaveChangesAsync();
+
+        var deleted = await svc.PurgeAsync(12);
+
+        Assert.Equal(0, deleted);
+        Assert.Equal(0, await db.JournalActivites.CountAsync(j => j.Action == "Purge"));
+    }
+
+    [Fact]
+    public async Task PurgeAsync_ZeroOrNegativeMonths_Throws()
+    {
+        var (svc, _) = CreateService();
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => svc.PurgeAsync(0));
     }
 }

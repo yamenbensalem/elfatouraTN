@@ -17,7 +17,7 @@ public class DevisClientServiceTests
         db.Clients.Add(new Client { CodeClient = "CL00001", NomClient = "Client Test", CodeDevise = 1 });
         await db.SaveChangesAsync();
 
-        var service = new DevisClientService(db, new DocumentNumberService(db));
+        var service = new DevisClientService(db, new DocumentNumberService(db), new NoOpJournalActiviteService());
         var devis = new DevisClient { CodeClient = "CL00001", DateDevis = DateTime.Today };
         var lignes = new List<LigneDevisClient>
         {
@@ -62,7 +62,7 @@ public class DevisClientServiceTests
         });
         await db.SaveChangesAsync();
 
-        var service = new DevisClientService(db, new DocumentNumberService(db));
+        var service = new DevisClientService(db, new DocumentNumberService(db), new NoOpJournalActiviteService());
 
         var updated = new DevisClient
         {
@@ -132,7 +132,7 @@ public class DevisClientServiceTests
         });
         await db.SaveChangesAsync();
 
-        var service = new DevisClientService(db, new DocumentNumberService(db));
+        var service = new DevisClientService(db, new DocumentNumberService(db), new NoOpJournalActiviteService());
 
         await service.UpdateAsync(
             new DevisClient
@@ -166,5 +166,27 @@ public class DevisClientServiceTests
 
         Assert.Single(cloneLines);
         Assert.Equal("PR-NEW", cloneLines[0].CodeProduit);
+    }
+
+    [Fact]
+    public async Task CreateAsync_RecordsJournalEntry()
+    {
+        var db = DbContextFactory.Create();
+        db.Clients.Add(new Client { CodeClient = "CL00001", NomClient = "Client Test", CodeDevise = 1 });
+        await db.SaveChangesAsync();
+
+        var journal = new JournalActiviteService(db, new StubCurrentUserService("jdoe"));
+        var service = new DevisClientService(db, new DocumentNumberService(db), journal);
+
+        var devis = await service.CreateAsync(
+            new DevisClient { CodeClient = "CL00001", DateDevis = DateTime.Today },
+            [],
+            new AppConfigService(new ConfigurationBuilder().Build()));
+
+        var entries = await journal.GetAllAsync(entite: "Devis");
+        Assert.Single(entries);
+        Assert.Equal("Ajout", entries[0].Action);
+        Assert.Equal(devis.NumeroDevis, entries[0].CodeEntite);
+        Assert.Equal("jdoe", entries[0].Login);
     }
 }

@@ -12,7 +12,7 @@ public class CommandeVenteServiceTests
     private static (CommandeVenteService svc, AppDbContext db) CreateService()
     {
         var db = DbContextFactory.Create();
-        return (new CommandeVenteService(db, new DocumentNumberService(db)), db);
+        return (new CommandeVenteService(db, new DocumentNumberService(db), new NoOpJournalActiviteService()), db);
     }
 
     private static async Task SeedBasicData(AppDbContext db)
@@ -130,5 +130,22 @@ public class CommandeVenteServiceTests
 
         Assert.Single(results);
         Assert.Equal("CL00001", results[0].CodeClient);
+    }
+
+    [Fact]
+    public async Task CreateAsync_RecordsJournalEntry()
+    {
+        var db = DbContextFactory.Create();
+        await SeedBasicData(db);
+        var journal = new JournalActiviteService(db, new StubCurrentUserService("jdoe"));
+        var svc = new CommandeVenteService(db, new DocumentNumberService(db), journal);
+
+        var commande = await svc.CreateAsync(MakeCommande(), [MakeLigne("PR00001", 2, 100)]);
+
+        var entries = await journal.GetAllAsync(entite: "CommandeVente");
+        Assert.Single(entries);
+        Assert.Equal("Ajout", entries[0].Action);
+        Assert.Equal(commande.NumeroCommandeVente, entries[0].CodeEntite);
+        Assert.Equal("jdoe", entries[0].Login);
     }
 }

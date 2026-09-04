@@ -17,6 +17,13 @@ public interface IJournalActiviteService
 
     Task<List<string>> GetLoginsDistinctsAsync();
     Task<List<string>> GetEntitesDistinctesAsync();
+
+    /// <summary>
+    /// Supprime définitivement les entrées de plus de <paramref name="olderThanMonths"/> mois et
+    /// retourne le nombre supprimé. Contrairement à EnregistrerAsync, ne masque pas les erreurs —
+    /// c'est une action destructive délibérée déclenchée par un admin, pas un effet de bord silencieux.
+    /// </summary>
+    Task<int> PurgeAsync(int olderThanMonths);
 }
 
 public class JournalActiviteService(
@@ -88,5 +95,29 @@ public class JournalActiviteService(
             q = q.Where(j => j.CompanyId == companyId);
 
         return await q.Select(j => j.Entite).Distinct().OrderBy(e => e).ToListAsync();
+    }
+
+    public async Task<int> PurgeAsync(int olderThanMonths)
+    {
+        if (olderThanMonths <= 0)
+            throw new ArgumentOutOfRangeException(nameof(olderThanMonths), "Le seuil doit être d'au moins 1 mois.");
+
+        var cutoff = DateTime.Today.AddMonths(-olderThanMonths);
+        var q = db.JournalActivites.Where(j => j.DateHeure < cutoff);
+        if (tenantService?.CurrentCompanyId is int companyId)
+            q = q.Where(j => j.CompanyId == companyId);
+
+        var toDelete = await q.ToListAsync();
+        if (toDelete.Count == 0)
+            return 0;
+
+        db.JournalActivites.RemoveRange(toDelete);
+        await db.SaveChangesGuardedAsync();
+
+        // Écrit après coup, hors de la sélection déjà supprimée — trace que la purge a eu lieu.
+        await EnregistrerAsync("Purge", "JournalActivite", null,
+            $"{toDelete.Count} entrée(s) antérieure(s) au {cutoff:dd/MM/yyyy} supprimée(s).");
+
+        return toDelete.Count;
     }
 }

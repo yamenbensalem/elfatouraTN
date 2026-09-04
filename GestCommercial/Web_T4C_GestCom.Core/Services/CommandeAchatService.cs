@@ -17,6 +17,7 @@ public interface ICommandeAchatService
 public class CommandeAchatService(
     AppDbContext db,
     DocumentNumberService numService,
+    IJournalActiviteService journal,
     ICurrentUserService? currentUser = null,
     IPermissionService? permissionService = null)
     : ICommandeAchatService
@@ -43,6 +44,7 @@ public class CommandeAchatService(
         commande.Lignes = lignes;
         db.CommandesAchat.Add(commande);
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Ajout", "CommandeAchat", commande.NumeroCommandeAchat, commande.CodeFournisseur);
         return commande;
     }
 
@@ -69,6 +71,7 @@ public class CommandeAchatService(
         RecalculateTotals(existing, lignes);
         existing.Lignes = lignes;
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Modification", "CommandeAchat", existing.NumeroCommandeAchat, existing.CodeFournisseur);
         return existing;
     }
 
@@ -86,6 +89,7 @@ public class CommandeAchatService(
         db.LignesCommandeAchat.RemoveRange(commande.Lignes);
         db.CommandesAchat.Remove(commande);
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Suppression", "CommandeAchat", numero);
     }
 
     public async Task<CommandeAchat> CloneAsync(string numero)
@@ -119,6 +123,7 @@ public class CommandeAchatService(
         clone.Lignes = lignes;
         db.CommandesAchat.Add(clone);
         await db.SaveChangesGuardedAsync();
+        await journal.EnregistrerAsync("Clone", "CommandeAchat", clone.NumeroCommandeAchat, $"cloné depuis {numero}");
         return clone;
     }
 
