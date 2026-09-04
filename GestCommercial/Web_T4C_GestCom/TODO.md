@@ -29,13 +29,19 @@ Fonctionnalités restantes à implémenter, classées par priorité.
 - [x] Créer `Services/FactureFournisseurService.cs` (interface `IFactureFournisseurService`)
   - `AddReglementAsync`, `GetSoldeAsync`, `CloneAsync`
   - Incrémente le stock à la création
-- [ ] Créer `Components/Pages/FacturesFournisseur/FactureFournisseurList.razor` (`@page "/factures-fournisseur"`)
-  - Colonnes : N°, Date, Fournisseur, Montant HT, FODEC, TVA, TTC, Timbre, État Règlement
-- [ ] Créer `Components/Pages/FacturesFournisseur/FactureFournisseurForm.razor`
-  - Routes : `/factures-fournisseur/nouveau` et `/factures-fournisseur/{Numero}`
-  - Section règlements fournisseur (identique à FactureClient)
-  - Bouton Cloner
-- [ ] Enregistrer `IFactureFournisseurService` dans `Program.cs`
+- [x] Créer `Components/Pages/FacturesFournisseur/FactureFournisseurList.razor` (`@page "/factures-fournisseur"`)
+  - Colonnes : N°, Date, Fournisseur, Montant HT, TVA, TTC, Timbre, État, Règlement — déjà en place
+- [x] Créer `Components/Pages/FacturesFournisseur/FactureFournisseurForm.razor`
+  - Routes `/factures-fournisseur/nouveau` et `/factures-fournisseur/{Numero}`, section règlements,
+    bouton Cloner, page d'impression (`Print/PrintFactureFournisseur.razor`) — déjà en place
+- [x] Enregistrer `IFactureFournisseurService` — déjà fait via `AddT4CGestComServices` (Core)
+  - Cette checklist était périmée : le module était déjà entièrement implémenté (liste, formulaire,
+    lignes avec recalcul auto, règlements avec calcul d'état, clonage, impression, permissions
+    `factures-fournisseur.*` seedées, lien menu). Revérifié de bout en bout dans le navigateur :
+    création, ajout de ligne (auto-remplissage prix/TVA depuis le produit), incrément de stock,
+    ajout d'un règlement partiel (état → "Partiellement Réglé", solde correct), impression, clonage
+    (nouveau numéro, stock re-incrémenté, règlement réinitialisé), suppression (stock restitué,
+    règlements supprimés). Aucun bug trouvé, aucun changement de code nécessaire.
 
 ---
 
