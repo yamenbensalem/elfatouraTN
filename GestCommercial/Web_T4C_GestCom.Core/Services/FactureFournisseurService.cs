@@ -51,7 +51,7 @@ public class FactureFournisseurService(
             db.FacturesFournisseur.Add(facture);
             foreach (var l in lignes)
                 await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -79,7 +79,7 @@ public class FactureFournisseurService(
             foreach (var l in existing.Lignes)
                 await ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
             db.LignesFactureFournisseur.RemoveRange(existing.Lignes);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
 
             existing.DateFactureFournisseur = facture.DateFactureFournisseur;
             existing.CodeFournisseur = facture.CodeFournisseur;
@@ -93,7 +93,7 @@ public class FactureFournisseurService(
 
             foreach (var l in lignes)
                 await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -110,6 +110,8 @@ public class FactureFournisseurService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.delete");
 
+        // Pas de AsNoTracking : voir le commentaire dans FactureClientService.DeleteAsync (risque de
+        // conflit d'identité avec RemoveRange sur une entité déjà trackée dans le même scope).
         var facture = await db.FacturesFournisseur
             .Include(f => f.Lignes)
             .Include(f => f.Reglements)
@@ -124,7 +126,7 @@ public class FactureFournisseurService(
             db.ReglementsFactureFournisseur.RemoveRange(facture.Reglements);
             db.LignesFactureFournisseur.RemoveRange(facture.Lignes);
             db.FacturesFournisseur.Remove(facture);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -173,7 +175,7 @@ public class FactureFournisseurService(
             db.FacturesFournisseur.Add(clone);
             foreach (var l in lignes)
                 await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -192,7 +194,7 @@ public class FactureFournisseurService(
 
         reglement.Id = 0;
         db.ReglementsFactureFournisseur.Add(reglement);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         await UpdateEtatReglementAsync(reglement.NumeroFactureFournisseur);
     }
 
@@ -227,7 +229,7 @@ public class FactureFournisseurService(
             : totalRegle >= netAPayer ? "Réglé"
             : "Partiellement Réglé";
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     private static void RecalculateTotals(FactureFournisseur doc, List<LigneFactureFournisseur> lignes)

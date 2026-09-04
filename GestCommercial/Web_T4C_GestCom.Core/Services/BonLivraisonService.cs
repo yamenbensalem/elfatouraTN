@@ -58,7 +58,7 @@ public class BonLivraisonService(
                 db.LignesBonLivraison.Add(ligne);
                 await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, -ligne.Quantite);
             }
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -79,6 +79,8 @@ public class BonLivraisonService(
             .FirstOrDefaultAsync(b => b.NumeroBonLivraison == bon.NumeroBonLivraison)
             ?? throw new InvalidOperationException("Bon de livraison introuvable.");
 
+        // Pas de AsNoTracking : voir DevisClientService.UpdateAsync pour le détail du risque de
+        // conflit d'identité avec RemoveRange sur une entité déjà trackée dans le même scope.
         var oldLignes = await db.LignesBonLivraison
             .Where(l => l.NumeroBonLivraison == bon.NumeroBonLivraison)
             .ToListAsync();
@@ -89,7 +91,7 @@ public class BonLivraisonService(
             foreach (var old in oldLignes)
                 await produitService.ApplyStockDeltaAsync(old.CodeProduit, old.Quantite);
             db.LignesBonLivraison.RemoveRange(oldLignes);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
 
             existing.DateBonLivraison = bon.DateBonLivraison;
             existing.CodeClient = bon.CodeClient;
@@ -117,7 +119,7 @@ public class BonLivraisonService(
                 db.LignesBonLivraison.Add(ligne);
                 await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, -ligne.Quantite);
             }
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -133,6 +135,7 @@ public class BonLivraisonService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-livraison.delete");
 
+        // Pas de AsNoTracking : voir le commentaire dans UpdateAsync ci-dessus.
         var bon = await db.BonsLivraison
             .Include(b => b.Lignes)
             .FirstOrDefaultAsync(b => b.NumeroBonLivraison == numero);
@@ -146,7 +149,7 @@ public class BonLivraisonService(
                 await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, ligne.Quantite);
             db.LignesBonLivraison.RemoveRange(bon.Lignes);
             db.BonsLivraison.Remove(bon);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -197,7 +200,7 @@ public class BonLivraisonService(
             db.LignesBonLivraison.AddRange(lignesClone);
             foreach (var l in lignesClone)
                 await produitService.ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch

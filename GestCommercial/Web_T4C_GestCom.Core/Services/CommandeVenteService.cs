@@ -52,7 +52,7 @@ public class CommandeVenteService(
             db.LignesCommandeVente.Add(ligne);
         }
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         return commande;
     }
 
@@ -64,12 +64,14 @@ public class CommandeVenteService(
             .FirstOrDefaultAsync(c => c.NumeroCommandeVente == commande.NumeroCommandeVente)
             ?? throw new InvalidOperationException("Commande introuvable.");
 
+        // Pas de AsNoTracking : ces lignes peuvent déjà être trackées (ex. juste créées dans le même
+        // scope) — voir DevisClientService.UpdateAsync pour le détail du risque de conflit d'identité.
         var oldLignes = await db.LignesCommandeVente
             .Where(l => l.NumeroCommandeVente == commande.NumeroCommandeVente)
             .ToListAsync();
 
         db.LignesCommandeVente.RemoveRange(oldLignes);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
 
         existing.DateCommandeVente = commande.DateCommandeVente;
         existing.CodeClient = commande.CodeClient;
@@ -93,13 +95,14 @@ public class CommandeVenteService(
 
         db.LignesCommandeVente.AddRange(nouvellesLignes);
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public async Task DeleteAsync(string numero)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.delete");
 
+        // Pas de AsNoTracking : voir le commentaire dans UpdateAsync ci-dessus.
         var commande = await db.CommandesVente
             .Include(c => c.Lignes)
             .FirstOrDefaultAsync(c => c.NumeroCommandeVente == numero);
@@ -108,7 +111,7 @@ public class CommandeVenteService(
 
         db.LignesCommandeVente.RemoveRange(commande.Lignes);
         db.CommandesVente.Remove(commande);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public async Task<CommandeVente> CloneAsync(string numero)
@@ -144,7 +147,7 @@ public class CommandeVenteService(
 
         db.CommandesVente.Add(clone);
         db.LignesCommandeVente.AddRange(lignesClone);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         return clone;
     }
 

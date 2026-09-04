@@ -21,7 +21,7 @@ public class FournisseurService(
 {
     public async Task<List<Fournisseur>> GetAllAsync(string? search = null)
     {
-        var query = db.Fournisseurs.Include(f => f.Devise).AsQueryable();
+        var query = db.Fournisseurs.AsNoTracking().Include(f => f.Devise).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(f =>
@@ -33,7 +33,7 @@ public class FournisseurService(
     }
 
     public async Task<Fournisseur?> GetByCodeAsync(string code)
-        => await db.Fournisseurs.Include(f => f.Devise).FirstOrDefaultAsync(f => f.CodeFournisseur == code);
+        => await db.Fournisseurs.AsNoTracking().Include(f => f.Devise).FirstOrDefaultAsync(f => f.CodeFournisseur == code);
 
     public async Task<string> AddAsync(Fournisseur fournisseur)
     {
@@ -45,7 +45,7 @@ public class FournisseurService(
             fournisseur.CodeFournisseur = $"FO{(count + 1):D5}";
         }
         db.Fournisseurs.Add(fournisseur);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Ajout", "Fournisseur", fournisseur.CodeFournisseur, fournisseur.NomFournisseur);
         return fournisseur.CodeFournisseur;
     }
@@ -55,7 +55,7 @@ public class FournisseurService(
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "fournisseurs.update");
 
         db.Fournisseurs.Update(fournisseur);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Fournisseur", fournisseur.CodeFournisseur, fournisseur.NomFournisseur);
     }
 
@@ -67,7 +67,7 @@ public class FournisseurService(
         if (f is not null)
         {
             db.Fournisseurs.Remove(f);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await journal.EnregistrerAsync("Suppression", "Fournisseur", code, f.NomFournisseur);
         }
     }

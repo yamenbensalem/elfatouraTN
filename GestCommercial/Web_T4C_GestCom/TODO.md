@@ -144,9 +144,30 @@ Fonctionnalités restantes à implémenter, classées par priorité.
 
 ## DETTE TECHNIQUE
 
-- [ ] Ajouter `AsNoTracking()` sur toutes les requêtes en lecture seule dans les services
-- [ ] Ajouter la gestion des erreurs de concurrence EF Core (`DbUpdateConcurrencyException`)
-- [ ] Centraliser la logique de calcul des totaux dans une classe utilitaire partagée (éviter la duplication entre services)
+- [~] Ajouter `AsNoTracking()` sur toutes les requêtes en lecture seule dans les services — fait sur
+      les services de données de référence (`ClientService`, `ProduitService`, `FournisseurService`,
+      `UtilisateurService`, `JournalActiviteService`). **Volontairement pas étendu** aux services
+      documents (Devis/Commandes/Bons/Factures) : tenté, mais la suite de tests a révélé un vrai
+      risque avec ce codebase — un `DbContext` scope Blazor Server suit tout le circuit (pas juste
+      une requête), et une entité déjà trackée plus tôt dans ce circuit (ex. `AddReglementAsync`,
+      ou un `UpdateAsync` juste avant un `CloneAsync`) entre en conflit d'identité avec un fetch
+      `AsNoTracking()` du même enregistrement, ou pire, renvoie silencieusement une collection de
+      lignes vide (`CloneAsync` après `UpdateAsync` dans le même scope). 5 tests xUnit ont détecté
+      le problème avant merge — voir `DevisClientServiceTests`, `FactureClientServiceTests`. Étendre
+      correctement demanderait de passer ces services sur `IDbContextFactory` (comme le font déjà
+      `PermissionService`/`FeatureFlagService`) plutôt que d'injecter `AppDbContext` scopé.
+- [x] Ajouter la gestion des erreurs de concurrence EF Core (`DbUpdateConcurrencyException`) —
+      `AppDbContextSaveExtensions.SaveChangesGuardedAsync()` (Core) remplace les 58 appels
+      `db.SaveChangesAsync()` des services et traduit `DbUpdateConcurrencyException` (ex. un
+      enregistrement supprimé/modifié par un autre utilisateur entre-temps) en
+      `ConcurrencyConflictException` avec un message clair, sans toucher l'UI (Web et Desktop
+      affichent déjà `ex.Message` dans leurs blocs `catch` génériques). Pas de token de concurrence
+      (`RowVersion`) ajouté — ça détecte la ligne déjà supprimée, pas une modification concurrente
+      silencieuse (dernier-écrit-gagne) ; ajouter un vrai token nécessiterait une migration de
+      schéma, hors scope ici. Vérifié par un test qui simule un vrai conflit (deux `DbContext` sur
+      la même base InMemory, l'un supprime la ligne pendant que l'autre tente de la sauvegarder).
+- [x] Centraliser la logique de calcul des totaux dans une classe utilitaire partagée (éviter la duplication entre services) — `LineCalculator` déplacé dans `Web_T4C_GestCom.Core`, utilisé par les 7 pages document et par `T4C_GestCom_Desktop`
+- [x] Unifier `Web_T4C_GestCom` et `Web_T4C_GestCom.Core` — `Web_T4C_GestCom.csproj` référence désormais `Web_T4C_GestCom.Core` (26 entités + `AppDbContext` + 22 services n'existent plus qu'une fois) ; `DeleteErrorMessageHelper`, `PartyDetailsHelper` et l'enregistrement DI (`AddT4CGestComServices`, appelée par `Program.cs` et `AppHost.cs`) sont eux aussi unifiés
 - [ ] Ajouter des tests unitaires sur les services (xUnit + InMemory EF Core)
 - [ ] Valider les montants négatifs dans les formulaires (quantité, prix)
 - [ ] Ajouter une migration pour tout changement de schéma futur

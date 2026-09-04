@@ -38,7 +38,7 @@ public class JournalActiviteService(
                 Detail     = detail,
                 CompanyId  = tenantService?.CurrentCompanyId
             });
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
         }
         catch
         {
@@ -52,7 +52,7 @@ public class JournalActiviteService(
         DateTime? debut = null,
         DateTime? fin = null)
     {
-        var q = db.JournalActivites.AsQueryable();
+        var q = db.JournalActivites.AsNoTracking().AsQueryable();
 
         if (tenantService?.CurrentCompanyId is int companyId)
             q = q.Where(j => j.CompanyId == companyId);

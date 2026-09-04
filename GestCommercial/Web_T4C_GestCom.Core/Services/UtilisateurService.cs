@@ -33,7 +33,7 @@ public class UtilisateurService(
 
     public async Task<List<Utilisateur>> GetAllAsync()
     {
-        var query = db.Utilisateurs.AsQueryable();
+        var query = db.Utilisateurs.AsNoTracking().AsQueryable();
         if (tenantService?.CurrentCompanyId is int companyId)
             query = query.Where(u => !u.IsSuperAdmin && u.CompanyId == companyId);
 
@@ -42,15 +42,15 @@ public class UtilisateurService(
 
     public async Task<Utilisateur?> GetByIdAsync(int id)
     {
-        var query = db.Utilisateurs.Where(u => u.Id == id);
+        var query = db.Utilisateurs.AsNoTracking().Where(u => u.Id == id);
         if (tenantService?.CurrentCompanyId is int companyId)
             query = query.Where(u => !u.IsSuperAdmin && u.CompanyId == companyId);
 
         return await query.FirstOrDefaultAsync();
     }
 
-    public async Task<Utilisateur?> GetByLoginAsync(string login) 
-        => await db.Utilisateurs.FirstOrDefaultAsync(u => u.Login == login);
+    public async Task<Utilisateur?> GetByLoginAsync(string login)
+        => await db.Utilisateurs.AsNoTracking().FirstOrDefaultAsync(u => u.Login == login);
 
     public async Task<Utilisateur?> AuthentifierAsync(string login, string password)
     {
@@ -64,7 +64,7 @@ public class UtilisateurService(
         if (needsRehash)
         {
             user.PasswordHash = HashPassword(password);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
         }
 
         return user;
@@ -92,7 +92,7 @@ public class UtilisateurService(
         utilisateur.PermissionsVersion = Math.Max(utilisateur.PermissionsVersion, 1);
 
         db.Utilisateurs.Add(utilisateur);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
 
         await SyncUserRoleMappingAsync(utilisateur.Id, utilisateur.Role);
     }
@@ -135,7 +135,7 @@ public class UtilisateurService(
         }
 
         db.Utilisateurs.Update(utilisateur);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
 
         await SyncUserRoleMappingAsync(utilisateur.Id, utilisateur.Role);
     }
@@ -146,7 +146,7 @@ public class UtilisateurService(
             ?? throw new InvalidOperationException("Utilisateur introuvable.");
         u.PasswordHash = HashPassword(newPlainPassword);
         u.SecurityStamp = CreateSecurityStamp();
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public async Task ActiverAsync(int id)
@@ -155,7 +155,7 @@ public class UtilisateurService(
             ?? throw new InvalidOperationException("Utilisateur introuvable.");
         u.Actif = true;
         u.SecurityStamp = CreateSecurityStamp();
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public async Task DesactiverAsync(int id)
@@ -164,7 +164,7 @@ public class UtilisateurService(
             ?? throw new InvalidOperationException("Utilisateur introuvable.");
         u.Actif = false;
         u.SecurityStamp = CreateSecurityStamp();
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public async Task<string> GetPrimaryRoleNameAsync(int userId, bool isSuperAdmin)
@@ -194,7 +194,7 @@ public class UtilisateurService(
         foreach (var user in users)
             await SyncUserRoleMappingAsync(user.Id, user.Role, saveImmediately: false);
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public string HashPassword(string password)
@@ -269,7 +269,7 @@ public class UtilisateurService(
             db.UserRoles.RemoveRange(staleMappings);
 
         if (saveImmediately)
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
 
         permissionService?.InvalidateUser(userId);
     }

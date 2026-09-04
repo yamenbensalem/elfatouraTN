@@ -26,6 +26,7 @@ public class ProduitService(
     public async Task<List<Produit>> GetAllAsync(string? search = null, int? categorieCode = null)
     {
         var query = db.Produits
+            .AsNoTracking()
             .Include(p => p.Devise)
             .Include(p => p.UniteProduit)
             .Include(p => p.TvaProduit)
@@ -45,6 +46,7 @@ public class ProduitService(
 
     public async Task<Produit?> GetByCodeAsync(string code)
         => await db.Produits
+            .AsNoTracking()
             .Include(p => p.Devise)
             .Include(p => p.UniteProduit)
             .Include(p => p.TvaProduit)
@@ -62,7 +64,7 @@ public class ProduitService(
             produit.CodeProduit = $"PR{(count + 1):D5}";
         }
         db.Produits.Add(produit);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Ajout", "Produit", produit.CodeProduit, produit.DesignationProduit);
         return produit.CodeProduit;
     }
@@ -72,7 +74,7 @@ public class ProduitService(
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "produits.update");
 
         db.Produits.Update(produit);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Produit", produit.CodeProduit, produit.DesignationProduit);
     }
 
@@ -84,7 +86,7 @@ public class ProduitService(
         if (produit is not null)
         {
             db.Produits.Remove(produit);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await journal.EnregistrerAsync("Suppression", "Produit", code, produit.DesignationProduit);
         }
     }
@@ -95,7 +97,7 @@ public class ProduitService(
         if (produit is not null)
         {
             produit.Quantite += delta;
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
         }
     }
 
@@ -108,6 +110,7 @@ public class ProduitService(
 
     public async Task<List<Produit>> GetStockAlerteAsync()
         => await db.Produits
+            .AsNoTracking()
             .Include(p => p.UniteProduit)
             .Where(p => p.Quantite <= p.StockMinimal)
             .OrderBy(p => p.DesignationProduit)

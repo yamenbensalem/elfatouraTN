@@ -22,7 +22,7 @@ public class ClientService(
 {
     public async Task<List<Client>> GetAllAsync(string? search = null)
     {
-        var query = db.Clients.Include(c => c.Devise).AsQueryable();
+        var query = db.Clients.AsNoTracking().Include(c => c.Devise).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(c =>
@@ -35,7 +35,7 @@ public class ClientService(
     }
 
     public async Task<Client?> GetByCodeAsync(string code)
-        => await db.Clients.Include(c => c.Devise).FirstOrDefaultAsync(c => c.CodeClient == code);
+        => await db.Clients.AsNoTracking().Include(c => c.Devise).FirstOrDefaultAsync(c => c.CodeClient == code);
 
     public async Task<string> AddAsync(Client client)
     {
@@ -48,7 +48,7 @@ public class ClientService(
             client.CodeClient = $"CL{(count + 1):D5}";
         }
         db.Clients.Add(client);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Ajout", "Client", client.CodeClient, client.NomClient);
         return client.CodeClient;
     }
@@ -58,7 +58,7 @@ public class ClientService(
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "clients.update");
 
         db.Clients.Update(client);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Client", client.CodeClient, client.NomClient);
     }
 
@@ -70,7 +70,7 @@ public class ClientService(
         if (client is not null)
         {
             db.Clients.Remove(client);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await journal.EnregistrerAsync("Suppression", "Client", code, client.NomClient);
         }
     }

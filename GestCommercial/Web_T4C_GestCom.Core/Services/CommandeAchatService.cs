@@ -41,7 +41,7 @@ public class CommandeAchatService(
         RecalculateTotals(commande, lignes);
         commande.Lignes = lignes;
         db.CommandesAchat.Add(commande);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         return commande;
     }
 
@@ -55,7 +55,7 @@ public class CommandeAchatService(
             ?? throw new InvalidOperationException("Commande introuvable.");
 
         db.LignesCommandeAchat.RemoveRange(existing.Lignes);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
 
         existing.DateCommandeAchat = commande.DateCommandeAchat;
         existing.CodeFournisseur = commande.CodeFournisseur;
@@ -66,7 +66,7 @@ public class CommandeAchatService(
         foreach (var l in lignes) l.Id = 0;
         RecalculateTotals(existing, lignes);
         existing.Lignes = lignes;
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         return existing;
     }
 
@@ -74,6 +74,8 @@ public class CommandeAchatService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-achat.delete");
 
+        // Pas de AsNoTracking : cette commande peut déjà être trackée dans le même scope — voir
+        // DevisClientService.UpdateAsync pour le détail du risque de conflit d'identité avec RemoveRange.
         var commande = await db.CommandesAchat
             .Include(c => c.Lignes)
             .FirstOrDefaultAsync(c => c.NumeroCommandeAchat == numero)
@@ -81,7 +83,7 @@ public class CommandeAchatService(
 
         db.LignesCommandeAchat.RemoveRange(commande.Lignes);
         db.CommandesAchat.Remove(commande);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public async Task<CommandeAchat> CloneAsync(string numero)
@@ -114,7 +116,7 @@ public class CommandeAchatService(
         RecalculateTotals(clone, lignes);
         clone.Lignes = lignes;
         db.CommandesAchat.Add(clone);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         return clone;
     }
 
