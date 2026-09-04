@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-t4c-gestcom",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "Web_T4C_GestCom/Web_T4C_GestCom.csproj", "--urls", "http://localhost:5087"],
+      "port": 5087
+    }
+  ]
+}

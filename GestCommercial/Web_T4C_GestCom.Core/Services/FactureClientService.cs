@@ -12,6 +12,7 @@ public interface IFactureClientService
     Task UpdateAsync(FactureClient facture, List<LigneFactureClient> lignes);
     Task DeleteAsync(string numero);
     Task AddReglementAsync(ReglementFactureClient reglement);
+    Task DeleteReglementAsync(int reglementId);
     Task<double> GetSoldeAsync(string numero);
     Task<FactureClient> CloneAsync(string numero, bool isAvoir = false);
 }
@@ -184,6 +185,20 @@ public class FactureClientService(
         db.ReglementsFactureClient.Add(reglement);
         await db.SaveChangesGuardedAsync();
         await UpdateEtatReglementAsync(reglement.NumeroFactureClient);
+    }
+
+    public async Task DeleteReglementAsync(int reglementId)
+    {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.update");
+
+        var reglement = await db.ReglementsFactureClient.FindAsync(reglementId)
+            ?? throw new InvalidOperationException("Règlement introuvable.");
+
+        var numero = reglement.NumeroFactureClient;
+        db.ReglementsFactureClient.Remove(reglement);
+        await db.SaveChangesGuardedAsync();
+
+        await UpdateEtatReglementAsync(numero);
     }
 
     public async Task<double> GetSoldeAsync(string numero)

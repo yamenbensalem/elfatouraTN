@@ -335,6 +335,38 @@ public class FactureClientServiceTests
         Assert.Equal("Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
     }
 
+    // ── DeleteReglement ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteReglementAsync_RemovesReglementAndRecomputesEtat()
+    {
+        var (svc, db, config) = CreateService();
+        await SeedBasicData(db);
+        // TTC = 100, Timbre = 0.6 → totalDu = 100.6
+        var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 1, 100, tva: 0)], config);
+        await svc.AddReglementAsync(new ReglementFactureClient
+        {
+            NumeroFactureClient = created.NumeroFactureClient,
+            Montant = 100.6,
+            DateReglement = DateTime.Today,
+            CodeModePayement = 1
+        });
+        var reglementId = (await db.ReglementsFactureClient.FirstAsync()).Id;
+        Assert.Equal("Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
+
+        await svc.DeleteReglementAsync(reglementId);
+
+        Assert.Equal(0, await db.ReglementsFactureClient.CountAsync());
+        Assert.Equal("Non Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
+    }
+
+    [Fact]
+    public async Task DeleteReglementAsync_UnknownId_Throws()
+    {
+        var (svc, _, _) = CreateService();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.DeleteReglementAsync(9999));
+    }
+
     // ── GetSolde ─────────────────────────────────────────────────────────────
 
     [Fact]

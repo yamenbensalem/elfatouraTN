@@ -92,7 +92,7 @@ else
                     {
                         <tr>
                             <td>Remise (@_bon.Remise%)</td>
-                            <td class="text-end text-danger">-@(_bon.MontantHT * _bon.Remise / 100).ToString("0.###")</td>
+                            <td class="text-end text-danger">-@((_bon.MontantHT * _bon.Remise / 100).ToString("0.###"))</td>
                         </tr>
                     }
                     <tr><td>TVA</td><td class="text-end">@_bon.MontantTVA.ToString("0.###")</td></tr>

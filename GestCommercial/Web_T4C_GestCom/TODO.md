@@ -57,11 +57,28 @@ Fonctionnalités restantes à implémenter, classées par priorité.
 - [x] Créer `Components/Pages/Fournisseurs/FournisseurForm.razor`
   - Routes : `/fournisseurs/nouveau` et `/fournisseurs/{Code}`
 
-### Amélioration Factures / Avoirs
+### Amélioration Factures / Avoirs ✅
 
-- [ ] Ajouter la possibilité de **créer un Avoir à partir d'une Facture** existante (bouton "Générer Avoir" dans `FactureForm`)
-- [ ] Ajouter la **suppression de règlements** individuels depuis `FactureForm`
-- [ ] Afficher **l'état règlement** (`EtatReglement`) sur la fiche facture (badge coloré)
+- [x] Ajouter la possibilité de **créer un Avoir à partir d'une Facture** existante (bouton "Générer Avoir" dans `FactureForm`)
+      — bouton visible uniquement sur une facture existante non-avoir, appelle
+      `FactureService.CloneAsync(Numero, isAvoir: true)` (déjà supporté par le service) et redirige
+      vers `/avoirs/{nouveauNumero}`
+- [x] Ajouter la **suppression de règlements** individuels depuis `FactureForm`
+      — nouvelle méthode `IFactureClientService.DeleteReglementAsync(int reglementId)` (Core),
+      recalcule `EtatReglement` après suppression ; bouton + `ConfirmDialog` dédié sur chaque ligne
+      de règlement. 2 nouveaux tests service (`FactureClientServiceTests`)
+- [x] Afficher **l'état règlement** (`EtatReglement`) sur la fiche facture (badge coloré)
+      — badge à côté du titre, réutilise le même mapping couleur que `FacturesList`/`FactureFournisseurList`
+      (Réglé=vert, Partiellement Réglé=orange, Non Réglé=rouge)
+      - Bug trouvé et corrigé en passant : le total "Net à Payer" (et 2 lignes "Remise") de
+        `FactureForm`, `BonLivraisonForm`, `CommandeVenteForm`, `DevisForm` et 3 pages `Print/*`
+        affichaient le texte littéral `.ToString("0.###")` au lieu du montant formaté —
+        `@(expr).ToString(...)` n'est pas équivalent à `@((expr).ToString(...))` en Razor (le
+        `.ToString()` sortait de l'expression C# et était rendu comme texte HTML). Corrigé aux
+        8 endroits concernés (grep `@(.*)\.ToString(` sans double parenthèse).
+      Vérifié de bout en bout dans le navigateur : badge Non Réglé → Réglé après paiement complet,
+      suppression de règlement ramène le badge à Non Réglé, Générer Avoir crée bien un avoir dans
+      `/avoirs` avec les mêmes lignes. Suite complète : 239/239 tests verts, build 0 erreur.
 
 ### Amélioration Bons de Livraison
 

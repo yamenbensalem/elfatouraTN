@@ -12,7 +12,13 @@
 <PageTitle>@PageTitle – T4C GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>@PageTitle</h3>
+    <div class="d-flex align-items-center gap-2">
+        <h3 class="mb-0">@PageTitle</h3>
+        @if (!_isNew)
+        {
+            <span class="badge @GetReglementBadge(_facture.EtatReglement)">@_facture.EtatReglement</span>
+        }
+    </div>
     <div class="d-flex gap-2">
         @if (!_isNew)
         {
@@ -22,6 +28,12 @@
             <button type="button" class="btn btn-outline-info" @onclick="CloneAsync">
                 <i class="bi bi-copy"></i> Cloner
             </button>
+            @if (!_isAvoir)
+            {
+                <button type="button" class="btn btn-outline-warning" @onclick="GenerateAvoirAsync">
+                    <i class="bi bi-arrow-return-left"></i> Générer Avoir
+                </button>
+            }
         }
         <a href="@(_isAvoir ? "avoirs" : "factures-client")" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Retour
@@ -193,7 +205,7 @@
                             {
                                 <tr>
                                     <td class="text-muted">Remise (@_facture.Remise%)</td>
-                                    <td class="text-end text-danger">-@(_totalHT * _facture.Remise / 100).ToString("0.###")</td>
+                                    <td class="text-end text-danger">-@((_totalHT * _facture.Remise / 100).ToString("0.###"))</td>
                                 </tr>
                             }
                             @if (_totalFodec > 0)
@@ -217,7 +229,7 @@
                             </tr>
                             <tr class="table-active fw-bold">
                                 <td>Net à Payer</td>
-                                <td class="text-end">@(_totalTTC + Config.TimbreFiscal).ToString("0.###")</td>
+                                <td class="text-end">@((_totalTTC + Config.TimbreFiscal).ToString("0.###"))</td>
                             </tr>
                         </table>
                     </div>
@@ -246,6 +258,7 @@
                             <th>Référence</th>
                             <th class="text-end">Montant</th>
                             <th>Note</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -257,6 +270,12 @@
                                 <td>@r.Reference</td>
                                 <td class="text-end fw-semibold">@r.Montant.ToString("0.###")</td>
                                 <td>@r.Note</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => AskDeleteReglement(r)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -264,12 +283,12 @@
                         <tr class="table-light fw-bold">
                             <td colspan="3">Total Réglé</td>
                             <td class="text-end">@_facture.Reglements.Sum(r => r.Montant).ToString("0.###")</td>
-                            <td></td>
+                            <td colspan="2"></td>
                         </tr>
                         <tr class="table-warning fw-bold">
                             <td colspan="3">Solde Restant</td>
                             <td class="text-end">@_solde.ToString("0.###")</td>
-                            <td></td>
+                            <td colspan="2"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -348,6 +367,12 @@
     }
 }
 
+<ConfirmDialog Title="Supprimer le règlement"
+               Message="@($"Confirmer la suppression du règlement de {_toDeleteReglement?.Montant.ToString("0.###")} du {_toDeleteReglement?.DateReglement.ToString("dd/MM/yyyy")} ?")"
+               Visible="_confirmReglementVisible"
+               OnConfirm="DeleteReglementConfirmed"
+               OnCancel="() => _confirmReglementVisible = false" />
+
 @code {
     [Parameter] public string? Numero { get; set; }
 
@@ -361,6 +386,8 @@
     private bool _isNew => string.IsNullOrEmpty(Numero);
     private bool _isAvoir;
     private Notification _notif = default!;
+    private bool _confirmReglementVisible;
+    private ReglementFactureClient? _toDeleteReglement;
 
     private double _totalHT;
     private double _totalFodec;
@@ -491,4 +518,50 @@
             _notif.ShowError($"Erreur : {ex.Message}");
         }
     }
+
+    private void AskDeleteReglement(ReglementFactureClient r)
+    {
+        _toDeleteReglement = r;
+        _confirmReglementVisible = true;
+    }
+
+    private async Task DeleteReglementConfirmed()
+    {
+        _confirmReglementVisible = false;
+        if (_toDeleteReglement is null) return;
+        try
+        {
+            await FactureService.DeleteReglementAsync(_toDeleteReglement.Id);
+
+            var existing = await FactureService.GetByNumeroAsync(Numero!);
+            if (existing is not null) _facture = existing;
+            _solde = await FactureService.GetSoldeAsync(Numero!);
+            _toDeleteReglement = null;
+            _notif.ShowSuccess("Règlement supprimé.");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
+    }
+
+    private async Task GenerateAvoirAsync()
+    {
+        try
+        {
+            var avoir = await FactureService.CloneAsync(Numero!, isAvoir: true);
+            Nav.NavigateTo($"avoirs/{avoir.NumeroFactureClient}");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur lors de la génération de l'avoir : {ex.Message}");
+        }
+    }
+
+    private static string GetReglementBadge(string etat) => etat switch
+    {
+        "Réglé" => "bg-success",
+        "Partiellement Réglé" => "bg-warning text-dark",
+        _ => "bg-danger"
+    };
 }

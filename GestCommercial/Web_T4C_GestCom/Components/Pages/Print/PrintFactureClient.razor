@@ -100,7 +100,7 @@ else
                     {
                         <tr>
                             <td>Remise (@_facture.Remise%)</td>
-                            <td class="text-end text-danger">-@(_facture.MontantHT * _facture.Remise / 100).ToString("0.###")</td>
+                            <td class="text-end text-danger">-@((_facture.MontantHT * _facture.Remise / 100).ToString("0.###"))</td>
                         </tr>
                     }
                     @if (_facture.Fodec > 0)

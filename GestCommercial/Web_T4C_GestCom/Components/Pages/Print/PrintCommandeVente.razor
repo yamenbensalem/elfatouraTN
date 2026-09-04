@@ -88,7 +88,7 @@ else
                     {
                         <tr>
                             <td>Remise (@_commande.Remise%)</td>
-                            <td class="text-end text-danger">-@(_commande.MontantHT * _commande.Remise / 100).ToString("0.###")</td>
+                            <td class="text-end text-danger">-@((_commande.MontantHT * _commande.Remise / 100).ToString("0.###"))</td>
                         </tr>
                     }
                     <tr><td>TVA</td><td class="text-end">@_commande.MontantTVA.ToString("0.###")</td></tr>
@@ -99,7 +99,7 @@ else
                     }
                     <tr class="print-totals-net">
                         <td>Net à Payer</td>
-                        <td class="text-end">@(_commande.MontantTTC + _commande.Timbre).ToString("0.###") TND</td>
+                        <td class="text-end">@((_commande.MontantTTC + _commande.Timbre).ToString("0.###")) TND</td>
                     </tr>
                 </table>
             </div>
