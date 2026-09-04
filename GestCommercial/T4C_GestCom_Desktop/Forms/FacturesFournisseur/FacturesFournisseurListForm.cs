@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -75,13 +76,13 @@ public class FacturesFournisseurListForm : Form
         List<Web_T4C_GestCom.Data.Models.FactureFournisseur> factures;
         try
         {
-            Logger.Debug("Chargement de la liste des factures fournisseur.");
+            Logger.DebugLoadingList("factures fournisseur");
             factures = await factureService.GetAllAsync();
-            Logger.Debug("Liste des factures fournisseur chargée : {Count} résultats.", factures.Count);
+            Logger.DebugListLoaded("factures fournisseur", factures.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du chargement de la liste des factures fournisseur.");
+            Logger.ErrorListLoadFailed(ex, "factures fournisseur");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Factures Fournisseur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -136,15 +137,15 @@ public class FacturesFournisseurListForm : Form
         var factureService = scope.ServiceProvider.GetRequiredService<IFactureFournisseurService>();
         try
         {
-            Logger.Debug("Clonage de la facture fournisseur {Numero}.", numero);
+            Logger.DebugCloning("facture fournisseur", numero);
             var clone = await factureService.CloneAsync(numero);
-            Logger.Debug("Facture fournisseur {Numero} clonée en {NouveauNumero}.", numero, clone.NumeroFactureFournisseur);
+            Logger.DebugCloned("Facture fournisseur", numero, clone.NumeroFactureFournisseur);
             await LoadAsync();
             OpenEditor(clone.NumeroFactureFournisseur);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du clonage de la facture fournisseur {Numero}.", numero);
+            Logger.ErrorCloneFailed(ex, "facture fournisseur", numero);
             MessageBox.Show(this, $"Erreur lors du clonage : {ex.Message}", "Factures Fournisseur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -166,14 +167,14 @@ public class FacturesFournisseurListForm : Form
         var factureService = scope.ServiceProvider.GetRequiredService<IFactureFournisseurService>();
         try
         {
-            Logger.Debug("Suppression de la facture fournisseur {Numero}.", numero);
+            Logger.DebugDeleting("facture fournisseur", numero);
             await factureService.DeleteAsync(numero);
-            Logger.Debug("Facture fournisseur {Numero} supprimée.", numero);
+            Logger.DebugDeleted("Facture fournisseur", numero);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            Logger.Warning(ex, "Échec de la suppression de la facture fournisseur {Numero}.", numero);
+            Logger.WarningDeleteFailed(ex, "facture fournisseur", numero);
             MessageBox.Show(this, $"Erreur de suppression : {ex.Message}", "Factures Fournisseur", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

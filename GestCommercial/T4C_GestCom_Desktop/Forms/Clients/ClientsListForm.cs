@@ -74,13 +74,13 @@ public class ClientsListForm : Form
         List<Client> clients;
         try
         {
-            Logger.Debug("Chargement de la liste des clients (recherche={Recherche}).", _txtSearch.Text.Trim());
+            Logger.DebugLoadingList("clients", $"recherche={_txtSearch.Text.Trim()}");
             clients = await clientService.GetAllAsync(_txtSearch.Text.Trim() is { Length: > 0 } s ? s : null);
-            Logger.Debug("Liste des clients chargée : {Count} résultats.", clients.Count);
+            Logger.DebugListLoaded("clients", clients.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du chargement de la liste des clients.");
+            Logger.ErrorListLoadFailed(ex, "clients");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Clients", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -130,14 +130,14 @@ public class ClientsListForm : Form
         var clientService = scope.ServiceProvider.GetRequiredService<IClientService>();
         try
         {
-            Logger.Debug("Suppression du client {Code}.", code);
+            Logger.DebugDeleting("client", code);
             await clientService.DeleteAsync(code);
-            Logger.Debug("Client {Code} supprimé.", code);
+            Logger.DebugDeleted("client", code);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            Logger.Warning(ex, "Échec de la suppression du client {Code}.", code);
+            Logger.WarningDeleteFailed(ex, "client", code);
             var message = DeleteErrorMessageHelper.Build(ex,
                 "Ce client ne peut pas etre supprime car il est lie a des factures ou d'autres documents. Supprimez d'abord les documents lies, puis reessayez.");
             MessageBox.Show(this, message, "Suppression impossible", MessageBoxButtons.OK, MessageBoxIcon.Error);

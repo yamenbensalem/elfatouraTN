@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -115,7 +116,7 @@ public class ClientEditForm : Form
             var client = await clientService.GetByCodeAsync(_code!);
             if (client is null)
             {
-                Logger.Warning("Client {Code} introuvable à l'ouverture de l'éditeur.", _code);
+                Logger.WarningNotFound("Client", _code);
                 MessageBox.Show(this, "Client introuvable.", "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -170,7 +171,7 @@ public class ClientEditForm : Form
         _btnSave.Enabled = false;
         try
         {
-            Logger.Debug("Enregistrement du client {Code} (nouveau={IsNew}).", _code, _isNew);
+            Logger.DebugSaving("client", _code, _isNew);
             using var scope = AppHost.CreateScope();
             var clientService = scope.ServiceProvider.GetRequiredService<IClientService>();
 
@@ -208,13 +209,13 @@ public class ClientEditForm : Form
             else
                 await clientService.UpdateAsync(client);
 
-            Logger.Debug("Client {Code} enregistré.", client.CodeClient);
+            Logger.DebugSaved("Client", client.CodeClient);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec de l'enregistrement du client {Code}.", _code);
+            Logger.ErrorSaveFailed(ex, "client", _code);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally

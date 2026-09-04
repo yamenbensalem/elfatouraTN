@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -117,7 +118,7 @@ public class ProduitEditForm : Form
             var produit = await produitService.GetByCodeAsync(_code!);
             if (produit is null)
             {
-                Logger.Warning("Produit {Code} introuvable à l'ouverture de l'éditeur.", _code);
+                Logger.WarningNotFound("Produit", _code);
                 MessageBox.Show(this, "Produit introuvable.", "Produit", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.Cancel;
                 Close();
@@ -177,7 +178,7 @@ public class ProduitEditForm : Form
         _btnSave.Enabled = false;
         try
         {
-            Logger.Debug("Enregistrement du produit {Code} (nouveau={IsNew}).", _code, _isNew);
+            Logger.DebugSaving("produit", _code, _isNew);
             using var scope = AppHost.CreateScope();
             var produitService = scope.ServiceProvider.GetRequiredService<IProduitService>();
 
@@ -213,13 +214,13 @@ public class ProduitEditForm : Form
             else
                 await produitService.UpdateAsync(produit);
 
-            Logger.Debug("Produit {Code} enregistré.", produit.CodeProduit);
+            Logger.DebugSaved("Produit", produit.CodeProduit);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec de l'enregistrement du produit {Code}.", _code);
+            Logger.ErrorSaveFailed(ex, "produit", _code);
             _lblError.Text = $"Erreur : {ex.Message}";
         }
         finally

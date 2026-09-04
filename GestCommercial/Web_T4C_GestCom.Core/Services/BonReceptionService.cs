@@ -50,7 +50,7 @@ public class BonReceptionService(
             db.BonsReception.Add(bon);
             foreach (var l in lignes)
                 await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -78,7 +78,7 @@ public class BonReceptionService(
             foreach (var l in existing.Lignes)
                 await ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
             db.LignesBonReception.RemoveRange(existing.Lignes);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
 
             existing.DateBonReception = bon.DateBonReception;
             existing.CodeFournisseur = bon.CodeFournisseur;
@@ -93,7 +93,7 @@ public class BonReceptionService(
 
             foreach (var l in lignes)
                 await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -110,6 +110,8 @@ public class BonReceptionService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-reception.delete");
 
+        // Pas de AsNoTracking : ce bon peut déjà être tracké dans le même scope — voir
+        // DevisClientService.UpdateAsync pour le détail du risque de conflit d'identité avec RemoveRange.
         var bon = await db.BonsReception
             .Include(b => b.Lignes)
             .FirstOrDefaultAsync(b => b.NumeroBonReception == numero)
@@ -122,7 +124,7 @@ public class BonReceptionService(
                 await ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
             db.LignesBonReception.RemoveRange(bon.Lignes);
             db.BonsReception.Remove(bon);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -171,7 +173,7 @@ public class BonReceptionService(
             db.BonsReception.Add(clone);
             foreach (var l in lignes)
                 await ApplyStockDeltaAsync(l.CodeProduit, +l.Quantite);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch

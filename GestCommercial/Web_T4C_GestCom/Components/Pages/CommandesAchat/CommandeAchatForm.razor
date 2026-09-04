@@ -222,15 +222,18 @@
     private void RecalculerLigne(int idx)
     {
         var l = _lignes[idx];
-        l.MontantHT = Math.Round(l.Quantite * l.PrixUnitaire, 3);
+        l.MontantHT = LineCalculator.LineMontantHT(l.Quantite, l.PrixUnitaire, remise: 0);
         RecalculerTotaux();
     }
 
     private void RecalculerTotaux()
     {
-        _commande.MontantHT = _lignes.Sum(l => l.MontantHT);
-        _commande.MontantTVA = Math.Round(_lignes.Sum(l => l.MontantHT * l.Tva / 100.0), 3);
-        _commande.MontantTTC = Math.Round(_commande.MontantHT + _commande.MontantTVA, 3);
+        var totals = LineCalculator.CalculateDocumentTotals(
+            _lignes.Select(l => new LineCalculator.LineAmounts(l.MontantHT, l.Tva, Fodec: 0)),
+            remisePercent: 0);
+        _commande.MontantHT = totals.TotalHT;
+        _commande.MontantTVA = totals.TotalTva;
+        _commande.MontantTTC = totals.TotalTTC;
     }
 
     private void AddLigne() => _lignes.Add(new LigneCommandeAchat { Tva = 19 });

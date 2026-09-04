@@ -53,7 +53,7 @@ public class DevisClientService(
             db.LignesDevisClient.Add(ligne);
         }
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         return devis;
     }
 
@@ -65,12 +65,16 @@ public class DevisClientService(
             .FirstOrDefaultAsync(d => d.NumeroDevis == devis.NumeroDevis)
             ?? throw new InvalidOperationException("Devis introuvable.");
 
+        // Pas de AsNoTracking ici : ces lignes peuvent déjà être trackées (ex. juste créées dans le
+        // même scope) — un fetch détaché suivi de RemoveRange entre en conflit avec l'entité déjà
+        // trackée (EF lève une exception d'identité). Scope DbContext potentiellement long (Blazor
+        // Server suit le circuit, pas juste une requête), donc ce risque est réel, pas théorique.
         var oldLignes = await db.LignesDevisClient
             .Where(l => l.NumeroDevis == devis.NumeroDevis)
             .ToListAsync();
 
         db.LignesDevisClient.RemoveRange(oldLignes);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
 
         existing.DateDevis = devis.DateDevis;
         existing.CodeClient = devis.CodeClient;
@@ -94,13 +98,15 @@ public class DevisClientService(
 
         db.LignesDevisClient.AddRange(nouvellesLignes);
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public async Task DeleteAsync(string numero)
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "devis.delete");
 
+        // Pas de AsNoTracking : voir le commentaire dans UpdateAsync ci-dessus (risque de conflit
+        // d'identité avec RemoveRange/Remove sur une entité déjà trackée dans le même scope).
         var devis = await db.DevisClient
             .Include(d => d.Lignes)
             .FirstOrDefaultAsync(d => d.NumeroDevis == numero);
@@ -109,7 +115,7 @@ public class DevisClientService(
 
         db.LignesDevisClient.RemoveRange(devis.Lignes);
         db.DevisClient.Remove(devis);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 
     public async Task<DevisClient> CloneAsync(string numero)
@@ -145,7 +151,7 @@ public class DevisClientService(
 
         db.DevisClient.Add(clone);
         db.LignesDevisClient.AddRange(lignesClone);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         return clone;
     }
 

@@ -312,15 +312,18 @@
     private void RecalculerLigne(int idx)
     {
         var l = _lignes[idx];
-        l.MontantHT = Math.Round(l.Quantite * l.PrixUnitaire, 3);
+        l.MontantHT = LineCalculator.LineMontantHT(l.Quantite, l.PrixUnitaire, remise: 0);
         RecalculerTotaux();
     }
 
     private void RecalculerTotaux()
     {
-        _facture.MontantHT = _lignes.Sum(l => l.MontantHT);
-        _facture.MontantTVA = Math.Round(_lignes.Sum(l => l.MontantHT * l.Tva / 100.0), 3);
-        _facture.MontantTTC = Math.Round(_facture.MontantHT + _facture.MontantTVA, 3);
+        var totals = LineCalculator.CalculateDocumentTotals(
+            _lignes.Select(l => new LineCalculator.LineAmounts(l.MontantHT, l.Tva, Fodec: 0)),
+            remisePercent: 0);
+        _facture.MontantHT = totals.TotalHT;
+        _facture.MontantTVA = totals.TotalTva;
+        _facture.MontantTTC = totals.TotalTTC;
     }
 
     private void AddLigne() => _lignes.Add(new LigneFactureFournisseur { Tva = 19 });

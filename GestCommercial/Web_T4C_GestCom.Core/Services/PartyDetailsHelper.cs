@@ -1,6 +1,6 @@
 using Web_T4C_GestCom.Data.Models;
 
-namespace T4C_GestCom_Desktop.Forms.Shared;
+namespace Web_T4C_GestCom.Services;
 
 /// <summary>Formats the "who this document is for" detail lines shown under the party name on a printed document.</summary>
 public static class PartyDetailsHelper

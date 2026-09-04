@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -73,13 +74,13 @@ public class DevisListForm : Form
         List<DevisClient> devis;
         try
         {
-            Logger.Debug("Chargement de la liste des devis.");
+            Logger.DebugLoadingList("devis");
             devis = await devisService.GetAllAsync();
-            Logger.Debug("Liste des devis chargée : {Count} résultats.", devis.Count);
+            Logger.DebugListLoaded("devis", devis.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du chargement de la liste des devis.");
+            Logger.ErrorListLoadFailed(ex, "devis");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Devis", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -132,15 +133,15 @@ public class DevisListForm : Form
         var devisService = scope.ServiceProvider.GetRequiredService<IDevisClientService>();
         try
         {
-            Logger.Debug("Clonage du devis {Numero}.", numero);
+            Logger.DebugCloning("devis", numero);
             var clone = await devisService.CloneAsync(numero);
-            Logger.Debug("Devis {Numero} cloné en {NouveauNumero}.", numero, clone.NumeroDevis);
+            Logger.DebugCloned("Devis", numero, clone.NumeroDevis);
             await LoadAsync();
             OpenEditor(clone.NumeroDevis);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du clonage du devis {Numero}.", numero);
+            Logger.ErrorCloneFailed(ex, "devis", numero);
             MessageBox.Show(this, $"Erreur lors du clonage : {ex.Message}", "Devis", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -162,14 +163,14 @@ public class DevisListForm : Form
         var devisService = scope.ServiceProvider.GetRequiredService<IDevisClientService>();
         try
         {
-            Logger.Debug("Suppression du devis {Numero}.", numero);
+            Logger.DebugDeleting("devis", numero);
             await devisService.DeleteAsync(numero);
-            Logger.Debug("Devis {Numero} supprimé.", numero);
+            Logger.DebugDeleted("Devis", numero);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            Logger.Warning(ex, "Échec de la suppression du devis {Numero}.", numero);
+            Logger.WarningDeleteFailed(ex, "devis", numero);
             MessageBox.Show(this, $"Erreur de suppression : {ex.Message}", "Devis", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

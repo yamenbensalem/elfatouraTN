@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -86,13 +87,14 @@ public class FacturesClientListForm : Form
         List<Web_T4C_GestCom.Data.Models.FactureClient> factures;
         try
         {
-            Logger.Debug("Chargement de la liste des {DocLabel}s (avoirsOnly={IsAvoir}).", _docLabel, _isAvoir);
+            var entite = $"{_docLabel}s";
+            Logger.DebugLoadingList(entite, $"avoirsOnly={_isAvoir}");
             factures = await factureService.GetAllAsync(avoirsOnly: _isAvoir);
-            Logger.Debug("Liste des {DocLabel}s chargée : {Count} résultats.", _docLabel, factures.Count);
+            Logger.DebugListLoaded(entite, factures.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du chargement de la liste des {DocLabel}s.", _docLabel);
+            Logger.ErrorListLoadFailed(ex, $"{_docLabel}s");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -147,15 +149,15 @@ public class FacturesClientListForm : Form
         var factureService = scope.ServiceProvider.GetRequiredService<IFactureClientService>();
         try
         {
-            Logger.Debug("Clonage du {DocLabel} {Numero}.", _docLabel, numero);
+            Logger.DebugCloning(_docLabel, numero);
             var clone = await factureService.CloneAsync(numero, _isAvoir);
-            Logger.Debug("{DocLabel} {Numero} clonée en {NouveauNumero}.", _docLabel, numero, clone.NumeroFactureClient);
+            Logger.DebugCloned(_docLabel, numero, clone.NumeroFactureClient);
             await LoadAsync();
             OpenEditor(clone.NumeroFactureClient);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du clonage du {DocLabel} {Numero}.", _docLabel, numero);
+            Logger.ErrorCloneFailed(ex, _docLabel, numero);
             MessageBox.Show(this, $"Erreur lors du clonage : {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -177,14 +179,14 @@ public class FacturesClientListForm : Form
         var factureService = scope.ServiceProvider.GetRequiredService<IFactureClientService>();
         try
         {
-            Logger.Debug("Suppression du {DocLabel} {Numero}.", _docLabel, numero);
+            Logger.DebugDeleting(_docLabel, numero);
             await factureService.DeleteAsync(numero);
-            Logger.Debug("{DocLabel} {Numero} supprimée.", _docLabel, numero);
+            Logger.DebugDeleted(_docLabel, numero);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            Logger.Warning(ex, "Échec de la suppression du {DocLabel} {Numero}.", _docLabel, numero);
+            Logger.WarningDeleteFailed(ex, _docLabel, numero);
             MessageBox.Show(this, $"Erreur de suppression : {ex.Message}", Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

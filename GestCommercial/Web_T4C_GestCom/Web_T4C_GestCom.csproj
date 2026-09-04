@@ -19,4 +19,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Entities, DbContext, and host-agnostic services shared with T4C_GestCom_Desktop — see
+         Web_T4C_GestCom.Core's own project comments for what stays there vs. web-only. -->
+    <ProjectReference Include="..\Web_T4C_GestCom.Core\Web_T4C_GestCom.Core.csproj" />
+  </ItemGroup>
+
 </Project>

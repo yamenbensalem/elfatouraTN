@@ -65,7 +65,7 @@ public class FactureClientService(
                 db.LignesFactureClient.Add(ligne);
                 await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, -ligne.Quantite);
             }
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -96,7 +96,7 @@ public class FactureClientService(
             foreach (var old in oldLignes)
                 await produitService.ApplyStockDeltaAsync(old.CodeProduit, old.Quantite);
             db.LignesFactureClient.RemoveRange(oldLignes);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
 
             existing.DateFactureClient = facture.DateFactureClient;
             existing.CodeClient = facture.CodeClient;
@@ -128,7 +128,7 @@ public class FactureClientService(
                 db.LignesFactureClient.Add(ligne);
                 await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, -ligne.Quantite);
             }
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -144,6 +144,10 @@ public class FactureClientService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.delete");
 
+        // Pas de AsNoTracking : cette facture peut déjà être trackée dans le même scope (ex. un
+        // règlement vient d'être ajouté) — un fetch détaché suivi de RemoveRange entrerait en
+        // conflit d'identité avec l'entité déjà trackée. Risque réel en Blazor Server, où le scope
+        // DbContext suit le circuit entier, pas juste cette requête.
         var facture = await db.FacturesClient
             .Include(f => f.Lignes)
             .Include(f => f.Reglements)
@@ -159,7 +163,7 @@ public class FactureClientService(
             db.ReglementsFactureClient.RemoveRange(facture.Reglements);
             db.LignesFactureClient.RemoveRange(facture.Lignes);
             db.FacturesClient.Remove(facture);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -176,7 +180,7 @@ public class FactureClientService(
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.update");
 
         db.ReglementsFactureClient.Add(reglement);
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
         await UpdateEtatReglementAsync(reglement.NumeroFactureClient);
     }
 
@@ -239,7 +243,7 @@ public class FactureClientService(
             db.LignesFactureClient.AddRange(lignesClone);
             foreach (var l in lignesClone)
                 await produitService.ApplyStockDeltaAsync(l.CodeProduit, -l.Quantite);
-            await db.SaveChangesAsync();
+            await db.SaveChangesGuardedAsync();
             await tx.CommitAsync();
         }
         catch
@@ -276,6 +280,6 @@ public class FactureClientService(
         facture.EtatReglement = totalRegle >= totalDu ? "Réglé" :
                                 totalRegle > 0 ? "Partiellement Réglé" : "Non Réglé";
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesGuardedAsync();
     }
 }

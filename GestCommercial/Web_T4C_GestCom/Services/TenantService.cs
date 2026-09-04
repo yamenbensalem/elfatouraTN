@@ -4,13 +4,11 @@ using Web_T4C_GestCom.Services;
 
 namespace Web_T4C_GestCom.Services;
 
-public interface ITenantService
-{
-    int?   CurrentCompanyId { get; }
-    int?   CurrentUserId    { get; }
-    string CurrentUserLogin { get; }
-}
-
+/// <summary>
+/// L'interface <see cref="ITenantService"/> vient de Web_T4C_GestCom.Core (partagée avec
+/// T4C_GestCom_Desktop, qui fournit sa propre implémentation liée à la session connectée) — seule
+/// cette implémentation liée à IHttpContextAccessor reste ici.
+/// </summary>
 public class TenantService : ITenantService
 {
     private readonly IHttpContextAccessor _http;

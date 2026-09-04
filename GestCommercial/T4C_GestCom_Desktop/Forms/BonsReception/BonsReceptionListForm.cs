@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using T4C_GestCom_Desktop.Forms.Shared;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
 
@@ -75,13 +76,13 @@ public class BonsReceptionListForm : Form
         List<BonReception> bons;
         try
         {
-            Logger.Debug("Chargement de la liste des bons de réception.");
+            Logger.DebugLoadingList("bons de réception");
             bons = await bonService.GetAllAsync();
-            Logger.Debug("Liste des bons de réception chargée : {Count} résultats.", bons.Count);
+            Logger.DebugListLoaded("bons de réception", bons.Count);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du chargement de la liste des bons de réception.");
+            Logger.ErrorListLoadFailed(ex, "bons de réception");
             MessageBox.Show(this, $"Erreur de chargement : {ex.Message}", "Bons de Réception", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
@@ -136,15 +137,15 @@ public class BonsReceptionListForm : Form
         var bonService = scope.ServiceProvider.GetRequiredService<IBonReceptionService>();
         try
         {
-            Logger.Debug("Clonage du bon de réception {Numero}.", numero);
+            Logger.DebugCloning("bon de réception", numero);
             var clone = await bonService.CloneAsync(numero);
-            Logger.Debug("Bon de réception {Numero} cloné en {NouveauNumero}.", numero, clone.NumeroBonReception);
+            Logger.DebugCloned("Bon de réception", numero, clone.NumeroBonReception);
             await LoadAsync();
             OpenEditor(clone.NumeroBonReception);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Échec du clonage du bon de réception {Numero}.", numero);
+            Logger.ErrorCloneFailed(ex, "bon de réception", numero);
             MessageBox.Show(this, $"Erreur lors du clonage : {ex.Message}", "Bons de Réception", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -166,14 +167,14 @@ public class BonsReceptionListForm : Form
         var bonService = scope.ServiceProvider.GetRequiredService<IBonReceptionService>();
         try
         {
-            Logger.Debug("Suppression du bon de réception {Numero}.", numero);
+            Logger.DebugDeleting("bon de réception", numero);
             await bonService.DeleteAsync(numero);
-            Logger.Debug("Bon de réception {Numero} supprimé.", numero);
+            Logger.DebugDeleted("Bon de réception", numero);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            Logger.Warning(ex, "Échec de la suppression du bon de réception {Numero}.", numero);
+            Logger.WarningDeleteFailed(ex, "bon de réception", numero);
             MessageBox.Show(this, $"Erreur de suppression : {ex.Message}", "Bons de Réception", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

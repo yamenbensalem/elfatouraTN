@@ -1,20 +1,9 @@
-namespace T4C_GestCom_Desktop.Forms.Shared;
+namespace Web_T4C_GestCom.Services;
 
 /// <summary>
-/// Lightweight row for a Produit ComboBox DataSource. A named type instead of an anonymous
-/// `new { p.CodeProduit, p.DesignationProduit }` deliberately — WinForms' DisplayMember/ValueMember
-/// binding resolves "CodeProduit"/"DesignationProduit" by reflection at runtime, and an anonymous
-/// type's compiler-generated properties get renamed by obfuscation tools (breaking that lookup)
-/// where a named, explicitly-excludable type does not.
-/// </summary>
-public sealed record ProduitOption(string CodeProduit, string DesignationProduit);
-
-/// <summary>
-/// The line/total math shared by every document editor (Devis, Commandes, Bons, Factures) —
-/// extracted out of ProductLinesEditor and FactureClientEditForm (which duplicated it inline)
-/// so it has one implementation and can be unit tested directly, since the WinForms grids that
-/// use it aren't practically testable themselves. Mirrors RecalculerLigne/RecalculerTotaux in the
-/// matching .razor pages exactly (same rounding, same order of operations).
+/// The line/total math shared by every document editor (Devis, Commandes, Bons, Factures) — one
+/// implementation used by both Web_T4C_GestCom's Razor pages and T4C_GestCom_Desktop's WinForms
+/// grids, instead of each reimplementing the same rounding/order of operations independently.
 /// </summary>
 public static class LineCalculator
 {
@@ -28,8 +17,7 @@ public static class LineCalculator
 
     /// <summary>
     /// Aggregates a document's lines into header totals. FODEC and header-level remise are optional —
-    /// pass Fodec = 0 on every line and remisePercent = 0 for document types that don't carry them
-    /// (matches the includeFodec/includeRemise flags on ProductLinesEditor).
+    /// pass Fodec = 0 on every line and remisePercent = 0 for document types that don't carry them.
     /// </summary>
     public static DocumentTotals CalculateDocumentTotals(IEnumerable<LineAmounts> lines, double remisePercent)
     {
