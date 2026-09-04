@@ -73,6 +73,18 @@ public class ProduitService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "produits.update");
 
+        // Détacher les propriétés de navigation avant Update() : ce produit vient typiquement d'un
+        // GetByCodeAsync() AsNoTracking() incluant Devise/UniteProduit/TvaProduit/CategorieProduit/
+        // FabriquantProduit, et le formulaire appelant a souvent déjà chargé une autre instance de
+        // l'une de ces mêmes entités (ex. pour peupler un select) dans le même scope DbContext —
+        // laisser Update() suivre le graphe entier provoque un conflit d'identité EF Core. Seules
+        // les colonnes scalaires du produit sont modifiées ici.
+        produit.Devise = null;
+        produit.UniteProduit = null;
+        produit.TvaProduit = null;
+        produit.CategorieProduit = null;
+        produit.FabriquantProduit = null;
+
         db.Produits.Update(produit);
         await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Produit", produit.CodeProduit, produit.DesignationProduit);

@@ -157,4 +157,55 @@ public class BonLivraisonServiceTests
         var (svc, _) = CreateService();
         Assert.Null(await svc.GetByNumeroAsync("UNKNOWN"));
     }
+
+    [Fact]
+    public async Task CreateFromCommandeVenteAsync_CopiesLinesAndDecreasesStock()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+        var commande = new CommandeVente { NumeroCommandeVente = "CV202609001", CodeClient = "CL00001", DateCommandeVente = DateTime.Today, Remise = 5 };
+        db.CommandesVente.Add(commande);
+        db.LignesCommandeVente.Add(new LigneCommandeVente
+        {
+            NumeroCommandeVente = commande.NumeroCommandeVente,
+            CodeProduit = "PR00001",
+            Quantite = 4,
+            PrixUnitaire = 50,
+            Tva = 19,
+            MontantHT = 200
+        });
+        await db.SaveChangesAsync();
+
+        var bl = await svc.CreateFromCommandeVenteAsync(commande.NumeroCommandeVente);
+
+        Assert.Equal("CL00001", bl.CodeClient);
+        Assert.Equal(commande.NumeroCommandeVente, bl.NumeroCommandeVente);
+        Assert.Equal(5, bl.Remise);
+        var lignes = await db.LignesBonLivraison.Where(l => l.NumeroBonLivraison == bl.NumeroBonLivraison).ToListAsync();
+        Assert.Single(lignes);
+        Assert.Equal("PR00001", lignes[0].CodeProduit);
+        Assert.Equal(4, lignes[0].Quantite);
+        Assert.Equal(96, (await db.Produits.FindAsync("PR00001"))!.Quantite); // 100 - 4
+    }
+
+    [Fact]
+    public async Task CreateFromCommandeVenteAsync_SetsCommandeEtatLivraisonToLivre()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+        var commande = new CommandeVente { NumeroCommandeVente = "CV202609002", CodeClient = "CL00001", DateCommandeVente = DateTime.Today, EtatLivraison = "Non Livré" };
+        db.CommandesVente.Add(commande);
+        await db.SaveChangesAsync();
+
+        await svc.CreateFromCommandeVenteAsync(commande.NumeroCommandeVente);
+
+        Assert.Equal("Livré", (await db.CommandesVente.FindAsync(commande.NumeroCommandeVente))!.EtatLivraison);
+    }
+
+    [Fact]
+    public async Task CreateFromCommandeVenteAsync_UnknownNumero_Throws()
+    {
+        var (svc, _) = CreateService();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateFromCommandeVenteAsync("UNKNOWN"));
+    }
 }

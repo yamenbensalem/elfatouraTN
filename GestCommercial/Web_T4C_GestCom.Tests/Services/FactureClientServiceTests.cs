@@ -409,6 +409,70 @@ public class FactureClientServiceTests
         Assert.Equal(0, await svc.GetSoldeAsync("UNKNOWN"));
     }
 
+    // ── CreateFromBonLivraison ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateFromBonLivraisonAsync_CopiesLinesWithoutDecreasingStockAgain()
+    {
+        var (svc, db, config) = CreateService();
+        var (client, produit) = await SeedBasicData(db);
+        var bon = new BonLivraison { NumeroBonLivraison = "BL202609001", CodeClient = client.CodeClient, DateBonLivraison = DateTime.Today, EtatFacture = "Non Facturé" };
+        db.BonsLivraison.Add(bon);
+        db.LignesBonLivraison.Add(new LigneBonLivraison
+        {
+            NumeroBonLivraison = bon.NumeroBonLivraison,
+            CodeProduit = produit.CodeProduit,
+            Quantite = 3,
+            PrixUnitaire = 100,
+            Tva = 19,
+            MontantHT = 300
+        });
+        produit.Quantite = 97; // simulate the BL having already decremented stock by 3 (100 -> 97)
+        await db.SaveChangesAsync();
+
+        var facture = await svc.CreateFromBonLivraisonAsync(bon.NumeroBonLivraison, config);
+
+        Assert.Equal(client.CodeClient, facture.CodeClient);
+        Assert.Equal(300, facture.MontantHT);
+        var lignes = await db.LignesFactureClient.Where(l => l.NumeroFactureClient == facture.NumeroFactureClient).ToListAsync();
+        Assert.Single(lignes);
+        Assert.Equal(produit.CodeProduit, lignes[0].CodeProduit);
+        Assert.Equal(97, (await db.Produits.FindAsync(produit.CodeProduit))!.Quantite); // unchanged
+    }
+
+    [Fact]
+    public async Task CreateFromBonLivraisonAsync_SetsBonEtatFactureToFacture()
+    {
+        var (svc, db, config) = CreateService();
+        var (client, _) = await SeedBasicData(db);
+        var bon = new BonLivraison { NumeroBonLivraison = "BL202609002", CodeClient = client.CodeClient, DateBonLivraison = DateTime.Today, EtatFacture = "Non Facturé" };
+        db.BonsLivraison.Add(bon);
+        await db.SaveChangesAsync();
+
+        await svc.CreateFromBonLivraisonAsync(bon.NumeroBonLivraison, config);
+
+        Assert.Equal("Facturé", (await db.BonsLivraison.FindAsync(bon.NumeroBonLivraison))!.EtatFacture);
+    }
+
+    [Fact]
+    public async Task CreateFromBonLivraisonAsync_AlreadyFacture_Throws()
+    {
+        var (svc, db, config) = CreateService();
+        var (client, _) = await SeedBasicData(db);
+        var bon = new BonLivraison { NumeroBonLivraison = "BL202609003", CodeClient = client.CodeClient, DateBonLivraison = DateTime.Today, EtatFacture = "Facturé" };
+        db.BonsLivraison.Add(bon);
+        await db.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateFromBonLivraisonAsync(bon.NumeroBonLivraison, config));
+    }
+
+    [Fact]
+    public async Task CreateFromBonLivraisonAsync_UnknownNumero_Throws()
+    {
+        var (svc, _, config) = CreateService();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateFromBonLivraisonAsync("UNKNOWN", config));
+    }
+
     // ── Update ───────────────────────────────────────────────────────────────
 
     [Fact]

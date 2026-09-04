@@ -29,6 +29,29 @@ public class ProduitServiceTests
             StockMinimal = stockMinimal
         };
 
+    // ── Update ───────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_AfterFormLoadsReferenceListsAndGetByCode_DoesNotThrowIdentityConflict()
+    {
+        // Reproduces ProduitForm.razor's OnInitializedAsync: it loads the dropdown reference lists
+        // (tracked, no AsNoTracking) and THEN GetByCodeAsync (AsNoTracking + Include navigations)
+        // in the same DbContext scope — Update() previously tried to re-attach the AsNoTracking
+        // graph's navigation instances, colliding with the already-tracked dropdown-list instances.
+        var svc = CreateService(out var db);
+        await svc.AddAsync(MakeProduit("PR00001", "Clavier USB"));
+        db.ChangeTracker.Clear(); // simulates a fresh circuit that never touched this row before
+
+        await db.CategoriesProduit.ToListAsync(); // simulates the form's dropdown load (tracked)
+        var produit = await svc.GetByCodeAsync("PR00001"); // AsNoTracking + Include(CategorieProduit)
+        produit!.DesignationProduit = "Clavier USB Sans Fil";
+
+        var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(produit));
+
+        Assert.Null(ex);
+        Assert.Equal("Clavier USB Sans Fil", (await db.Produits.FindAsync("PR00001"))!.DesignationProduit);
+    }
+
     // ── Add ─────────────────────────────────────────────────────────────────
 
     [Fact]

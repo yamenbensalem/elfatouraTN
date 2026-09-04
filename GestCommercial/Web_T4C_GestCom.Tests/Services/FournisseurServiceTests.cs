@@ -158,6 +158,27 @@ public class FournisseurServiceTests
         Assert.Equal("New Name", (await db.Fournisseurs.FindAsync("FO00001"))!.NomFournisseur);
     }
 
+    [Fact]
+    public async Task UpdateAsync_AfterFormLoadsReferenceListsAndGetByCode_DoesNotThrowIdentityConflict()
+    {
+        // Reproduces FournisseurForm.razor's OnInitializedAsync: it loads the Devise dropdown
+        // (tracked, no AsNoTracking) and THEN GetByCodeAsync (AsNoTracking + Include(Devise)) in
+        // the same DbContext scope — Update() previously tried to re-attach the AsNoTracking
+        // graph's Devise instance, colliding with the already-tracked dropdown-list instance.
+        var svc = CreateService(out var db);
+        await svc.AddAsync(MakeFournisseur("FO00001", "Old Name"));
+        db.ChangeTracker.Clear(); // simulates a fresh circuit that never touched this row before
+
+        await db.Devises.ToListAsync(); // simulates the form's currency dropdown load (tracked)
+        var fournisseur = await svc.GetByCodeAsync("FO00001"); // AsNoTracking + Include(Devise)
+        fournisseur!.NomFournisseur = "New Name";
+
+        var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(fournisseur));
+
+        Assert.Null(ex);
+        Assert.Equal("New Name", (await db.Fournisseurs.FindAsync("FO00001"))!.NomFournisseur);
+    }
+
     // ── Delete ───────────────────────────────────────────────────────────────
 
     [Fact]

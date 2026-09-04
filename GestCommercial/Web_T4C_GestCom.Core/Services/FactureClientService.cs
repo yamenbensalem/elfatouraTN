@@ -15,6 +15,7 @@ public interface IFactureClientService
     Task DeleteReglementAsync(int reglementId);
     Task<double> GetSoldeAsync(string numero);
     Task<FactureClient> CloneAsync(string numero, bool isAvoir = false);
+    Task<FactureClient> CreateFromBonLivraisonAsync(string numeroBonLivraison, AppConfigService config);
 }
 
 public class FactureClientService(
@@ -271,6 +272,63 @@ public class FactureClientService(
 
         await journal.EnregistrerAsync("Clone", "FactureClient", clone.NumeroFactureClient, $"cloné depuis {numero}");
         return clone;
+    }
+
+    public async Task<FactureClient> CreateFromBonLivraisonAsync(string numeroBonLivraison, AppConfigService config)
+    {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures.create");
+
+        var source = await db.BonsLivraison
+            .Include(b => b.Lignes).ThenInclude(l => l.Produit)
+            .FirstOrDefaultAsync(b => b.NumeroBonLivraison == numeroBonLivraison)
+            ?? throw new InvalidOperationException($"Bon de livraison {numeroBonLivraison} introuvable.");
+
+        if (source.EtatFacture == "Facturé")
+            throw new InvalidOperationException($"Le bon de livraison {numeroBonLivraison} est déjà facturé.");
+
+        var facture = new FactureClient
+        {
+            NumeroFactureClient = await numService.NextFactureClientAsync(),
+            DateFactureClient = DateTime.Today,
+            CodeClient = source.CodeClient,
+            Remise = source.Remise,
+            Note = source.Note,
+            EtatFacture = "Facture Ouverte",
+            EtatReglement = "Non Réglé"
+        };
+
+        var lignes = source.Lignes.Select(l => new LigneFactureClient
+        {
+            CodeProduit = l.CodeProduit,
+            Quantite = l.Quantite,
+            PrixUnitaire = l.PrixUnitaire,
+            Remise = l.Remise,
+            Tva = l.Tva,
+            Fodec = l.Produit?.Fodec ?? 0,
+            MontantHT = l.MontantHT
+        }).ToList();
+
+        RecalculateTotals(facture, lignes, config);
+
+        // Pas de décrément de stock ici : le bon de livraison source a déjà déplacé le stock à sa
+        // propre création. Générer une facture à partir de ce bon n'est qu'un enregistrement
+        // financier du même mouvement de marchandise, pas un second mouvement.
+        // LIMITE CONNUE : DeleteAsync restitue toujours le stock de ses lignes, sans savoir qu'une
+        // facture "générée depuis un BL" n'a jamais décrémenté ce stock elle-même — la supprimer
+        // restituerait donc du stock à tort (le BL, lui, reste responsable du mouvement réel). Le
+        // modèle actuel n'a pas de champ traçant la provenance d'une facture pour distinguer ce cas ;
+        // corriger ça proprement demanderait un champ de provenance + une migration de schéma.
+        db.FacturesClient.Add(facture);
+        foreach (var ligne in lignes)
+        {
+            ligne.NumeroFactureClient = facture.NumeroFactureClient;
+            db.LignesFactureClient.Add(ligne);
+        }
+        source.EtatFacture = "Facturé";
+        await db.SaveChangesGuardedAsync();
+
+        await journal.EnregistrerAsync("Ajout", "FactureClient", facture.NumeroFactureClient, $"généré depuis {numeroBonLivraison}");
+        return facture;
     }
 
     private static void RecalculateTotals(FactureClient facture, List<LigneFactureClient> lignes, AppConfigService config)

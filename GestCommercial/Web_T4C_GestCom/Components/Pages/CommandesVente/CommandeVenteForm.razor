@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = "perm:commandes-vente.view")]
 @inject ICommandeVenteService CommandeService
+@inject IBonLivraisonService BonLivraisonService
 @inject AppDbContext Db
 @inject NavigationManager Nav
 
@@ -19,6 +20,12 @@
             <button type="button" class="btn btn-outline-info" @onclick="CloneAsync">
                 <i class="bi bi-copy"></i> Cloner
             </button>
+            @if (_commande.EtatLivraison != "Livré")
+            {
+                <button type="button" class="btn btn-outline-warning" @onclick="GenerateBonLivraisonAsync">
+                    <i class="bi bi-truck"></i> Générer BL
+                </button>
+            }
         }
         <a href="commandes-vente" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Retour
@@ -312,6 +319,19 @@
         catch (Exception ex)
         {
             _notif.ShowError($"Erreur lors du clonage : {ex.Message}");
+        }
+    }
+
+    private async Task GenerateBonLivraisonAsync()
+    {
+        try
+        {
+            var bon = await BonLivraisonService.CreateFromCommandeVenteAsync(Numero!);
+            Nav.NavigateTo($"bons-livraison/{bon.NumeroBonLivraison}");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur lors de la génération du bon de livraison : {ex.Message}");
         }
     }
 }

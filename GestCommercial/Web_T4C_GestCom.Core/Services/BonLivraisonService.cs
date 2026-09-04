@@ -12,6 +12,7 @@ public interface IBonLivraisonService
     Task UpdateAsync(BonLivraison bon, List<LigneBonLivraison> lignes);
     Task DeleteAsync(string numero);
     Task<BonLivraison> CloneAsync(string numero);
+    Task<BonLivraison> CreateFromCommandeVenteAsync(string numeroCommandeVente);
 }
 
 public class BonLivraisonService(
@@ -213,6 +214,44 @@ public class BonLivraisonService(
 
         await journal.EnregistrerAsync("Clone", "BonLivraison", clone.NumeroBonLivraison, $"cloné depuis {numero}");
         return clone;
+    }
+
+    public async Task<BonLivraison> CreateFromCommandeVenteAsync(string numeroCommandeVente)
+    {
+        await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.update");
+
+        var source = await db.CommandesVente
+            .Include(c => c.Lignes)
+            .FirstOrDefaultAsync(c => c.NumeroCommandeVente == numeroCommandeVente)
+            ?? throw new InvalidOperationException($"Commande {numeroCommandeVente} introuvable.");
+
+        var bon = new BonLivraison
+        {
+            DateBonLivraison = DateTime.Today,
+            CodeClient = source.CodeClient,
+            NumeroCommandeVente = source.NumeroCommandeVente,
+            Remise = source.Remise,
+            Note = source.Note,
+            EtatBonLivraison = "Ouvert",
+            EtatFacture = "Non Facturé"
+        };
+
+        var lignes = source.Lignes.Select(l => new LigneBonLivraison
+        {
+            CodeProduit = l.CodeProduit,
+            Quantite = l.Quantite,
+            PrixUnitaire = l.PrixUnitaire,
+            Remise = l.Remise,
+            Tva = l.Tva,
+            MontantHT = l.MontantHT
+        }).ToList();
+
+        var created = await CreateAsync(bon, lignes);
+
+        source.EtatLivraison = "Livré";
+        await db.SaveChangesGuardedAsync();
+
+        return created;
     }
 
     private static void RecalculateTotals(BonLivraison bon, List<LigneBonLivraison> lignes)

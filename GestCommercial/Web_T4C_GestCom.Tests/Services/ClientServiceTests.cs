@@ -158,6 +158,27 @@ public class ClientServiceTests
         Assert.Equal("New Name", (await db.Clients.FindAsync("CL00001"))!.NomClient);
     }
 
+    [Fact]
+    public async Task UpdateAsync_AfterFormLoadsReferenceListsAndGetByCode_DoesNotThrowIdentityConflict()
+    {
+        // Reproduces ClientForm.razor's OnInitializedAsync: it loads the Devise dropdown (tracked,
+        // no AsNoTracking) and THEN GetByCodeAsync (AsNoTracking + Include(Devise)) in the same
+        // DbContext scope — Update() previously tried to re-attach the AsNoTracking graph's Devise
+        // instance, colliding with the already-tracked dropdown-list instance.
+        var svc = CreateService(out var db);
+        await svc.AddAsync(MakeClient("CL00001", "Old Name"));
+        db.ChangeTracker.Clear(); // simulates a fresh circuit that never touched this row before
+
+        await db.Devises.ToListAsync(); // simulates the form's currency dropdown load (tracked)
+        var client = await svc.GetByCodeAsync("CL00001"); // AsNoTracking + Include(Devise)
+        client!.NomClient = "New Name";
+
+        var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(client));
+
+        Assert.Null(ex);
+        Assert.Equal("New Name", (await db.Clients.FindAsync("CL00001"))!.NomClient);
+    }
+
     // ── Delete ───────────────────────────────────────────────────────────────
 
     [Fact]

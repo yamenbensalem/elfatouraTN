@@ -57,6 +57,14 @@ public class ClientService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "clients.update");
 
+        // Détacher la navigation avant Update() : ce client vient typiquement d'un GetByCodeAsync()
+        // AsNoTracking() incluant Devise, et le formulaire appelant a souvent déjà chargé une autre
+        // instance de cette même Devise (ex. pour peupler un select) dans le même scope DbContext —
+        // laisser Update() suivre le graphe entier provoque un conflit d'identité EF Core. Seules
+        // les colonnes scalaires du client sont modifiées ici.
+        client.Devise = null;
+        client.Company = null;
+
         db.Clients.Update(client);
         await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Client", client.CodeClient, client.NomClient);

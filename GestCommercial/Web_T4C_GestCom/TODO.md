@@ -80,14 +80,31 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       suppression de règlement ramène le badge à Non Réglé, Générer Avoir crée bien un avoir dans
       `/avoirs` avec les mêmes lignes. Suite complète : 239/239 tests verts, build 0 erreur.
 
-### Amélioration Bons de Livraison
+### Amélioration Bons de Livraison ✅
 
-- [ ] Ajouter la possibilité de **facturer un BL** directement (bouton "Générer Facture" dans `BonLivraisonForm`)
-- [ ] Lier un BL à une facture existante (mettre à jour `EtatFacture` du BL)
+- [x] Ajouter la possibilité de **facturer un BL** directement (bouton "Générer Facture" dans `BonLivraisonForm`)
+- [x] Lier un BL à une facture existante (mettre à jour `EtatFacture` du BL)
+      — `IFactureClientService.CreateFromBonLivraisonAsync(numeroBonLivraison, config)` (Core) copie
+      les lignes du BL vers une nouvelle facture (FODEC repris du produit, absent sur les lignes de
+      BL), sans re-décrémenter le stock (le BL l'a déjà fait à sa création — voir commentaire dans
+      le code), et met `BonLivraison.EtatFacture = "Facturé"`. Rejette si déjà facturé. Bouton
+      masqué une fois le BL facturé. **Limite connue documentée dans le code** : `DeleteAsync`
+      d'une facture générée ainsi restituerait le stock à tort (elle ne l'a jamais décrémenté
+      elle-même) — corriger ça proprement demanderait un champ de provenance sur `FactureClient` +
+      migration de schéma, hors scope ici.
 
-### Amélioration Commandes Vente
+### Amélioration Commandes Vente ✅
 
-- [ ] Ajouter la possibilité de **créer un BL depuis une commande** (bouton "Générer BL" dans `CommandeVenteForm`)
+- [x] Ajouter la possibilité de **créer un BL depuis une commande** (bouton "Générer BL" dans `CommandeVenteForm`)
+      — `IBonLivraisonService.CreateFromCommandeVenteAsync(numeroCommandeVente)` (Core) copie les
+      lignes de la commande vers un nouveau BL (numérotation/décrément de stock/journal via le
+      `CreateAsync` existant, donc comportement de stock identique à un BL normal), et met
+      `CommandeVente.EtatLivraison = "Livré"`. Bouton masqué une fois la commande livrée.
+      6 nouveaux tests service (`BonLivraisonServiceTests`, `FactureClientServiceTests`). Vérifié
+      de bout en bout dans le navigateur : Commande → Générer BL → BL lié affiché dans le
+      formulaire (dropdown "Commande Vente") → Générer Facture → Facture créée sans double
+      décrément de stock → BL passe à "Facturé" → bouton disparaît. Suite complète : 246/246 tests
+      verts, build 0 erreur (Web + Desktop).
 
 ---
 
@@ -179,6 +196,26 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       le problème avant merge — voir `DevisClientServiceTests`, `FactureClientServiceTests`. Étendre
       correctement demanderait de passer ces services sur `IDbContextFactory` (comme le font déjà
       `PermissionService`/`FeatureFlagService`) plutôt que d'injecter `AppDbContext` scopé.
+- [x] **BUG DE RÉGRESSION CORRIGÉ** — `ClientService.UpdateAsync`, `FournisseurService.UpdateAsync`
+      et `ProduitService.UpdateAsync` levaient systématiquement `InvalidOperationException: The
+      instance of entity type 'X' cannot be tracked...` en production, cassant **l'édition de
+      n'importe quel Client/Fournisseur/Produit**. Cause : le point `AsNoTracking()` ci-dessus a mis
+      `GetByCodeAsync()` en `AsNoTracking().Include(...)`, mais `ClientForm`/`FournisseurForm`/
+      `ProduitForm` chargent aussi une liste de référence trackée pour peupler un `<select>` (ex.
+      `Db.Devises.ToListAsync()`, `Db.CategoriesProduit.ToListAsync()`) dans le même scope
+      `DbContext` — `Update()` suit alors tout le graphe de navigation renvoyé par
+      `GetByCodeAsync()` (Devise/Catégorie/Unité/TVA/Fabricant) et tente de le re-tracker,
+      entrant en conflit d'identité avec l'instance déjà trackée par le chargement du `<select>`.
+      Trouvé en testant manuellement le point "Générer BL/Facture" ci-dessous (l'édition de
+      `Produit` a échoué en essayant de remettre le stock à zéro après le test). Corrigé en mettant
+      à `null` les propriétés de navigation avant `Update()` dans les 3 services (seules les
+      colonnes scalaires sont modifiées ; motif standard EF Core pour ce cas). 3 nouveaux tests de
+      régression qui reproduisent exactement le scénario (charger la liste de référence trackée
+      PUIS `GetByCodeAsync` PUIS `UpdateAsync`) — vérifiés comme échouant sans le fix avant d'être
+      confirmés verts avec. Revérifié dans le navigateur : édition Client et Produit fonctionnent à
+      nouveau. **À vérifier : si le commit qui a introduit `AsNoTracking()` sur ces 3 services a
+      déjà été déployé chez le client, l'édition de Client/Fournisseur/Produit y était cassée
+      jusqu'à ce fix — prévoir un déploiement correctif si c'est le cas.**
 - [x] Ajouter la gestion des erreurs de concurrence EF Core (`DbUpdateConcurrencyException`) —
       `AppDbContextSaveExtensions.SaveChangesGuardedAsync()` (Core) remplace les 58 appels
       `db.SaveChangesAsync()` des services et traduit `DbUpdateConcurrencyException` (ex. un

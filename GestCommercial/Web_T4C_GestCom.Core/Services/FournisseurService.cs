@@ -54,6 +54,14 @@ public class FournisseurService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "fournisseurs.update");
 
+        // Détacher la navigation avant Update() : ce fournisseur vient typiquement d'un
+        // GetByCodeAsync() AsNoTracking() incluant Devise, et le formulaire appelant a souvent déjà
+        // chargé une autre instance de cette même Devise (ex. pour peupler un select) dans le même
+        // scope DbContext — laisser Update() suivre le graphe entier provoque un conflit d'identité
+        // EF Core. Seules les colonnes scalaires du fournisseur sont modifiées ici.
+        fournisseur.Devise = null;
+        fournisseur.Company = null;
+
         db.Fournisseurs.Update(fournisseur);
         await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Fournisseur", fournisseur.CodeFournisseur, fournisseur.NomFournisseur);

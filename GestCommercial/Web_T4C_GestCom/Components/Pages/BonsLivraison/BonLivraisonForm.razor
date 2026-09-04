@@ -3,6 +3,8 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = "perm:bons-livraison.view")]
 @inject IBonLivraisonService BonService
+@inject IFactureClientService FactureService
+@inject AppConfigService Config
 @inject AppDbContext Db
 @inject NavigationManager Nav
 
@@ -19,6 +21,12 @@
             <button type="button" class="btn btn-outline-info" @onclick="CloneAsync">
                 <i class="bi bi-copy"></i> Cloner
             </button>
+            @if (_bon.EtatFacture != "Facturé")
+            {
+                <button type="button" class="btn btn-outline-warning" @onclick="GenerateFactureAsync">
+                    <i class="bi bi-receipt"></i> Générer Facture
+                </button>
+            }
         }
         <a href="bons-livraison" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Retour
@@ -346,6 +354,19 @@
         catch (Exception ex)
         {
             _notif.ShowError($"Erreur lors du clonage : {ex.Message}");
+        }
+    }
+
+    private async Task GenerateFactureAsync()
+    {
+        try
+        {
+            var facture = await FactureService.CreateFromBonLivraisonAsync(Numero!, Config);
+            Nav.NavigateTo($"factures-client/{facture.NumeroFactureClient}");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur lors de la génération de la facture : {ex.Message}");
         }
     }
 }
