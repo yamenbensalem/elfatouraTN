@@ -15,6 +15,39 @@
 
 <Notification @ref="_notif" />
 
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white d-flex gap-2 flex-wrap align-items-end">
+        <div>
+            <label class="form-label small mb-1">Client</label>
+            <select class="form-select form-select-sm" style="min-width:160px" @bind="_filterClient">
+                <option value="">Tous</option>
+                @foreach (var c in ClientsDistincts)
+                { <option value="@c.CodeClient">@c.NomClient</option> }
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">État</label>
+            <select class="form-select form-select-sm" style="min-width:140px" @bind="_filterEtat">
+                <option value="">Tous</option>
+                <option value="Ouvert">Ouvert</option>
+                <option value="Confirmé">Confirmé</option>
+                <option value="Annulé">Annulé</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">Du</label>
+            <input type="date" class="form-control form-control-sm" @bind="_filterDebut" />
+        </div>
+        <div>
+            <label class="form-label small mb-1">Au</label>
+            <input type="date" class="form-control form-control-sm" @bind="_filterFin" />
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mb-0" @onclick="ResetFilters">
+            <i class="bi bi-x-circle"></i> Réinitialiser
+        </button>
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <LoadingSpinner Loading="@_loading" />
@@ -34,7 +67,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var d in _devis)
+                    @foreach (var d in FilteredDevis)
                     {
                         <tr>
                             <td><a href="devis/@d.NumeroDevis">@d.NumeroDevis</a></td>
@@ -61,7 +94,7 @@
                             </td>
                         </tr>
                     }
-                    @if (!_devis.Any())
+                    @if (!FilteredDevis.Any())
                     {
                         <tr><td colspan="8" class="text-center text-muted py-4">Aucun devis trouvé.</td></tr>
                     }
@@ -69,7 +102,7 @@
             </table>
         }
     </div>
-    <div class="card-footer text-muted small">@_devis.Count devis</div>
+    <div class="card-footer text-muted small">@FilteredDevis.Count() / @_devis.Count devis</div>
 </div>
 
 <ConfirmDialog Title="Supprimer le devis"
@@ -84,6 +117,32 @@
     private bool _confirmVisible;
     private DevisClient? _toDelete;
     private Notification _notif = default!;
+
+    private string? _filterClient;
+    private string? _filterEtat;
+    private DateTime? _filterDebut;
+    private DateTime? _filterFin;
+
+    private IEnumerable<DevisClient> FilteredDevis => _devis.Where(d =>
+        (string.IsNullOrEmpty(_filterClient) || d.CodeClient == _filterClient) &&
+        (string.IsNullOrEmpty(_filterEtat) || d.EtatDevis == _filterEtat) &&
+        (!_filterDebut.HasValue || d.DateDevis.Date >= _filterDebut.Value.Date) &&
+        (!_filterFin.HasValue || d.DateDevis.Date <= _filterFin.Value.Date));
+
+    private List<Client> ClientsDistincts => _devis
+        .Where(d => d.Client is not null)
+        .Select(d => d.Client!)
+        .DistinctBy(c => c.CodeClient)
+        .OrderBy(c => c.NomClient)
+        .ToList();
+
+    private void ResetFilters()
+    {
+        _filterClient = null;
+        _filterEtat = null;
+        _filterDebut = null;
+        _filterFin = null;
+    }
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 

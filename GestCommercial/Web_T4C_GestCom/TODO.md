@@ -131,12 +131,25 @@ Fonctionnalités restantes à implémenter, classées par priorité.
   dans le navigateur avec une vraie facture. Suite complète : 259/259 tests verts, build 0 erreur
   (Web + Desktop).
 
-### Recherche et filtres avancés
+### Recherche et filtres avancés ✅
 
-- [ ] Ajouter filtre par **période** (date début / date fin) sur toutes les listes de documents
-- [ ] Ajouter filtre par **état** sur les listes (Devis, Commandes, BL, Factures)
-- [ ] Ajouter filtre par **client** sur les listes VENTES
-- [ ] Ajouter filtre par **fournisseur** sur les listes ACHATS
+- [x] Ajouter filtre par **période** (date début / date fin) sur toutes les listes de documents
+- [x] Ajouter filtre par **état** sur les listes (Devis, Commandes, BL, Factures)
+- [x] Ajouter filtre par **client** sur les listes VENTES
+- [x] Ajouter filtre par **fournisseur** sur les listes ACHATS
+      — appliqué aux 7 listes de documents (`DevisList`, `CommandeVenteList`, `BonLivraisonList`,
+      `FacturesList` [factures + avoirs], `CommandeAchatList`, `BonReceptionList`,
+      `FactureFournisseurList`). Filtrage **côté client** (LINQ en mémoire sur la liste déjà
+      chargée par `GetAllAsync()`), pas de changement de service ni de requête — cohérent avec le
+      volume de données d'une PME et évite de faire diverger 7 signatures de service. Barre de
+      filtre uniforme (client/fournisseur déduit des lignes déjà chargées, état = mêmes libellés
+      que le formulaire d'édition, période, bouton Réinitialiser) reprenant le style déjà utilisé
+      dans `JournalActiviteList`. `FacturesList` réinitialise les filtres au changement de route
+      (`/factures-client` ↔ `/avoirs`, deux listes distinctes sur la même page). Aucun test service
+      nécessaire (aucune logique métier touchée) ; vérifié dans le navigateur (filtre état,
+      période, réinitialisation) sur `DevisList` et rendu confirmé sur les 6 autres pages,
+      y compris celles basées sur `Virtualize` (`BonLivraisonList`, `FacturesList`). Suite complète
+      inchangée : 259/259 tests verts, build 0 erreur (Web + Desktop).
 
 ### Impression / Export
 

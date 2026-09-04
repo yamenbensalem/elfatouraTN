@@ -15,6 +15,39 @@
 
 <Notification @ref="_notif" />
 
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white d-flex gap-2 flex-wrap align-items-end">
+        <div>
+            <label class="form-label small mb-1">Client</label>
+            <select class="form-select form-select-sm" style="min-width:160px" @bind="_filterClient">
+                <option value="">Tous</option>
+                @foreach (var c in ClientsDistincts)
+                { <option value="@c.CodeClient">@c.NomClient</option> }
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">État</label>
+            <select class="form-select form-select-sm" style="min-width:140px" @bind="_filterEtat">
+                <option value="">Tous</option>
+                <option value="Ouvert">Ouvert</option>
+                <option value="Livré">Livré</option>
+                <option value="Annulé">Annulé</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">Du</label>
+            <input type="date" class="form-control form-control-sm" @bind="_filterDebut" />
+        </div>
+        <div>
+            <label class="form-label small mb-1">Au</label>
+            <input type="date" class="form-control form-control-sm" @bind="_filterFin" />
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mb-0" @onclick="ResetFilters">
+            <i class="bi bi-x-circle"></i> Réinitialiser
+        </button>
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <LoadingSpinner Loading="@_loading" />
@@ -36,7 +69,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <Virtualize Items="_bons" Context="b">
+                    <Virtualize Items="FilteredBons" Context="b">
                         <ItemContent>
                             <tr>
                                 <td><a href="bons-livraison/@b.NumeroBonLivraison">@b.NumeroBonLivraison</a></td>
@@ -73,7 +106,7 @@
             </table>
         }
     </div>
-    <div class="card-footer text-muted small">@_bons.Count bon(s) de livraison</div>
+    <div class="card-footer text-muted small">@FilteredBons.Count / @_bons.Count bon(s) de livraison</div>
 </div>
 
 <ConfirmDialog Title="Supprimer le bon de livraison"
@@ -88,6 +121,33 @@
     private bool _confirmVisible;
     private BonLivraison? _toDelete;
     private Notification _notif = default!;
+
+    private string? _filterClient;
+    private string? _filterEtat;
+    private DateTime? _filterDebut;
+    private DateTime? _filterFin;
+
+    private List<BonLivraison> FilteredBons => _bons.Where(b =>
+        (string.IsNullOrEmpty(_filterClient) || b.CodeClient == _filterClient) &&
+        (string.IsNullOrEmpty(_filterEtat) || b.EtatBonLivraison == _filterEtat) &&
+        (!_filterDebut.HasValue || b.DateBonLivraison.Date >= _filterDebut.Value.Date) &&
+        (!_filterFin.HasValue || b.DateBonLivraison.Date <= _filterFin.Value.Date))
+        .ToList();
+
+    private List<Client> ClientsDistincts => _bons
+        .Where(b => b.Client is not null)
+        .Select(b => b.Client!)
+        .DistinctBy(c => c.CodeClient)
+        .OrderBy(c => c.NomClient)
+        .ToList();
+
+    private void ResetFilters()
+    {
+        _filterClient = null;
+        _filterEtat = null;
+        _filterDebut = null;
+        _filterFin = null;
+    }
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 

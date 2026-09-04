@@ -15,6 +15,39 @@
 
 <Notification @ref="_notif" />
 
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white d-flex gap-2 flex-wrap align-items-end">
+        <div>
+            <label class="form-label small mb-1">Fournisseur</label>
+            <select class="form-select form-select-sm" style="min-width:160px" @bind="_filterFournisseur">
+                <option value="">Tous</option>
+                @foreach (var f in FournisseursDistincts)
+                { <option value="@f.CodeFournisseur">@f.NomFournisseur</option> }
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">État</label>
+            <select class="form-select form-select-sm" style="min-width:140px" @bind="_filterEtat">
+                <option value="">Tous</option>
+                <option value="Ouvert">Ouvert</option>
+                <option value="Confirmé">Confirmé</option>
+                <option value="Annulé">Annulé</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">Du</label>
+            <input type="date" class="form-control form-control-sm" @bind="_filterDebut" />
+        </div>
+        <div>
+            <label class="form-label small mb-1">Au</label>
+            <input type="date" class="form-control form-control-sm" @bind="_filterFin" />
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mb-0" @onclick="ResetFilters">
+            <i class="bi bi-x-circle"></i> Réinitialiser
+        </button>
+    </div>
+</div>
+
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <LoadingSpinner Loading="@_loading" />
@@ -35,7 +68,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var c in _commandes)
+                    @foreach (var c in FilteredCommandes)
                     {
                         <tr>
                             <td><a href="/commandes-achat/@c.NumeroCommandeAchat">@c.NumeroCommandeAchat</a></td>
@@ -68,7 +101,7 @@
                             </td>
                         </tr>
                     }
-                    @if (!_commandes.Any())
+                    @if (!FilteredCommandes.Any())
                     {
                         <tr><td colspan="9" class="text-center text-muted py-4">Aucune commande trouvée.</td></tr>
                     }
@@ -76,7 +109,7 @@
             </table>
         }
     </div>
-    <div class="card-footer text-muted small">@_commandes.Count commande(s)</div>
+    <div class="card-footer text-muted small">@FilteredCommandes.Count() / @_commandes.Count commande(s)</div>
 </div>
 
 <ConfirmDialog Title="Supprimer la commande"
@@ -91,6 +124,32 @@
     private bool _confirmVisible;
     private CommandeAchat? _toDelete;
     private Notification _notif = default!;
+
+    private string? _filterFournisseur;
+    private string? _filterEtat;
+    private DateTime? _filterDebut;
+    private DateTime? _filterFin;
+
+    private IEnumerable<CommandeAchat> FilteredCommandes => _commandes.Where(c =>
+        (string.IsNullOrEmpty(_filterFournisseur) || c.CodeFournisseur == _filterFournisseur) &&
+        (string.IsNullOrEmpty(_filterEtat) || c.EtatCommandeAchat == _filterEtat) &&
+        (!_filterDebut.HasValue || c.DateCommandeAchat.Date >= _filterDebut.Value.Date) &&
+        (!_filterFin.HasValue || c.DateCommandeAchat.Date <= _filterFin.Value.Date));
+
+    private List<Fournisseur> FournisseursDistincts => _commandes
+        .Where(c => c.Fournisseur is not null)
+        .Select(c => c.Fournisseur!)
+        .DistinctBy(f => f.CodeFournisseur)
+        .OrderBy(f => f.NomFournisseur)
+        .ToList();
+
+    private void ResetFilters()
+    {
+        _filterFournisseur = null;
+        _filterEtat = null;
+        _filterDebut = null;
+        _filterFin = null;
+    }
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
