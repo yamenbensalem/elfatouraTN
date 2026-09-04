@@ -168,7 +168,19 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       la même base InMemory, l'un supprime la ligne pendant que l'autre tente de la sauvegarder).
 - [x] Centraliser la logique de calcul des totaux dans une classe utilitaire partagée (éviter la duplication entre services) — `LineCalculator` déplacé dans `Web_T4C_GestCom.Core`, utilisé par les 7 pages document et par `T4C_GestCom_Desktop`
 - [x] Unifier `Web_T4C_GestCom` et `Web_T4C_GestCom.Core` — `Web_T4C_GestCom.csproj` référence désormais `Web_T4C_GestCom.Core` (26 entités + `AppDbContext` + 22 services n'existent plus qu'une fois) ; `DeleteErrorMessageHelper`, `PartyDetailsHelper` et l'enregistrement DI (`AddT4CGestComServices`, appelée par `Program.cs` et `AppHost.cs`) sont eux aussi unifiés
-- [ ] Ajouter des tests unitaires sur les services (xUnit + InMemory EF Core)
+- [x] Ajouter des tests unitaires sur les services (xUnit + InMemory EF Core) — 7 nouveaux fichiers
+      de tests couvrant les services qui n'avaient encore aucune couverture : `BonLivraisonService`,
+      `BonReceptionService`, `CommandeVenteService`, `CommandeAchatService`, `FactureFournisseurService`
+      (création/màj/suppression avec impact stock, règlements, solde, clonage), `JournalActiviteService`
+      (filtres login/entité/date, listes distinctes, et le fait qu'un échec de journalisation ne doit
+      jamais remonter), `FeatureFlagService` (modèle opt-out par défaut, portée par entreprise, cache).
+      `Helpers/InMemoryDbContextFactory.cs` a été extrait (dupliqué à l'identique dans
+      `PermissionServiceTests`) pour être réutilisé par `FeatureFlagServiceTests`. Suite complète :
+      222/222 tests verts (`Web_T4C_GestCom`) + build 0 erreur (`Web_T4C_GestCom` + `T4C_GestCom_Desktop`).
+      Restent sans test dédié (comportement simple, à faible risque) : `LineCalculator`,
+      `DeleteErrorMessageHelper`, `PartyDetailsHelper`, `RoleNameMapper`, `AppConfigService` (déjà
+      couvert), `TenantService`/`CurrentUserService` (dépendent de `HttpContext`/état Blazor, mieux
+      couverts en intégration que via un mock).
 - [ ] Valider les montants négatifs dans les formulaires (quantité, prix)
 - [ ] Ajouter une migration pour tout changement de schéma futur
 - [ ] Revoir le `DeleteBehavior.Restrict` global — certaines suppressions pourraient nécessiter des règles plus fines

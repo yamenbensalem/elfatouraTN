@@ -153,26 +153,4 @@ public class PermissionServiceTests
 
         Assert.False(result);
     }
-
-    // ── Helper: in-memory IDbContextFactory wrapper ───────────────────────────
-    // Creates fresh AppDbContext instances sharing the same named in-memory database
-    // so that PermissionService's `await using var db = ...` does not dispose the
-    // seeding context used by the test.
-
-    private sealed class InMemoryDbContextFactory : IDbContextFactory<AppDbContext>
-    {
-        private readonly DbContextOptions<AppDbContext> _opts;
-
-        public InMemoryDbContextFactory(string dbName)
-        {
-            // Reuse the same options instance as DbContextFactory.Create() so that
-            // both contexts are routed to the same EF Core InMemory store.
-            _opts = DbContextFactory.GetOrCreateOptions(dbName);
-        }
-
-        public AppDbContext CreateDbContext() => new AppDbContext(_opts);
-
-        public Task<AppDbContext> CreateDbContextAsync(CancellationToken ct = default)
-            => Task.FromResult(new AppDbContext(_opts));
-    }
 }
