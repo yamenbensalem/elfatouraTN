@@ -33,6 +33,7 @@ public sealed class HomeTests : TestContext
         _produits.Setup(s => s.GetStockAlerteAsync()).ReturnsAsync([]);
         _fournisseurs.Setup(s => s.GetAllAsync(null)).ReturnsAsync([]);
         _factures.Setup(s => s.GetAllAsync(false, null)).ReturnsAsync([]);
+        _factures.Setup(s => s.GetAllAsync(true, null)).ReturnsAsync([]);
         _currentUser.Setup(s => s.Login).Returns("testuser");
     }
 
@@ -97,6 +98,80 @@ public sealed class HomeTests : TestContext
             TimeSpan.FromSeconds(5));
 
         Assert.Contains("2", cut.Markup);  // 2 factures non-réglées
+    }
+
+    [Fact]
+    public void KpiCards_ShowUnpaidAmount_NetOfReglements()
+    {
+        _factures.Setup(s => s.GetAllAsync(false, null)).ReturnsAsync(
+        [
+            new FactureClient
+            {
+                NumeroFactureClient = "FC001",
+                EtatReglement       = "Partiellement Réglé",
+                DateFactureClient   = DateTime.Today,
+                MontantTTC          = 200,
+                Timbre              = 0.6,
+                Reglements          = [new ReglementFactureClient { Montant = 50, DateReglement = DateTime.Today, CodeModePayement = 1 }]
+            }
+        ]);
+        AuthorizeAdmin();
+
+        var cut = RenderComponent<Home>();
+        cut.WaitForState(
+            () => cut.Markup.Contains("Montant Impayé"),
+            TimeSpan.FromSeconds(5));
+
+        // 200 + 0.6 timbre - 50 déjà réglé = 150.6 (formaté selon la culture courante : "." ou ",")
+        var expected = (200.0 + 0.6 - 50).ToString("0.###");
+        Assert.Contains(expected, cut.Markup);
+    }
+
+    [Fact]
+    public void KpiCards_ShowCaDuMois_ExcludesInvoicesFromOtherMonths()
+    {
+        // Le graphique mensuel affiche légitimement les 6 derniers mois (donc "lastMonth" y apparaît
+        // aussi) — ce test vérifie seulement la carte KPI "CA du Mois", pas la page entière.
+        var thisMonth = DateTime.Today;
+        var lastMonth = thisMonth.AddMonths(-2);
+        _factures.Setup(s => s.GetAllAsync(false, null)).ReturnsAsync(
+        [
+            new FactureClient { NumeroFactureClient = "FC001", EtatReglement = "Réglé", DateFactureClient = thisMonth, MontantTTC = 300 },
+            new FactureClient { NumeroFactureClient = "FC002", EtatReglement = "Réglé", DateFactureClient = lastMonth, MontantTTC = 999 }
+        ]);
+        AuthorizeAdmin();
+
+        var cut = RenderComponent<Home>();
+        cut.WaitForState(
+            () => cut.Markup.Contains("CA du Mois"),
+            TimeSpan.FromSeconds(5));
+
+        var kpiCard = cut.FindAll(".kpi-label").Single(e => e.TextContent.Contains("CA du Mois")).ParentElement!.ParentElement!;
+        Assert.Contains("300", kpiCard.TextContent);
+        Assert.DoesNotContain("999", kpiCard.TextContent);
+    }
+
+    [Fact]
+    public void KpiCards_CaDuMois_SubtractsAvoirsFromSameMonth()
+    {
+        var thisMonth = DateTime.Today;
+        _factures.Setup(s => s.GetAllAsync(false, null)).ReturnsAsync(
+        [
+            new FactureClient { NumeroFactureClient = "FC001", EtatReglement = "Réglé", DateFactureClient = thisMonth, MontantTTC = 500 }
+        ]);
+        _factures.Setup(s => s.GetAllAsync(true, null)).ReturnsAsync(
+        [
+            new FactureClient { NumeroFactureClient = "AV001", IsAvoir = true, EtatReglement = "Réglé", DateFactureClient = thisMonth, MontantTTC = 120 }
+        ]);
+        AuthorizeAdmin();
+
+        var cut = RenderComponent<Home>();
+        cut.WaitForState(
+            () => cut.Markup.Contains("CA du Mois"),
+            TimeSpan.FromSeconds(5));
+
+        // 500 (facture) - 120 (avoir) = 380
+        Assert.Contains("380", cut.Markup);
     }
 
     // ── Stock Alerts ──────────────────────────────────────────────────────

@@ -110,14 +110,26 @@ Fonctionnalités restantes à implémenter, classées par priorité.
 
 ## PRIORITÉ BASSE
 
-### Tableau de bord — Home.razor
+### Tableau de bord — Home.razor ✅
 
-- [ ] Implémenter un vrai tableau de bord avec les métriques clés :
-  - Chiffre d'affaires du mois (somme des factures TTC)
-  - Factures non réglées (montant total)
-  - Produits en alerte de stock (count)
-  - Dernières factures (5 dernières)
-  - Graphique CA mensuel (6 derniers mois)
+- [x] Implémenter un vrai tableau de bord avec les métriques clés :
+  - Chiffre d'affaires du mois (somme des factures TTC) — nouvelle carte KPI "CA du Mois", net des
+    avoirs du mois (une facture normale ajoute au CA, un avoir du même mois le réduit)
+  - Factures non réglées (montant total) — nouvelle carte KPI "Montant Impayé" (TTC + timbre -
+    règlements déjà reçus, sur les factures non réglées) ; la carte "Factures en attente" (count)
+    existante est conservée telle quelle, les deux se complètent
+  - Produits en alerte de stock (count) — déjà en place (tableau d'alerte existant)
+  - Dernières factures (5 dernières) — déjà en place (bloc "Activité Récente" existant)
+  - Graphique CA mensuel (6 derniers mois) — barres CSS (pas de nouvelle dépendance JS type
+    Chart.js), hauteur proportionnelle au mois le plus élevé, libellés de mois en français
+    (`CultureInfo("fr-FR")`, ex. "Sept. 26")
+  Nécessitait un second appel `FactureService.GetAllAsync(avoirsOnly: true)` pour calculer le CA
+  net des avoirs — a cassé 7 tests bUnit existants (`HomeTests`) qui ne stubaient que
+  `GetAllAsync(false, null)` ; corrigé en ajoutant le stub par défaut manquant. 3 nouveaux tests
+  bUnit pour les nouvelles cartes (montant impayé net des règlements, CA du mois qui exclut les
+  autres mois, CA du mois qui soustrait bien les avoirs du même mois). Vérifié de bout en bout
+  dans le navigateur avec une vraie facture. Suite complète : 259/259 tests verts, build 0 erreur
+  (Web + Desktop).
 
 ### Recherche et filtres avancés
 
