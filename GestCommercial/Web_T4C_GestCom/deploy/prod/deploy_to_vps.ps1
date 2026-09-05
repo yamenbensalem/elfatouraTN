@@ -162,8 +162,13 @@ function Build-Image {
         exit 1
     }
 
+    # Web_T4C_GestCom.csproj references the sibling ../Web_T4C_GestCom.Core project, which sits
+    # outside this build context — supplied as a separate named context instead of widening the
+    # main one (which would otherwise also pull in T4C_GestCom_Desktop, __Delivery, etc.).
+    $coreProjectRoot = Resolve-Path (Join-Path $ProjectRoot "..\Web_T4C_GestCom.Core")
+
     Write-Status "Building gestcom/app:prod ..." "Info"
-    docker build -t gestcom/app:prod $ProjectRoot
+    docker build --build-context "core=$coreProjectRoot" -t gestcom/app:prod $ProjectRoot
 
     if ($LASTEXITCODE -eq 0) {
         Write-Status "Image built successfully" "Success"

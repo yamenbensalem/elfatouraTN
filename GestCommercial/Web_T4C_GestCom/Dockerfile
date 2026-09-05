@@ -1,5 +1,11 @@
+# syntax=docker/dockerfile:1
 # ================================================================
 # Multi-stage build — Web T4C GestCom (Blazor Server .NET 8)
+#
+# Web_T4C_GestCom.csproj has a ProjectReference to the sibling
+# ../Web_T4C_GestCom.Core project, so it's supplied here as a separate
+# named build context ("core") rather than widening the main context —
+# see deploy/prod/deploy_to_vps.ps1's `--build-context core=...` flag.
 # ================================================================
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -7,6 +13,7 @@ WORKDIR /src
 
 # Restore (layer cached separately for faster rebuilds)
 COPY Web_T4C_GestCom.csproj .
+COPY --from=core . ../Web_T4C_GestCom.Core/
 RUN dotnet restore
 
 # Publish
