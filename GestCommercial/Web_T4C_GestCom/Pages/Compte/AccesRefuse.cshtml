@@ -1,0 +1,105 @@
+@page "/compte/acces-refuse"
+@model Web_T4C_GestCom.Pages.Compte.AccesRefuseModel
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accès refusé – GestCom</title>
+    <link rel="stylesheet" href="~/bootstrap/bootstrap.min.css" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 1.5rem;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border-radius: 1.5rem;
+            padding: 2.5rem 2.25rem 2rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+            text-align: center;
+        }
+
+        .denied-icon {
+            width: 68px;
+            height: 68px;
+            border-radius: 1.1rem;
+            background: linear-gradient(145deg, #ef4444, #dc2626);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            box-shadow: 0 8px 20px rgba(220,38,38,0.4);
+        }
+
+        .auth-title {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: #111827;
+            margin: 0 0 0.5rem;
+        }
+
+        .auth-subtitle {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin: 0 0 1.75rem;
+        }
+
+        .btn-auth {
+            display: inline-block;
+            padding: 0.85rem 1.75rem;
+            border: none;
+            border-radius: 0.65rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            letter-spacing: 0.02em;
+            transition: opacity .2s, transform .15s;
+            box-shadow: 0 4px 15px rgba(139,92,246,0.4);
+        }
+
+        .btn-auth:hover { opacity: 0.92; transform: translateY(-1px); color: white; }
+
+        .auth-footer {
+            margin-top: 1.75rem;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.65);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-card">
+    <div class="denied-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="white" viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+            <path d="M11.354 4.646a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708l6-6a.5.5 0 0 1 .708 0"/>
+            <path d="M4.646 4.646a.5.5 0 0 0 0 .708l6 6a.5.5 0 0 0 .708-.708l-6-6a.5.5 0 0 0-.708 0"/>
+        </svg>
+    </div>
+
+    <h1 class="auth-title">Accès refusé</h1>
+    <p class="auth-subtitle">Vous n'avez pas la permission requise pour accéder à cette page.</p>
+
+    <a href="/" class="btn-auth">Retour au tableau de bord</a>
+</div>
+
+<footer class="auth-footer">© 2026 GestCom – Tous droits réservés</footer>
+
+</body>
+</html>

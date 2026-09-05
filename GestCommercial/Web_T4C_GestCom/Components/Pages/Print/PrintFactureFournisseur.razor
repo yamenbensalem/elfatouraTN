@@ -91,10 +91,26 @@ else
                     <tr><td>TVA</td><td class="text-end">@_facture.MontantTVA.ToString("0.###")</td></tr>
                     <tr><td>Total TTC</td><td class="text-end fw-semibold">@_facture.MontantTTC.ToString("0.###")</td></tr>
                     <tr><td>Timbre Fiscal</td><td class="text-end">@_facture.Timbre.ToString("0.###")</td></tr>
+                    @if (_facture.MontantRetenue > 0)
+                    {
+                        <tr>
+                            <td>Retenue à la Source</td>
+                            <td class="text-end text-danger">-@_facture.MontantRetenue.ToString("0.###")</td>
+                        </tr>
+                    }
                     <tr class="print-totals-net">
                         <td>Net à Payer</td>
                         <td class="text-end">@((_facture.MontantTTC + _facture.Timbre).ToString("0.###")) TND</td>
                     </tr>
+                    @if (_facture.MontantRetenue > 0)
+                    {
+                        <tr>
+                            <td class="text-muted" style="font-size:0.8rem">dont retenu à la source</td>
+                            <td class="text-end text-muted" style="font-size:0.8rem">
+                                @((_facture.MontantTTC + _facture.Timbre - _facture.MontantRetenue).ToString("0.###")) net à verser
+                            </td>
+                        </tr>
+                    }
                 </table>
             </div>
 

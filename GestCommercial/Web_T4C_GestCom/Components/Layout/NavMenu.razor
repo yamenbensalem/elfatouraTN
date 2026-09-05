@@ -119,6 +119,16 @@
         </div>
     </details>
 
+    <!-- ── RAPPORTS ───────────────────────────── -->
+    <div class="sidebar-section-item">
+        <PermissionGuard Permission="factures.view">
+            <NavLink class="sidebar-link" href="rapports/retenues">
+                <i class="bi bi-file-earmark-ruled sidebar-icon"></i>
+                <span>Retenues à la Source</span>
+            </NavLink>
+        </PermissionGuard>
+    </div>
+
     <!-- ── PARAMÈTRES ─────────────────────────── -->
     @if (CanAccessAdministration)
     {
@@ -136,6 +146,24 @@
                 <div class="sidebar-group-items">
                     <NavLink class="sidebar-link sidebar-link-sub" href="entreprise">
                         <i class="bi bi-building-gear sidebar-icon"></i> Entreprise
+                    </NavLink>
+                    <NavLink class="sidebar-link sidebar-link-sub" href="parametres/tva">
+                        <i class="bi bi-percent sidebar-icon"></i> Taux de TVA
+                    </NavLink>
+                    <NavLink class="sidebar-link sidebar-link-sub" href="parametres/categories">
+                        <i class="bi bi-tags sidebar-icon"></i> Catégories
+                    </NavLink>
+                    <NavLink class="sidebar-link sidebar-link-sub" href="parametres/unites">
+                        <i class="bi bi-rulers sidebar-icon"></i> Unités
+                    </NavLink>
+                    <NavLink class="sidebar-link sidebar-link-sub" href="parametres/modes-payement">
+                        <i class="bi bi-credit-card sidebar-icon"></i> Modes de Paiement
+                    </NavLink>
+                    <NavLink class="sidebar-link sidebar-link-sub" href="parametres/devises">
+                        <i class="bi bi-currency-exchange sidebar-icon"></i> Devises
+                    </NavLink>
+                    <NavLink class="sidebar-link sidebar-link-sub" href="parametres/fabricants">
+                        <i class="bi bi-award sidebar-icon"></i> Fabricants
                     </NavLink>
                 </div>
             </div>
@@ -166,6 +194,12 @@
                     <NavLink class="sidebar-link sidebar-link-sub" href="admin/journal">
                         <i class="bi bi-journal-text sidebar-icon"></i> Journal d'Activité
                     </NavLink>
+                    @if (CurrentUserService.IsSuperAdmin)
+                    {
+                        <NavLink class="sidebar-link sidebar-link-sub" href="admin/entreprises">
+                            <i class="bi bi-diagram-3 sidebar-icon"></i> Entreprises
+                        </NavLink>
+                    }
                 </div>
             </div>
         </div>
@@ -223,11 +257,11 @@
         if (string.IsNullOrWhiteSpace(p))
             return;
 
-        if (StartsWithAny(p, "entreprise"))
+        if (StartsWithAny(p, "entreprise", "parametres"))
             _paramsOpen = true;
 
         if (StartsWithAny(p, "admin"))
-            _adminOpen = true;
+            _adminOpen = true; // covers admin/utilisateurs, admin/roles, admin/journal, admin/entreprises
     }
 
     private static bool StartsWithAny(string value, params string[] prefixes)

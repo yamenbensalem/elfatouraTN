@@ -1,0 +1,170 @@
+@page "/admin/entreprises"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject ICompanyService CompanyService
+
+<PageTitle>Entreprises – T4C GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="bi bi-diagram-3 me-2"></i>Entreprises</h3>
+    <button class="btn btn-primary" @onclick="AskNew">
+        <i class="bi bi-plus-circle"></i> Nouvelle Entreprise
+    </button>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Identifiant (slug)</th>
+                        <th>Plan</th>
+                        <th class="text-end">Utilisateurs</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in _items)
+                    {
+                        <tr>
+                            <td>@c.Name</td>
+                            <td><code>@c.Slug</code></td>
+                            <td><span class="badge bg-secondary">@c.Plan</span></td>
+                            <td class="text-end">@c.Utilisateurs.Count</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AskEdit(c)">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(c)">
+                                    <i class="bi bi-trash me-1"></i>Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_items.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">Aucune entreprise.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_items.Count entreprise(s)</div>
+</div>
+
+@if (_editVisible)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,0.5)" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="_editing" OnValidSubmit="SaveAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_isNew ? "Nouvelle Entreprise" : "Modifier l'Entreprise")</h5>
+                        <button type="button" class="btn-close" @onclick="() => _editVisible = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nom <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_editing!.Name" />
+                            <ValidationMessage For="() => _editing!.Name" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Identifiant (slug)</label>
+                            <InputText class="form-control" @bind-Value="_editing!.Slug" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Plan</label>
+                            <InputSelect class="form-select" @bind-Value="_editing!.Plan">
+                                <option value="Standard">Standard</option>
+                                <option value="Pro">Pro</option>
+                                <option value="Enterprise">Enterprise</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => _editVisible = false">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog Title="Supprimer l'entreprise"
+               Message="@($"Confirmer la suppression de « {_toDelete?.Name} » ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<Company> _items = [];
+    private bool _loading = true;
+    private bool _editVisible;
+    private bool _isNew;
+    private Company? _editing;
+    private bool _confirmVisible;
+    private Company? _toDelete;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _items = await CompanyService.GetAllAsync();
+        _loading = false;
+    }
+
+    private void AskNew()
+    {
+        _editing = new Company { Plan = "Standard" };
+        _isNew = true;
+        _editVisible = true;
+    }
+
+    private void AskEdit(Company c)
+    {
+        _editing = new Company { Id = c.Id, Name = c.Name, Slug = c.Slug, Plan = c.Plan, SettingsJson = c.SettingsJson };
+        _isNew = false;
+        _editVisible = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_isNew) await CompanyService.AddAsync(_editing!);
+            else await CompanyService.UpdateAsync(_editing!);
+            _editVisible = false;
+            _notif.ShowSuccess("Enregistré.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private void AskDelete(Company c) { _toDelete = c; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await CompanyService.DeleteAsync(_toDelete);
+            _notif.ShowSuccess("Supprimé.");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer : cette entreprise a encore des utilisateurs ou des données rattachées."));
+        }
+    }
+}

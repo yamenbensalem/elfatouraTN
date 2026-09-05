@@ -3,22 +3,27 @@
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
-            <NotAuthorized>
-                <AuthorizeView>
-                    <Authorized Context="authorizedUser">
-                        <LayoutView Layout="typeof(Layout.MainLayout)">
-                            <div class="alert alert-danger m-3" role="alert">
-                                Acces refuse. Vous n'avez pas la permission requise pour cette page.
-                            </div>
-                        </LayoutView>
-                    </Authorized>
-                    <NotAuthorized Context="anonymousUser">
-                        @{
-                            var returnUrl = NavigationManager.Uri;
-                            NavigationManager.NavigateTo($"/compte/connexion?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
-                        }
-                    </NotAuthorized>
-                </AuthorizeView>
+            <NotAuthorized Context="notAuthorizedState">
+                @* AuthorizeRouteView already resolved AuthenticationState here — use it directly.
+                   A nested <AuthorizeView> re-evaluating from the ambient cascade was unreliable
+                   for an authenticated-but-wrong-role user (it took the anonymous branch), which
+                   redirected to /compte/connexion; since that page redirects an authenticated user
+                   straight back to the denied page, the two bounced forever (ERR_TOO_MANY_REDIRECTS)
+                   on every Roles-restricted page — reproduced on /admin/utilisateurs too, so this
+                   was pre-existing, not specific to any one page. *@
+                @if (notAuthorizedState.User.Identity?.IsAuthenticated == true)
+                {
+                    <LayoutView Layout="typeof(Layout.MainLayout)">
+                        <div class="alert alert-danger m-3" role="alert">
+                            Acces refuse. Vous n'avez pas la permission requise pour cette page.
+                        </div>
+                    </LayoutView>
+                }
+                else
+                {
+                    var returnUrl = NavigationManager.Uri;
+                    NavigationManager.NavigateTo($"/compte/connexion?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+                }
             </NotAuthorized>
         </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />

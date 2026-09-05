@@ -44,6 +44,10 @@ public class FactureClient : ITenantOwned
     [Display(Name = "Timbre Fiscal")]
     public double Timbre { get; set; }
 
+    [Column("retenue_factureclient")]
+    [Display(Name = "Retenue à la Source")]
+    public double MontantRetenue { get; set; }
+
     [Column("fodec_factureclient")]
     [Display(Name = "FODEC")]
     public double Fodec { get; set; }

@@ -14,7 +14,11 @@ public static class DeleteErrorMessageHelper
 
         if (message.Contains("REFERENCE constraint", StringComparison.OrdinalIgnoreCase)
             || message.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase)
-            || message.Contains("DELETE statement conflicted", StringComparison.OrdinalIgnoreCase))
+            || message.Contains("DELETE statement conflicted", StringComparison.OrdinalIgnoreCase)
+            // SQL Server running with a French locale/collation phrases the same errors differently
+            // (e.g. "L'instruction DELETE est en conflit avec la contrainte REFERENCE ...").
+            || message.Contains("contrainte REFERENCE", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("instruction DELETE est en conflit", StringComparison.OrdinalIgnoreCase))
         {
             return friendlyMessage;
         }

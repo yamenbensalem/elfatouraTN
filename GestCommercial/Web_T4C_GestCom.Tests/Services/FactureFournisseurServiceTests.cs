@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Web_T4C_GestCom.Data;
 using Web_T4C_GestCom.Data.Models;
 using Web_T4C_GestCom.Services;
@@ -12,7 +13,15 @@ public class FactureFournisseurServiceTests
     private static (FactureFournisseurService svc, AppDbContext db) CreateService()
     {
         var db = DbContextFactory.Create();
-        return (new FactureFournisseurService(db, new DocumentNumberService(db), new NoOpJournalActiviteService()), db);
+        var config = new AppConfigService(
+            new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AppConfig:TimbreFiscal"] = "0.6",
+                    ["AppConfig:TauxRetenue"] = "1.5"
+                })
+                .Build());
+        return (new FactureFournisseurService(db, new DocumentNumberService(db), new NoOpJournalActiviteService(), config), db);
     }
 
     private static async Task SeedBasicData(AppDbContext db)
@@ -215,5 +224,45 @@ public class FactureFournisseurServiceTests
         Assert.NotEqual(created.NumeroFactureFournisseur, clone.NumeroFactureFournisseur);
         Assert.Equal(120, (await db.Produits.FindAsync("PR00001"))!.Quantite);
         Assert.Equal("Non Réglé", clone.EtatReglement);
+    }
+
+    // ── Retenue à la source ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateAsync_ComputesRetenueFromMontantHT()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+
+        // HT = 1000, taux de retenue = 1.5% (config de test) → retenue = 15
+        var result = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 100, tva: 0)]);
+
+        Assert.Equal(1000, result.MontantHT);
+        Assert.Equal(15, result.MontantRetenue);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RecomputesRetenueFromNewLines()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+        var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 100, tva: 0)]);
+        Assert.Equal(15, created.MontantRetenue);
+
+        var updated = await svc.UpdateAsync(created, [MakeLigne("PR00001", 4, 100, tva: 0)]); // HT = 400 → retenue = 6
+
+        Assert.Equal(6, updated.MontantRetenue);
+    }
+
+    [Fact]
+    public async Task CloneAsync_CopiesRetenueFromSource()
+    {
+        var (svc, db) = CreateService();
+        await SeedBasicData(db);
+        var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 100, tva: 0)]);
+
+        var clone = await svc.CloneAsync(created.NumeroFactureFournisseur);
+
+        Assert.Equal(created.MontantRetenue, clone.MontantRetenue);
     }
 }

@@ -1,0 +1,146 @@
+@page "/rapports/retenues"
+@layout PrintLayout
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:factures.view")]
+@inject AppDbContext Db
+@inject IJSRuntime JS
+
+<PageTitle>Récapitulatif des Retenues – T4C GestCom</PageTitle>
+
+<div class="print-toolbar">
+    <button class="btn btn-primary btn-sm" @onclick="@(() => JS.InvokeVoidAsync("window.print"))">
+        <i class="bi bi-printer me-1"></i>Imprimer / PDF
+    </button>
+    <a href="/" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Retour au tableau de bord
+    </a>
+    <span class="ms-auto text-muted small">RÉCAPITULATIF RETENUES</span>
+</div>
+
+<div class="print-wrapper">
+    <div class="print-document" style="max-width:1000px">
+
+        <h3 class="mb-3"><i class="bi bi-file-earmark-ruled me-2"></i>Récapitulatif des Retenues à la Source</h3>
+
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
+            <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+            <div>
+                <strong>Récapitulatif interne, pas un document officiel.</strong>
+                Cette page liste les montants de retenue à la source calculés sur les factures — elle
+                est utile pour ta comptabilité interne, mais ne constitue pas une déclaration
+                conforme au formulaire exigé par l'administration fiscale tunisienne. Vérifie le
+                format officiel requis avant toute transmission.
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap align-items-end mb-3 print-toolbar">
+            <div>
+                <label class="form-label small mb-1">Du</label>
+                <input type="date" class="form-control form-control-sm" @bind="_filterDebut" @bind:after="LoadAsync" />
+            </div>
+            <div>
+                <label class="form-label small mb-1">Au</label>
+                <input type="date" class="form-control form-control-sm" @bind="_filterFin" @bind:after="LoadAsync" />
+            </div>
+            <div>
+                <label class="form-label small mb-1">Type</label>
+                <select class="form-select form-select-sm" @bind="_filterType" @bind:after="LoadAsync">
+                    <option value="">Tous</option>
+                    <option value="Vente">Ventes (Client)</option>
+                    <option value="Achat">Achats (Fournisseur)</option>
+                </select>
+            </div>
+        </div>
+
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>N° Document</th>
+                        <th>Client / Fournisseur</th>
+                        <th class="text-end">Montant HT</th>
+                        <th class="text-end">Retenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in _lignes)
+                    {
+                        <tr>
+                            <td>@r.Date.ToString("dd/MM/yyyy")</td>
+                            <td>@r.Type</td>
+                            <td>@r.Numero</td>
+                            <td>@r.Tiers</td>
+                            <td class="text-end">@r.MontantHT.ToString("0.###")</td>
+                            <td class="text-end fw-semibold">@r.MontantRetenue.ToString("0.###")</td>
+                        </tr>
+                    }
+                    @if (!_lignes.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">Aucune retenue sur cette période.</td></tr>
+                    }
+                </tbody>
+                @if (_lignes.Any())
+                {
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td colspan="4">Total</td>
+                            <td class="text-end">@_lignes.Sum(l => l.MontantHT).ToString("0.###")</td>
+                            <td class="text-end">@_lignes.Sum(l => l.MontantRetenue).ToString("0.###")</td>
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+            <div class="text-muted small mt-2">@_lignes.Count ligne(s)</div>
+        }
+
+        <div class="print-footer">
+            <small>Imprimé le @DateTime.Now.ToString("dd/MM/yyyy à HH:mm", new System.Globalization.CultureInfo("fr-FR"))</small>
+        </div>
+    </div>
+</div>
+
+@code {
+    private record RetenueLigne(DateTime Date, string Type, string Numero, string Tiers, double MontantHT, double MontantRetenue);
+
+    private List<RetenueLigne> _lignes = [];
+    private bool _loading = true;
+    private DateTime? _filterDebut = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime? _filterFin;
+    private string _filterType = "";
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        var ventes = _filterType is "" or "Vente"
+            ? await Db.FacturesClient
+                .Include(f => f.Client)
+                .Where(f => f.MontantRetenue > 0)
+                .Where(f => !_filterDebut.HasValue || f.DateFactureClient.Date >= _filterDebut.Value.Date)
+                .Where(f => !_filterFin.HasValue || f.DateFactureClient.Date <= _filterFin.Value.Date)
+                .Select(f => new RetenueLigne(f.DateFactureClient, "Vente", f.NumeroFactureClient,
+                    f.Client!.NomClient, f.MontantHT, f.MontantRetenue))
+                .ToListAsync()
+            : [];
+
+        var achats = _filterType is "" or "Achat"
+            ? await Db.FacturesFournisseur
+                .Include(f => f.Fournisseur)
+                .Where(f => f.MontantRetenue > 0)
+                .Where(f => !_filterDebut.HasValue || f.DateFactureFournisseur.Date >= _filterDebut.Value.Date)
+                .Where(f => !_filterFin.HasValue || f.DateFactureFournisseur.Date <= _filterFin.Value.Date)
+                .Select(f => new RetenueLigne(f.DateFactureFournisseur, "Achat", f.NumeroFactureFournisseur,
+                    f.Fournisseur!.NomFournisseur, f.MontantHT, f.MontantRetenue))
+                .ToListAsync()
+            : [];
+
+        _lignes = ventes.Concat(achats).OrderByDescending(l => l.Date).ToList();
+        _loading = false;
+    }
+}

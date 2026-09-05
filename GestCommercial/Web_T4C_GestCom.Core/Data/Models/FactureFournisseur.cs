@@ -40,6 +40,10 @@ public class FactureFournisseur : ITenantOwned
     [Display(Name = "Timbre Fiscal")]
     public double Timbre { get; set; }
 
+    [Column("retenue_facturefournisseur")]
+    [Display(Name = "Retenue à la Source")]
+    public double MontantRetenue { get; set; }
+
     [MaxLength(20)]
     [Column("etat_facturefournisseur")]
     [Display(Name = "État")]

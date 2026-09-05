@@ -20,7 +20,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.LoginPath       = "/compte/connexion";
         options.LogoutPath      = "/compte/deconnexion";
-        options.AccessDeniedPath = "/compte/connexion";
+        // Must NOT be the login page: AccessDeniedPath fires for an authenticated user who lacks
+        // the required role/policy, and Connexion's own OnGet redirects an authenticated user
+        // straight back to ReturnUrl — pointing both paths at the same page created an infinite
+        // redirect loop (ERR_TOO_MANY_REDIRECTS) on every Roles-restricted page for a logged-in
+        // user without the right role.
+        options.AccessDeniedPath = "/compte/acces-refuse";
         options.ExpireTimeSpan  = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
         options.Events = new CookieAuthenticationEvents
@@ -356,6 +361,27 @@ using (var scope = app.Services.CreateScope())
         )
         BEGIN
             ALTER TABLE facturefournisseur ADD company_id_facturefournisseur INT NULL REFERENCES company(id_company)
+        END
+        """);
+
+    // Retenue à la source (Web_T4C_GestCom/TODO.md, section "Retenues à la source").
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'factureclient' AND COLUMN_NAME = 'retenue_factureclient'
+        )
+        BEGIN
+            ALTER TABLE factureclient ADD retenue_factureclient FLOAT NOT NULL DEFAULT 0
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'facturefournisseur' AND COLUMN_NAME = 'retenue_facturefournisseur'
+        )
+        BEGIN
+            ALTER TABLE facturefournisseur ADD retenue_facturefournisseur FLOAT NOT NULL DEFAULT 0
         END
         """);
 

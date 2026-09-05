@@ -1,0 +1,149 @@
+@page "/parametres/unites"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject IReferenceDataService<UniteProduit> Service
+
+<PageTitle>Unités de Produit – T4C GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Unités de Produit</h3>
+    <button class="btn btn-primary" @onclick="AskNew">
+        <i class="bi bi-plus-circle"></i> Nouvelle Unité
+    </button>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>Nom</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in _items)
+                    {
+                        <tr>
+                            <td>@u.NomUniteProduit</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AskEdit(u)">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(u)">
+                                    <i class="bi bi-trash me-1"></i>Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_items.Any())
+                    {
+                        <tr><td colspan="2" class="text-center text-muted py-4">Aucune unité.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_items.Count unités</div>
+</div>
+
+@if (_editVisible)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,0.5)" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="_editing" OnValidSubmit="SaveAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_isNew ? "Nouvelle Unité" : "Modifier l'Unité")</h5>
+                        <button type="button" class="btn-close" @onclick="() => _editVisible = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nom <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_editing!.NomUniteProduit" />
+                            <ValidationMessage For="() => _editing!.NomUniteProduit" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => _editVisible = false">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog Title="Supprimer l'unité"
+               Message="@($"Confirmer la suppression de « {_toDelete?.NomUniteProduit} » ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<UniteProduit> _items = [];
+    private bool _loading = true;
+    private bool _editVisible;
+    private bool _isNew;
+    private UniteProduit? _editing;
+    private bool _confirmVisible;
+    private UniteProduit? _toDelete;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _items = await Service.GetAllAsync();
+        _loading = false;
+    }
+
+    private void AskNew()
+    {
+        _editing = new UniteProduit();
+        _isNew = true;
+        _editVisible = true;
+    }
+
+    private void AskEdit(UniteProduit u)
+    {
+        _editing = new UniteProduit { CodeUniteProduit = u.CodeUniteProduit, NomUniteProduit = u.NomUniteProduit };
+        _isNew = false;
+        _editVisible = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_isNew) await Service.AddAsync(_editing!);
+            else await Service.UpdateAsync(_editing!);
+            _editVisible = false;
+            _notif.ShowSuccess("Enregistré.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private void AskDelete(UniteProduit u) { _toDelete = u; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await Service.DeleteAsync(_toDelete);
+            _notif.ShowSuccess("Supprimé.");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer : cette unité est utilisée par au moins un produit."));
+        }
+    }
+}

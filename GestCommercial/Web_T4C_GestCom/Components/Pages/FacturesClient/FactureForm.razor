@@ -227,10 +227,24 @@
                                 <td class="text-muted">Timbre Fiscal</td>
                                 <td class="text-end">@Config.TimbreFiscal.ToString("0.###")</td>
                             </tr>
+                            @if (_montantRetenue > 0)
+                            {
+                                <tr>
+                                    <td class="text-muted">Retenue à la Source (@Config.TauxRetenue.ToString("0.###")%)</td>
+                                    <td class="text-end text-danger">-@(_montantRetenue.ToString("0.###"))</td>
+                                </tr>
+                            }
                             <tr class="table-active fw-bold">
                                 <td>Net à Payer</td>
                                 <td class="text-end">@((_totalTTC + Config.TimbreFiscal).ToString("0.###"))</td>
                             </tr>
+                            @if (_montantRetenue > 0)
+                            {
+                                <tr>
+                                    <td class="text-muted small">dont retenu par le client</td>
+                                    <td class="text-end text-muted small">@((_totalTTC + Config.TimbreFiscal - _montantRetenue).ToString("0.###")) à recevoir</td>
+                                </tr>
+                            }
                         </table>
                     </div>
                 </div>
@@ -393,6 +407,7 @@
     private double _totalFodec;
     private double _totalTVA;
     private double _totalTTC;
+    private double _montantRetenue;
     private double _solde;
 
     private string PageTitle => _isNew
@@ -466,6 +481,9 @@
         _totalFodec = totals.TotalFodec;
         _totalTVA = totals.TotalTva;
         _totalTTC = totals.TotalTTC;
+        // Affichage uniquement : le service recalcule et persiste la retenue de façon autoritaire
+        // (voir FactureClientService.RecalculateTotals), ce champ n'est jamais envoyé à Create/Update.
+        _montantRetenue = Math.Round(_totalHT * Config.TauxRetenue / 100, 3);
     }
 
     private async Task SaveAsync()

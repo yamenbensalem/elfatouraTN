@@ -20,6 +20,7 @@ public class FactureFournisseurService(
     AppDbContext db,
     DocumentNumberService numService,
     IJournalActiviteService journal,
+    AppConfigService config,
     ICurrentUserService? currentUser = null,
     IPermissionService? permissionService = null)
     : IFactureFournisseurService
@@ -44,6 +45,7 @@ public class FactureFournisseurService(
 
         facture.NumeroFactureFournisseur = await numService.NextFactureFournisseurAsync();
         RecalculateTotals(facture, lignes);
+        facture.MontantRetenue = Math.Round(facture.MontantHT * config.TauxRetenue / 100, 3);
         facture.Lignes = lignes;
 
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -91,6 +93,7 @@ public class FactureFournisseurService(
 
             foreach (var l in lignes) l.Id = 0;
             RecalculateTotals(existing, lignes);
+            existing.MontantRetenue = Math.Round(existing.MontantHT * config.TauxRetenue / 100, 3);
             existing.Lignes = lignes;
 
             foreach (var l in lignes)
@@ -153,6 +156,7 @@ public class FactureFournisseurService(
             DateFactureFournisseur = DateTime.Today,
             CodeFournisseur = source.CodeFournisseur,
             Timbre = source.Timbre,
+            MontantRetenue = source.MontantRetenue,
             EtatFacture = "Facture Ouverte",
             EtatReglement = "Non Réglé",
             Note = source.Note

@@ -167,10 +167,26 @@
                                 <td>Timbre Fiscal</td>
                                 <td class="text-end">@_facture.Timbre.ToString("0.###")</td>
                             </tr>
+                            @if (_facture.MontantRetenue > 0)
+                            {
+                                <tr>
+                                    <td>Retenue à la Source (@Config.TauxRetenue.ToString("0.###")%)</td>
+                                    <td class="text-end text-danger">-@_facture.MontantRetenue.ToString("0.###")</td>
+                                </tr>
+                            }
                             <tr class="fw-bold table-light fs-6">
                                 <td>Net à Payer</td>
                                 <td class="text-end">@((_facture.MontantTTC + _facture.Timbre).ToString("0.###"))</td>
                             </tr>
+                            @if (_facture.MontantRetenue > 0)
+                            {
+                                <tr>
+                                    <td class="text-muted small">dont retenu à la source</td>
+                                    <td class="text-end text-muted small">
+                                        @((_facture.MontantTTC + _facture.Timbre - _facture.MontantRetenue).ToString("0.###")) net à verser
+                                    </td>
+                                </tr>
+                            }
                         </table>
                     </div>
                 </div>
@@ -324,6 +340,9 @@
         _facture.MontantHT = totals.TotalHT;
         _facture.MontantTVA = totals.TotalTva;
         _facture.MontantTTC = totals.TotalTTC;
+        // Affichage uniquement : le service recalcule et persiste la retenue de façon autoritaire
+        // (voir FactureFournisseurService.CreateAsync/UpdateAsync).
+        _facture.MontantRetenue = Math.Round(_facture.MontantHT * Config.TauxRetenue / 100, 3);
     }
 
     private void AddLigne() => _lignes.Add(new LigneFactureFournisseur { Tva = 19 });

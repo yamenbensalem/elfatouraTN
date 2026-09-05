@@ -23,6 +23,7 @@ public class FactureClientService(
     DocumentNumberService numService,
     IProduitService produitService,
     IJournalActiviteService journal,
+    AppConfigService config,
     ICurrentUserService? currentUser = null,
     IPermissionService? permissionService = null) : IFactureClientService
 {
@@ -105,15 +106,13 @@ public class FactureClientService(
             existing.DateFactureClient = facture.DateFactureClient;
             existing.CodeClient = facture.CodeClient;
             existing.Remise = facture.Remise;
-            existing.Timbre = facture.Timbre;
             existing.Note = facture.Note;
             existing.EtatFacture = facture.EtatFacture;
             existing.EtatReglement = facture.EtatReglement;
             existing.IsAvoir = facture.IsAvoir;
-            existing.MontantHT = facture.MontantHT;
-            existing.Fodec = facture.Fodec;
-            existing.MontantTVA = facture.MontantTVA;
-            existing.MontantTTC = facture.MontantTTC;
+            // Timbre n'est délibérément pas copié depuis `facture` ici : `existing.Timbre` porte
+            // déjà la valeur verrouillée à la création, et RecalculateTotals ci-dessous ne la touche
+            // pas non plus (voir son commentaire).
 
             var nouvellesLignes = lignes.Select(l => new LigneFactureClient
             {
@@ -126,6 +125,14 @@ public class FactureClientService(
                 Fodec = l.Fodec,
                 MontantHT = l.MontantHT
             }).ToList();
+
+            // BUG CORRIGÉ : MontantHT/Fodec/MontantTVA/MontantTTC étaient auparavant copiés tels
+            // quels depuis le `facture` reçu en paramètre — mais rien (ni ce service, ni
+            // FactureForm.razor côté UI) ne les recalculait avant cet appel, donc modifier les
+            // lignes d'une facture existante persistait silencieusement les ANCIENS totaux. On
+            // recalcule maintenant ici, à partir des nouvelles lignes, comme le fait déjà
+            // FactureFournisseurService.UpdateAsync.
+            RecalculateTotals(existing, nouvellesLignes, config);
 
             foreach (var ligne in nouvellesLignes)
             {
@@ -230,6 +237,7 @@ public class FactureClientService(
             CodeClient = source.CodeClient,
             Remise = source.Remise,
             Timbre = source.Timbre,
+            MontantRetenue = source.MontantRetenue,
             Note = source.Note,
             EtatFacture = "Facture Ouverte",
             EtatReglement = "Non Réglé",
@@ -294,7 +302,8 @@ public class FactureClientService(
             Remise = source.Remise,
             Note = source.Note,
             EtatFacture = "Facture Ouverte",
-            EtatReglement = "Non Réglé"
+            EtatReglement = "Non Réglé",
+            Timbre = config.TimbreFiscal
         };
 
         var lignes = source.Lignes.Select(l => new LigneFactureClient
@@ -338,7 +347,11 @@ public class FactureClientService(
         facture.MontantTVA = lignes.Sum(l => l.Tva * l.MontantHT / 100);
         var remiseMontant = facture.MontantHT * facture.Remise / 100;
         facture.MontantTTC = facture.MontantHT - remiseMontant + facture.Fodec + facture.MontantTVA;
-        facture.Timbre = config.TimbreFiscal;
+        facture.MontantRetenue = Math.Round(facture.MontantHT * config.TauxRetenue / 100, 3);
+        // Le timbre fiscal n'est PAS recalculé ici — c'est un montant fixe verrouillé à la création
+        // (voir CreateAsync/CreateFromBonLivraisonAsync), pas une valeur dérivée des lignes. Le
+        // recalculer ici ferait dériver silencieusement le timbre d'une facture déjà émise à chaque
+        // modification si le taux global change entre-temps.
     }
 
     private async Task UpdateEtatReglementAsync(string numero)

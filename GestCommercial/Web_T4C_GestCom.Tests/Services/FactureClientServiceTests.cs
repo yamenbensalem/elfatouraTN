@@ -29,7 +29,7 @@ public class FactureClientServiceTests
                     ["AppConfig:TauxRetenue"] = "1.5"
                 })
                 .Build());
-        return (new FactureClientService(db, numService, produitService, journal), db, config);
+        return (new FactureClientService(db, numService, produitService, journal, config), db, config);
     }
 
     private static async Task<(Client client, Produit produit)> SeedBasicData(AppDbContext db)
@@ -501,5 +501,77 @@ public class FactureClientServiceTests
         // Old line gone, new line saved
         Assert.Equal(1, await db.LignesFactureClient.CountAsync());
         Assert.Equal("PR00002", (await db.LignesFactureClient.FirstAsync()).CodeProduit);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithChangedLines_RecalculatesPersistedTotals()
+    {
+        // Régression : MontantHT/MontantTVA/MontantTTC étaient auparavant copiés tels quels depuis
+        // l'objet reçu (jamais recalculés côté service), et FactureForm.razor ne les réassigne pas
+        // non plus avant d'appeler UpdateAsync — modifier les lignes d'une facture existante
+        // persistait donc silencieusement les ANCIENS totaux.
+        var (svc, db, config) = CreateService();
+        await SeedBasicData(db);
+        var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 5, 100, tva: 0)], config);
+        Assert.Equal(500, created.MontantHT);
+
+        await svc.UpdateAsync(created, [MakeLigne("PR00001", 2, 50, tva: 0)]);
+
+        var persisted = await db.FacturesClient.FindAsync(created.NumeroFactureClient);
+        Assert.Equal(100, persisted!.MontantHT); // 2 * 50, pas l'ancien 500
+        Assert.Equal(100, persisted.MontantTTC);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DoesNotChangeTimbre_EvenIfConfigChangedSinceCreation()
+    {
+        var (svc, db, config) = CreateService();
+        await SeedBasicData(db);
+        var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 1, 100)], config);
+        Assert.Equal(0.6, created.Timbre);
+
+        await svc.UpdateAsync(created, [MakeLigne("PR00001", 2, 100)]);
+
+        Assert.Equal(0.6, (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.Timbre);
+    }
+
+    // ── Retenue à la source ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CreateAsync_ComputesRetenueFromMontantHT()
+    {
+        var (svc, db, config) = CreateService();
+        await SeedBasicData(db);
+
+        // HT = 1000, taux de retenue = 1.5% (config de test) → retenue = 15
+        var result = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 100, tva: 0)], config);
+
+        Assert.Equal(1000, result.MontantHT);
+        Assert.Equal(15, result.MontantRetenue);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RecomputesRetenueFromNewLines()
+    {
+        var (svc, db, config) = CreateService();
+        await SeedBasicData(db);
+        var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 100, tva: 0)], config);
+        Assert.Equal(15, created.MontantRetenue);
+
+        await svc.UpdateAsync(created, [MakeLigne("PR00001", 4, 100, tva: 0)]); // HT = 400 → retenue = 6
+
+        Assert.Equal(6, (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.MontantRetenue);
+    }
+
+    [Fact]
+    public async Task CloneAsync_CopiesRetenueFromSource()
+    {
+        var (svc, db, config) = CreateService();
+        await SeedBasicData(db);
+        var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 100, tva: 0)], config);
+
+        var clone = await svc.CloneAsync(created.NumeroFactureClient);
+
+        Assert.Equal(created.MontantRetenue, clone.MontantRetenue);
     }
 }

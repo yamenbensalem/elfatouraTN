@@ -200,16 +200,93 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       quand rien ne dépasse le seuil).
       Suite complète : 256/256 tests verts, build 0 erreur (Web + Desktop).
 
-### Retenues à la source
+### Retenues à la source ✅
 
-- [ ] Intégrer le calcul de la retenue à la source (`TauxRetenue` depuis `AppConfigService`)
-  - Afficher le montant retenu sur les factures
-  - Générer les déclarations de retenue
+- [x] Intégrer le calcul de la retenue à la source (`TauxRetenue` depuis `AppConfigService`)
+      — décision utilisateur : symétrique sur `FactureClient` ET `FactureFournisseur`, même
+      traitement que le Timbre Fiscal. Nouvelle colonne `MontantRetenue` sur les deux entités
+      (migration SQL idempotente dans `Program.cs`), calculée sur le HT (`MontantHT × TauxRetenue /
+      100`), verrouillée à la création/modification comme les autres montants — jamais recalculée
+      rétroactivement si le taux change en config après coup. `AppConfigService` injecté au
+      constructeur des deux services (déjà singleton, injection sans risque de cycle de vie).
+      **Non déduite automatiquement du solde/règlement** (reste informative) : appliquer une
+      déduction automatique aurait supposé que TOUTES les factures sont soumises à la retenue, ce
+      qui n'est pas garanti — décision conservatrice pour ne pas fausser le suivi des règlements
+      existant.
+      - Bug trouvé et corrigé en le faisant : `FactureClientService.UpdateAsync` copiait tels quels
+        les `MontantHT/MontantTVA/MontantTTC` reçus en paramètre au lieu de les recalculer depuis
+        les nouvelles lignes — et `FactureForm.razor` ne les réassigne jamais avant l'appel.
+        Modifier les lignes d'une facture client existante persistait donc silencieusement les
+        **anciens totaux**. Corrigé en appelant `RecalculateTotals` côté service (comme le fait
+        déjà `FactureFournisseurService.UpdateAsync`), sans toucher au Timbre (verrouillé, extrait
+        de `RecalculateTotals` vers les points d'appel qui doivent le fixer explicitement).
+  - [x] Afficher le montant retenu sur les factures — carte totaux de `FactureForm.razor` et
+        `FactureFournisseurForm.razor` (recalcul live à chaque ligne modifiée) + pages d'impression
+        `PrintFactureClient.razor`/`PrintFactureFournisseur.razor` (valeur persistée), avec une
+        ligne "net à recevoir/à verser" une fois la retenue déduite.
+  - [x] Générer les déclarations de retenue — **décision utilisateur** : récapitulatif interne
+        (`/rapports/retenues`, `RetenueRecap.razor`), PAS un document officiel — bannière
+        d'avertissement explicite, car je ne peux pas garantir la conformité au formulaire exact
+        exigé par l'administration fiscale tunisienne. Liste Ventes + Achats sur une période
+        filtrable (dates, type), total, imprimable.
+      8 nouveaux tests service (calcul, recalcul sur update, copie au clonage, + régression sur le
+      bug de totaux). Vérifié de bout en bout dans le navigateur : calcul live, persistance après
+      modification de lignes (totaux ET retenue recalculés correctement), impression, filtre du
+      récapitulatif par type. Suite complète : 267/267 tests verts, build 0 erreur (Web + Desktop).
 
-### Gestion multi-entreprises
+### Gestion multi-entreprises ✅
 
-- [ ] Support de plusieurs entreprises (sélection au démarrage)
-  - Logique déjà présente dans le projet desktop (commentée)
+- [x] Support de plusieurs entreprises — **décision utilisateur** : gestion des entreprises
+      côté SuperAdmin uniquement, PAS de bascule d'entreprise pour l'utilisateur normal
+      (`Utilisateur.CompanyId` reste un FK fixe unique — pas d'appartenance multi-entreprises,
+      ça aurait demandé un changement d'architecture plus profond). Réutilise le module de
+      permissions "tenants" déjà seedé mais jusqu'ici inutilisé.
+      - Nouveau `Web_T4C_GestCom.Core/Services/CompanyService.cs` (`ICompanyService`) : CRUD sur
+        `Company`, `GetAllAsync` avec `Include(c => c.Utilisateurs)` pour afficher le nombre
+        d'utilisateurs par entreprise dans la liste.
+      - Nouvelle page `Components/Pages/Admin/CompaniesList.razor` (`/admin/entreprises`),
+        `[Authorize(Roles = "SuperAdmin")]` (strictement SuperAdmin, pas Admin) : liste + modal
+        Add/Edit (Nom, Slug, Plan) + `ConfirmDialog` de suppression, erreurs FK via
+        `DeleteErrorMessageHelper`. Lien ajouté dans la section Administration du menu,
+        visible uniquement si `CurrentUserService.IsSuperAdmin`.
+      - Même bug de tracking EF Core que les pages de données de référence (voir section
+        ci-dessous) : extrait dans une extension partagée `AppDbContextSaveExtensions.
+        DetachStaleTrackedEntry<T>()`, réutilisée par `ReferenceDataService<T>` ET
+        `CompanyService`.
+      - **Bug critique trouvé et corrigé en le testant** : un utilisateur authentifié mais sans
+        le rôle requis (ex. Admin visitant une page SuperAdmin, ou n'importe quel utilisateur
+        visitant n'importe quelle page `[Authorize(Roles=...)]` sans le bon rôle) tombait dans
+        une **boucle de redirection infinie** (`ERR_TOO_MANY_REDIRECTS`) — reproduit aussi sur
+        `/admin/utilisateurs`, une page existante sans rapport avec ce chantier, donc bug
+        préexistant jamais détecté faute d'avoir testé un scénario "authentifié mais rôle
+        insuffisant" (tous les tests précédents utilisaient le compte `admin`, qui satisfait
+        toujours "Admin,SuperAdmin"). Cause réelle : `Program.cs` configurait
+        `options.AccessDeniedPath = "/compte/connexion"` (même page que `LoginPath`) — quand
+        l'autorisation ASP.NET Core au niveau middleware refuse l'accès (Forbidden, utilisateur
+        authentifié mais rôle insuffisant), le handler de cookie redirige vers
+        `AccessDeniedPath` avec `?ReturnUrl=...` ; mais `Connexion.cshtml.cs.OnGet` renvoie
+        immédiatement tout utilisateur déjà authentifié vers ce même `ReturnUrl` → boucle
+        infinie entre les deux pages. Corrigé en créant une page dédiée
+        `Pages/Compte/AccesRefuse.cshtml` (`/compte/acces-refuse`, message "Accès refusé" +
+        lien retour tableau de bord, sans redirection) et en pointant `AccessDeniedPath` vers
+        celle-ci au lieu de `LoginPath`. En passant, corrigé aussi `Components/Routes.razor` :
+        le `<NotAuthorized>` de `AuthorizeRouteView` utilisait un `<AuthorizeView>` imbriqué
+        pour distinguer authentifié/anonyme, mais celui-ci pouvait mal classer un utilisateur
+        authentifié comme anonyme (root cause exacte non confirmée avec certitude — plausible :
+        double enregistrement de l'état d'authentification en cascade entre l'ancien
+        `<CascadingAuthenticationState>` de `App.razor` et le `services.
+        AddCascadingAuthenticationState()` déjà enregistré dans `Program.cs`, retiré du wrapper
+        de `App.razor` par précaution) ; utilise maintenant directement l'`AuthenticationState`
+        déjà résolu passé en paramètre `Context` du `NotAuthorized`, plus fiable qu'une
+        réévaluation via un `AuthorizeView` imbriqué.
+      12 nouveaux tests service (`CompanyServiceTests` : CRUD, régression de tracking, métadonnées
+      FK Restrict). Vérifié de bout en bout dans le navigateur : promotion temporaire d'un
+      utilisateur en SuperAdmin (via SQL direct, restauré après coup) pour tester CRUD complet
+      (créer/modifier/supprimer une entreprise) ; reproduction de la boucle infinie AVANT le fix
+      (sur `/admin/entreprises` ET sur `/admin/utilisateurs` pour prouver que ce n'était pas
+      spécifique à cette page) ; re-test après le fix confirmant l'affichage correct de la page
+      "Accès refusé" sans boucle, pour un Admin normal visitant la page SuperAdmin. Suite
+      complète : 284/284 tests verts, build 0 erreur.
 
 ### Améliorations UX
 
@@ -219,14 +296,45 @@ Fonctionnalités restantes à implémenter, classées par priorité.
 - [ ] Notifications toast auto-disparaissant après quelques secondes
 - [ ] Breadcrumb de navigation
 
-### Données de référence — Pages de gestion
+### Données de référence — Pages de gestion ✅
 
-- [ ] Pages CRUD pour `TvaProduit` (taux de TVA)
-- [ ] Pages CRUD pour `CategorieProduit`
-- [ ] Pages CRUD pour `UniteProduit`
-- [ ] Pages CRUD pour `ModePayement`
-- [ ] Pages CRUD pour `Devise` (avec gestion des taux de change)
-- [ ] Pages CRUD pour `FabriquantProduit`
+- [x] Pages CRUD pour `TvaProduit` (taux de TVA)
+- [x] Pages CRUD pour `CategorieProduit`
+- [x] Pages CRUD pour `UniteProduit`
+- [x] Pages CRUD pour `ModePayement`
+- [x] Pages CRUD pour `Devise` (avec gestion des taux de change)
+- [x] Pages CRUD pour `FabriquantProduit`
+      — un seul service générique `IReferenceDataService<T>`/`ReferenceDataService<T>`
+      (`Web_T4C_GestCom.Core/Services/ReferenceDataService.cs`, enregistré en DI comme generic
+      ouvert) remplace 6 services quasi identiques : les 6 entités sont de simples tables de lookup
+      sans navigation properties ni logique métier. 6 pages Razor (`Components/Pages/Parametres/`),
+      routes `/parametres/{tva,categories,unites,modes-payement,devises,fabricants}`, `[Authorize
+      (Roles = "Admin,SuperAdmin")]` (même convention que `/admin/journal`, pas de nouvelle
+      permission fine seedée) : liste + modal Add/Edit + `ConfirmDialog` de suppression, erreurs FK
+      traduites via `DeleteErrorMessageHelper`. Liens ajoutés dans la section PARAMÈTRES du menu.
+      - Bug trouvé et corrigé en le faisant : Blazor Server garde un `AppDbContext` scopé vivant
+        pour tout le circuit (pas juste une requête) — une entité `Add`ée plus tôt dans la session
+        restait trackée, et un `Update`/`Delete` suivant sur la même ligne (via une instance
+        `AsNoTracking()` fraîchement chargée, ce que fait chaque page) levait `InvalidOperationException:
+        The instance of entity type 'X' cannot be tracked because another instance with the same
+        key value ... is already being tracked`. Reproduit dans le navigateur (créer un taux de TVA
+        puis le supprimer dans la foulée). Corrigé en détachant, avant tout `Update`/`Delete`,
+        toute entrée déjà trackée portant la même clé primaire (comparaison générique via les
+        métadonnées EF, `ReferenceDataService.DetachStaleTrackedEntry`). 2 tests de régression qui
+        reproduisent exactement le scénario Add-puis-Update/Delete sur le même contexte.
+      - Second bug trouvé et corrigé en le faisant : `DeleteErrorMessageHelper` ne reconnaissait que
+        le message d'erreur SQL Server en anglais ("REFERENCE constraint", "FOREIGN KEY", "DELETE
+        statement conflicted"), pas la version française ("contrainte REFERENCE", "instruction
+        DELETE est en conflit") — sur une base SQL Server en locale française, toute violation de
+        contrainte FK (pas seulement sur ces nouvelles pages) affichait le message technique brut
+        au lieu du message convivial. Corrigé en ajoutant les deux tournures françaises à la
+        détection. 3 nouveaux tests (`DeleteErrorMessageHelperTests`, absent jusqu'ici).
+      7 nouveaux tests service (`ReferenceDataServiceTests`, CRUD + les 2 régressions de tracking +
+      un test de métadonnées EF confirmant que `TvaProduit`→`Produit` reste en `Restrict`) + 3 tests
+      (`DeleteErrorMessageHelperTests`). Vérifié de bout en bout dans le navigateur : création,
+      modification, suppression, suppression bloquée par FK avec message convivial (en français),
+      page Devises (3 champs) testée séparément pour confirmer que le patron générique s'adapte aux
+      entités à plusieurs colonnes. Suite complète : 277/277 tests verts, build 0 erreur.
 
 ---
 

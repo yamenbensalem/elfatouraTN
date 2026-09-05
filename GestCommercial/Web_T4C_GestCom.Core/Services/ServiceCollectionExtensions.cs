@@ -44,6 +44,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBonReceptionService, BonReceptionService>();
         services.AddScoped<IFactureFournisseurService, FactureFournisseurService>();
 
+        services.AddScoped(typeof(IReferenceDataService<>), typeof(ReferenceDataService<>));
+        services.AddScoped<ICompanyService, CompanyService>();
+
         return services;
     }
 }
