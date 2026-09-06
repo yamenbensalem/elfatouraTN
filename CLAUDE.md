@@ -15,7 +15,7 @@ it is more specific and takes precedence over the generic notes below.
 
 | Path | Stack | Status | Own CLAUDE.md? |
 |---|---|---|---|
-| `GestCommercial/Web_T4C_GestCom/` | Blazor Server, .NET 8, EF Core, SQL Server | **Active** — deployed to `http://gestioncom.tijaraflow.fr/` | ✅ [Web_T4C_GestCom/CLAUDE.md](GestCommercial/Web_T4C_GestCom/CLAUDE.md) |
+| `GestCommercial/Web_GestCom/` | Blazor Server, .NET 8, EF Core, SQL Server | **Active** — deployed to `http://gestioncom.tijaraflow.fr/` | ✅ [Web_GestCom/CLAUDE.md](GestCommercial/Web_GestCom/CLAUDE.md) |
 | `gestCom/` | ASP.NET Core Web API, .NET, Clean Architecture (Domain/Application/Infrastructure/WebAPI/Shared), MediatR/CQRS, Angular frontend | In-progress rewrite of the legacy WinForms app | ❌ (see `LEGACY_T4C_REWORK_PLAYBOOK.md`, `ARCHITECTURE_DIAGRAM.md` in that folder) |
 | `ClaudePrjt/TunisianEInvoice/` | ASP.NET Core 9 Web API, Clean Architecture, EF Core + SQL Server, QuestPDF, QRCoder, TTN SOAP client | Tunisian e-invoice (El Fatoora / TTN) backend | ❌ (see root [README.md](README.md), [Schema.md](Schema.md)) |
 | `ClaudePrjt/einvoice-frontend/` | Angular 20 | Frontend for `TunisianEInvoice` above | ❌ |
@@ -25,17 +25,17 @@ it is more specific and takes precedence over the generic notes below.
 Blazor, C# style, security, testing) are generic boilerplate templates — the top-level
 `GestCommercial/CLAUDE.md` in particular describes a WinForms project (`T4C_Commercial_Project`)
 that does not exist in this repo; **ignore it** and use
-[GestCommercial/Web_T4C_GestCom/CLAUDE.md](GestCommercial/Web_T4C_GestCom/CLAUDE.md) instead,
+[GestCommercial/Web_GestCom/CLAUDE.md](GestCommercial/Web_GestCom/CLAUDE.md) instead,
 which accurately documents the actual Blazor app in that folder.
 
 The legacy WinForms original (raw ODBC/Access, no ORM, French UI) is not present in this repo,
-but both `GestCommercial/Web_T4C_GestCom/` and `gestCom/` are rewrites of it — they model the
+but both `GestCommercial/Web_GestCom/` and `gestCom/` are rewrites of it — they model the
 same commercial-management domain (clients, produits, factures, bons de livraison/réception,
 devis, commandes) with different architectures. Don't assume changes in one apply to the other.
 
 ## Domain language (French)
 
-All three commercial-management projects (`Web_T4C_GestCom`, `gestCom`) use French domain
+All three commercial-management projects (`Web_GestCom`, `gestCom`) use French domain
 terms throughout entities, UI, and DB:
 
 | French | English |
@@ -56,18 +56,18 @@ terms throughout entities, UI, and DB:
 
 ## Build & run per sub-project
 
-### GestCommercial/Web_T4C_GestCom (active Blazor app)
+### GestCommercial/Web_GestCom (active Blazor app)
 ```bash
-cd GestCommercial/Web_T4C_GestCom
-dotnet restore Web_T4C_GestCom.sln
-dotnet run --project Web_T4C_GestCom
-dotnet test ../Web_T4C_GestCom.Tests
+cd GestCommercial/Web_GestCom
+dotnet restore Web_GestCom.sln
+dotnet run --project Web_GestCom
+dotnet test ../Web_GestCom.Tests
 ```
 Default login: `admin` / `admin123` at `/compte/connexion`. Full architecture details, document
 numbering conventions, stock/payment logic, and testing conventions are in its own
-[CLAUDE.md](GestCommercial/Web_T4C_GestCom/CLAUDE.md) — read that before making changes here.
+[CLAUDE.md](GestCommercial/Web_GestCom/CLAUDE.md) — read that before making changes here.
 
-Docker/VPS deployment for this app lives in `GestCommercial/Web_T4C_GestCom/deploy/prod/` (see
+Docker/VPS deployment for this app lives in `GestCommercial/Web_GestCom/deploy/prod/` (see
 `DEPLOY.md` there) and follows the shared OVH VPS Docker conventions in the user's global
 instructions (nginx-proxy + acme-companion already running on the VPS; never redefine them,
 always declare networks as `external: true` except in `docker-compose.infra.yml`).
@@ -113,5 +113,5 @@ OVH VPS (`vps-bf0b3440.vps.ovh.net`), follow the global rules already codified i
 owning ports 80/443 — never recreate them; app-level compose files declare their network as
 `external: true`; only `docker-compose.infra.yml` defines the network itself; use
 `$http_upgrade` (never `$connection_upgrade`) in vhost WebSocket config; inject vhost files via
-`docker cp` + `docker kill --signal=HUP nginx-proxy`. `GestCommercial/Web_T4C_GestCom/deploy/prod/`
+`docker cp` + `docker kill --signal=HUP nginx-proxy`. `GestCommercial/Web_GestCom/deploy/prod/`
 is the reference implementation of these conventions in this repo.

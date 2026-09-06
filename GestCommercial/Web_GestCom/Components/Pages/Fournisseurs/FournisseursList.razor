@@ -1,0 +1,135 @@
+@page "/fournisseurs"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:fournisseurs.view")]
+@inject IFournisseurService FournisseurService
+
+<PageTitle>Fournisseurs – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Fournisseurs</h3>
+    <PermissionGuard Permission="fournisseurs.create">
+        <a href="fournisseurs/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau Fournisseur
+        </a>
+    </PermissionGuard>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <div class="input-group" style="max-width:400px">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input class="form-control" placeholder="Rechercher..." @bind="_search" @bind:after="LoadAsync" />
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Nom</th>
+                        <th>Matricule Fiscale</th>
+                        <th>Téléphone</th>
+                        <th>Ville</th>
+                        <th>État</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in _fournisseurs)
+                    {
+                        <tr>
+                            <td><code>@f.CodeFournisseur</code></td>
+                            <td>@f.NomFournisseur</td>
+                            <td>@f.MatriculeFiscale</td>
+                            <td>@f.Tel</td>
+                            <td>@f.Ville</td>
+                            <td>
+                                <span class="badge @(f.EtatFournisseur == "Actif" ? "bg-success" : "bg-secondary")">
+                                    @f.EtatFournisseur
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <PermissionGuard Permission="fournisseurs.update">
+                                    <a href="fournisseurs/@f.CodeFournisseur" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
+                                <PermissionGuard Permission="fournisseurs.delete">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(f)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_fournisseurs.Any())
+                    {
+                        <tr><td colspan="7" class="text-center text-muted py-4">Aucun fournisseur trouvé.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_fournisseurs.Count fournisseur(s)</div>
+</div>
+
+<ConfirmDialog Title="Supprimer le fournisseur"
+               Message="@($"Confirmer la suppression de {_toDelete?.NomFournisseur} ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+<ErrorDialog Title="@_errorTitle"
+             Message="@_errorMessage"
+             Visible="_errorVisible"
+             OnClose="CloseErrorDialog" />
+
+@code {
+    private List<Fournisseur> _fournisseurs = [];
+    private bool _loading = true;
+    private string? _search;
+    private bool _confirmVisible;
+    private Fournisseur? _toDelete;
+    private Notification _notif = default!;
+    private bool _errorVisible;
+    private string _errorTitle = "Erreur";
+    private string _errorMessage = "Une erreur est survenue.";
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _fournisseurs = await FournisseurService.GetAllAsync(_search);
+        _loading = false;
+    }
+
+    private void AskDelete(Fournisseur f) { _toDelete = f; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await FournisseurService.DeleteAsync(_toDelete.CodeFournisseur);
+            _notif.ShowSuccess($"Fournisseur {_toDelete.NomFournisseur} supprimé.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorTitle = "Suppression impossible";
+            _errorMessage = DeleteErrorMessageHelper.Build(ex,
+                "Ce fournisseur ne peut pas etre supprime car il est lie a des factures, commandes ou bons de reception. Supprimez d'abord les documents lies, puis reessayez.");
+            _errorVisible = true;
+        }
+    }
+
+    private void CloseErrorDialog() => _errorVisible = false;
+}

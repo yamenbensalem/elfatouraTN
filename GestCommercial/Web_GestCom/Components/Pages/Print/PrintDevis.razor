@@ -1,0 +1,141 @@
+@page "/print/devis/{Numero}"
+@layout PrintLayout
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:devis.view")]
+@inject AppDbContext Db
+@inject IJSRuntime JS
+
+<PageTitle>Devis @Numero – Impression</PageTitle>
+
+@if (_loading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height:50vh">
+        <div class="spinner-border text-primary me-3"></div>
+        <span>Chargement du document…</span>
+    </div>
+}
+else if (_devis is null)
+{
+    <div class="alert alert-danger m-4">Document introuvable : @Numero</div>
+}
+else
+{
+    <div class="print-toolbar">
+        <button class="btn btn-primary btn-sm" @onclick="@(() => JS.InvokeVoidAsync("window.print"))">
+            <i class="bi bi-printer me-1"></i>Imprimer / PDF
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.close()">
+            <i class="bi bi-x me-1"></i>Fermer
+        </button>
+        <span class="ms-auto text-muted small">DEVIS · @_devis.NumeroDevis</span>
+    </div>
+
+    <div class="print-wrapper">
+        <div class="print-document">
+
+            <PrintDocHeader Entreprise="_entreprise"
+                            DocType="DEVIS"
+                            Numero="@_devis.NumeroDevis"
+                            Date="_devis.DateDevis"
+                            Etat="@_devis.EtatDevis" />
+
+            <div class="print-parties">
+                <div>
+                    <div class="print-party-label">Adressé à</div>
+                    <div class="print-party-name">@_devis.Client?.NomClient</div>
+                    @foreach (var line in PartyDetailsHelper.ForClient(_devis.Client))
+                    { <div>@line</div> }
+                </div>
+                <div class="text-end">
+                    <div class="print-party-label">Validité</div>
+                    <div class="small text-muted">Devis valable 30 jours</div>
+                </div>
+            </div>
+
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width:40%">Désignation</th>
+                        <th class="text-center" style="width:8%">Qté</th>
+                        <th class="text-end" style="width:13%">Prix HT</th>
+                        <th class="text-center" style="width:8%">Rem%</th>
+                        <th class="text-center" style="width:8%">TVA%</th>
+                        <th class="text-end" style="width:11%">Montant HT</th>
+                        <th class="text-end" style="width:12%">Montant TTC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in _devis.Lignes)
+                    {
+                        var ttc = Math.Round(l.MontantHT * (1 + l.Tva / 100), 3);
+                        <tr>
+                            <td>@(l.Produit?.DesignationProduit ?? l.CodeProduit)</td>
+                            <td class="text-center">@l.Quantite.ToString("0.###")</td>
+                            <td class="text-end">@l.PrixUnitaire.ToString("0.###")</td>
+                            <td class="text-center">@(l.Remise > 0 ? l.Remise.ToString("0.##") + "%" : "—")</td>
+                            <td class="text-center">@l.Tva.ToString("0.##")%</td>
+                            <td class="text-end">@l.MontantHT.ToString("0.###")</td>
+                            <td class="text-end">@ttc.ToString("0.###")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="print-totals-wrap">
+                <table class="print-totals-table">
+                    <tr><td>Total HT</td><td class="text-end">@_devis.MontantHT.ToString("0.###")</td></tr>
+                    @if (_devis.Remise > 0)
+                    {
+                        <tr>
+                            <td>Remise (@_devis.Remise%)</td>
+                            <td class="text-end text-danger">-@((_devis.MontantHT * _devis.Remise / 100).ToString("0.###"))</td>
+                        </tr>
+                    }
+                    <tr><td>TVA</td><td class="text-end">@_devis.MontantTVA.ToString("0.###")</td></tr>
+                    @if (_devis.Timbre > 0)
+                    {
+                        <tr><td>Timbre Fiscal</td><td class="text-end">@_devis.Timbre.ToString("0.###")</td></tr>
+                    }
+                    <tr class="print-totals-net">
+                        <td>Total TTC</td>
+                        <td class="text-end">@_devis.MontantTTC.ToString("0.###") TND</td>
+                    </tr>
+                </table>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_devis.Note))
+            {
+                <div class="print-note"><strong>Note :</strong> @_devis.Note</div>
+            }
+
+            <div class="print-footer">
+                @if (_entreprise is not null)
+                {
+                    <span>@_entreprise.NomEntreprise</span>
+                    @if (!string.IsNullOrWhiteSpace(_entreprise.Rib)) { <span> · RIB : @_entreprise.Rib</span> }
+                    <br />
+                }
+                <small>Imprimé le @DateTime.Now.ToString("dd/MM/yyyy à HH:mm", new System.Globalization.CultureInfo("fr-FR"))</small>
+                <br />
+                <small>Développé par AIVOR Consulting – aivorconsulting.com</small>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Numero { get; set; } = string.Empty;
+    private DevisClient? _devis;
+    private Entreprise? _entreprise;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _devis = await Db.DevisClient
+            .Include(d => d.Client)
+            .Include(d => d.Lignes).ThenInclude(l => l.Produit)
+            .FirstOrDefaultAsync(d => d.NumeroDevis == Numero);
+        _entreprise = await Db.Entreprises.FirstOrDefaultAsync();
+        _loading = false;
+    }
+}

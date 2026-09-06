@@ -1,4 +1,4 @@
-# Plan : Système de Connexion & Traçabilité pour T4C GestCom
+# Plan : Système de Connexion & Traçabilité pour GestCom
 
 ## Ce qui existe déjà (ne pas recréer)
 

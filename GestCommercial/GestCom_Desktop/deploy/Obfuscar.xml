@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<!--
+  Obfuscar config for the client-deployed desktop build. Run via publish-and-obfuscate.ps1 against
+  a Release publish output — never against the dev build.
+
+  SCOPE, deliberately narrow after hands-on testing found two ways a wider scope breaks the app:
+
+  1. Web_GestCom.Core.dll (entities + services) is NOT obfuscated at all.
+     - AppDbContext.OnModelCreating configures composite keys via anonymous types
+       (HasKey(ur => new { ur.UserId, ur.RoleId })) — EF Core validates those through reflection
+       on the anonymous type's generated properties, and renaming them throws at first query
+       ("is not a property accessor"). Fixing that requires either an exclusion Obfuscar can't
+       express at that granularity, or rewriting AppDbContext.cs to avoid anonymous types — which
+       would also touch Web_GestCom's own copy to keep them in sync, out of scope here.
+     - EF Core's DbSet<T> properties (db.Clients, db.Produits, ...) get pruned as "unused public
+       API" by Obfuscar's own dead-code analysis (it can't see EF Core's reflection-based
+       discovery), unless KeepPublicApi=true — which then leaves most of the interesting surface
+       (service method names, entity property names) unobfuscated anyway, at which point
+       obfuscating this assembly buys little.
+     Net effect: the business logic (stock deltas, permission checks, numbering, pricing formulas)
+     living in Core stays readable in a decompiler. Revisit only with dedicated time for exclusion
+     rules plus a full interactive regression pass across all 14 screens.
+
+  2. GestCom_Desktop.dll (this app's own code) IS obfuscated, with KeepPublicApi=true.
+     WinForms' DisplayMember/ValueMember binding resolves property names by reflection at runtime
+     (TypeDescriptor), which Obfuscar's static call-graph analysis can't see either — the same
+     pruning risk as #1, but confined here to one small type: ProduitOption (Forms/Shared), used
+     as a lightweight ComboBox DataSource in two forms. KeepPublicApi=true keeps every public
+     class/member (including ProduitOption's properties) stable, while HidePrivateApi=true still
+     renames all private fields and private methods — which is where the actual method names
+     (SaveAsync, LoadAsync, RecalculerTotaux, event handlers, etc.) live. Verified against the real
+     database after this config change: the app launches, and Mapping.txt confirms ProduitOption's
+     properties are preserved while FactureClientEditForm's private methods are renamed to single
+     letters.
+
+  MANDATORY before shipping to a client: manually run the obfuscated build once — log in, open at
+  least the Produit combo inside a Facture/Devis line (the one binding this config had to protect
+  explicitly), save a document, and confirm nothing regressed. This config was validated with a
+  scripted smoke test (app launches, DI resolves, EF Core query against the real DB succeeds) but
+  not a full interactive pass of all 14 screens.
+-->
+<Obfuscator>
+  <Var name="InPath" value="$(InPath)" />
+  <Var name="OutPath" value="$(OutPath)" />
+  <Var name="AssemblySearchPath" value="$(InPath)" />
+
+  <Var name="KeepPublicApi" value="true" />
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="RenameFields" value="true" />
+  <Var name="RenameProperties" value="true" />
+  <Var name="RenameEvents" value="true" />
+  <Var name="HideStrings" value="true" />
+  <Var name="OptimizeMethods" value="true" />
+  <Var name="SuppressIldasm" value="true" />
+  <Var name="UseUnicodeNames" value="false" />
+
+  <Module file="$(InPath)\GestCom_Desktop.dll">
+    <SkipType name="GestCom_Desktop.Forms.Shared.ProduitOption" />
+  </Module>
+</Obfuscator>

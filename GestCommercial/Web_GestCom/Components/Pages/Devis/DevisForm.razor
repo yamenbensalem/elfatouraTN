@@ -1,0 +1,310 @@
+@page "/devis/nouveau"
+@page "/devis/{Numero}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:devis.view")]
+@inject IDevisClientService DevisService
+@inject AppDbContext Db
+@inject AppConfigService Config
+@inject NavigationManager Nav
+
+<PageTitle>@(_isNew ? "Nouveau Devis" : $"Devis {Numero}") – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>@(_isNew ? "Nouveau Devis" : $"Devis : {_devis.NumeroDevis}")</h3>
+    <div class="d-flex gap-2">
+        @if (!_isNew)
+        {
+            <a href="/print/devis/@Numero" target="_blank" class="btn btn-outline-success">
+                <i class="bi bi-printer me-1"></i>Imprimer
+            </a>
+            <button type="button" class="btn btn-outline-info" @onclick="CloneAsync">
+                <i class="bi bi-copy"></i> Cloner
+            </button>
+        }
+        <a href="devis" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    </div>
+</div>
+
+<Notification @ref="_notif" />
+<LoadingSpinner Loading="@_loading" />
+
+@if (!_loading)
+{
+    <EditForm Model="_devis" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">Informations Devis</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    @if (!_isNew)
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label">N° Devis</label>
+                            <input class="form-control" value="@_devis.NumeroDevis" readonly />
+                        </div>
+                    }
+                    <div class="col-md-3">
+                        <label class="form-label">Date <span class="text-danger">*</span></label>
+                        <InputDate class="form-control" @bind-Value="_devis.DateDevis" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Client <span class="text-danger">*</span></label>
+                        <InputSelect class="form-select" @bind-Value="_devis.CodeClient">
+                            <option value="">-- Sélectionner --</option>
+                            @foreach (var c in _clients)
+                            {
+                                <option value="@c.CodeClient">@c.NomClient</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => _devis.CodeClient" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Remise (%)</label>
+                        <InputNumber class="form-control" @bind-Value="_devis.Remise"
+                                     @bind-Value:after="RecalculerTotaux" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">État</label>
+                        <InputSelect class="form-select" @bind-Value="_devis.EtatDevis">
+                            <option value="Ouvert">Ouvert</option>
+                            <option value="Confirmé">Confirmé</option>
+                            <option value="Annulé">Annulé</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Note</label>
+                        <InputTextArea class="form-control" @bind-Value="_devis.Note" rows="2" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+                <span>Lignes Devis</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddLigne">
+                    <i class="bi bi-plus"></i> Ajouter une ligne
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="min-width:220px">Produit</th>
+                                <th style="width:100px">Quantité</th>
+                                <th style="width:120px">Prix HT</th>
+                                <th style="width:90px">Remise%</th>
+                                <th style="width:80px">TVA%</th>
+                                <th style="width:120px" class="text-end">Montant HT</th>
+                                <th style="width:50px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < _lignes.Count; i++)
+                            {
+                                var idx = i;
+                                <tr>
+                                    <td>
+                                        <select class="form-select form-select-sm"
+                                                @onchange="e => OnProduitChanged(idx, e.Value?.ToString() ?? string.Empty)">
+                                            <option value="">-- Produit --</option>
+                                            @foreach (var p in _produits)
+                                            {
+                                                <option value="@p.CodeProduit"
+                                                        selected="@(_lignes[idx].CodeProduit == p.CodeProduit)">
+                                                    @p.DesignationProduit
+                                                </option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm" min="0"
+                                                     @bind-Value="_lignes[idx].Quantite"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm" min="0"
+                                                     @bind-Value="_lignes[idx].PrixUnitaire"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm"
+                                                     @bind-Value="_lignes[idx].Remise"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td>
+                                        <InputNumber class="form-control form-control-sm"
+                                                     @bind-Value="_lignes[idx].Tva"
+                                                     @bind-Value:after="() => RecalculerLigne(idx)" />
+                                    </td>
+                                    <td class="text-end align-middle fw-semibold">
+                                        @_lignes[idx].MontantHT.ToString("0.###")
+                                    </td>
+                                    <td class="align-middle">
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => RemoveLigne(idx)">
+                                            <i class="bi bi-trash me-1"></i>Retirer
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                            @if (!_lignes.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-3">
+                                        Aucune ligne. Cliquez sur "Ajouter une ligne".
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row justify-content-end">
+                    <div class="col-md-4">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="text-muted">Total HT</td>
+                                <td class="text-end fw-semibold">@_totalHT.ToString("0.###")</td>
+                            </tr>
+                            @if (_devis.Remise > 0)
+                            {
+                                <tr>
+                                    <td class="text-muted">Remise (@_devis.Remise%)</td>
+                                    <td class="text-end text-danger">-@((_totalHT * _devis.Remise / 100).ToString("0.###"))</td>
+                                </tr>
+                            }
+                            <tr>
+                                <td class="text-muted">TVA</td>
+                                <td class="text-end">@_totalTVA.ToString("0.###")</td>
+                            </tr>
+                            <tr class="table-active fw-bold">
+                                <td>Total TTC</td>
+                                <td class="text-end">@_totalTTC.ToString("0.###")</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Enregistrer
+            </button>
+            <a href="devis" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public string? Numero { get; set; }
+
+    private DevisClient _devis = new();
+    private List<LigneDevisClient> _lignes = [];
+    private List<Client> _clients = [];
+    private List<Produit> _produits = [];
+    private bool _loading = true;
+    private bool _isNew => string.IsNullOrEmpty(Numero);
+    private Notification _notif = default!;
+
+    private double _totalHT;
+    private double _totalTVA;
+    private double _totalTTC;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clients = await Db.Clients.OrderBy(c => c.NomClient).ToListAsync();
+        _produits = await Db.Produits.Include(p => p.TvaProduit)
+                             .OrderBy(p => p.DesignationProduit).ToListAsync();
+
+        if (!_isNew)
+        {
+            var existing = await DevisService.GetByNumeroAsync(Numero!);
+            if (existing is not null)
+            {
+                _devis = existing;
+                _lignes = existing.Lignes.ToList();
+            }
+        }
+
+        RecalculerTotaux();
+        _loading = false;
+    }
+
+    private void AddLigne() => _lignes.Add(new LigneDevisClient());
+
+    private void RemoveLigne(int idx)
+    {
+        _lignes.RemoveAt(idx);
+        RecalculerTotaux();
+    }
+
+    private void OnProduitChanged(int idx, string codeProduit)
+    {
+        _lignes[idx].CodeProduit = codeProduit;
+        var produit = _produits.FirstOrDefault(p => p.CodeProduit == codeProduit);
+        if (produit is not null)
+        {
+            _lignes[idx].PrixUnitaire = produit.PrixVenteHT;
+            _lignes[idx].Tva = produit.TvaProduit?.TauxTvaProduit ?? 19;
+            _lignes[idx].Remise = 0;
+        }
+        RecalculerLigne(idx);
+    }
+
+    private void RecalculerLigne(int idx)
+    {
+        var l = _lignes[idx];
+        l.MontantHT = LineCalculator.LineMontantHT(l.Quantite, l.PrixUnitaire, l.Remise);
+        RecalculerTotaux();
+    }
+
+    private void RecalculerTotaux()
+    {
+        var totals = LineCalculator.CalculateDocumentTotals(
+            _lignes.Select(l => new LineCalculator.LineAmounts(l.MontantHT, l.Tva, Fodec: 0)),
+            _devis.Remise);
+        _totalHT = totals.TotalHT;
+        _totalTVA = totals.TotalTva;
+        _totalTTC = totals.TotalTTC;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_isNew)
+                await DevisService.CreateAsync(_devis, _lignes, Config);
+            else
+                await DevisService.UpdateAsync(_devis, _lignes);
+
+            Nav.NavigateTo("devis");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
+    }
+
+    private async Task CloneAsync()
+    {
+        try
+        {
+            var clone = await DevisService.CloneAsync(Numero!);
+            Nav.NavigateTo($"devis/{clone.NumeroDevis}");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur lors du clonage : {ex.Message}");
+        }
+    }
+}

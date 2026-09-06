@@ -1,0 +1,138 @@
+@page "/clients"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:clients.view")]
+@inject IClientService ClientService
+@inject NavigationManager Nav
+
+<PageTitle>Clients – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Clients</h3>
+    <PermissionGuard Permission="clients.create">
+        <a href="clients/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau Client
+        </a>
+    </PermissionGuard>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <div class="input-group" style="max-width:400px">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input class="form-control" placeholder="Rechercher nom, code, téléphone..." @bind="_search" @bind:after="LoadAsync" />
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Nom</th>
+                        <th>Matricule Fiscale</th>
+                        <th>Téléphone</th>
+                        <th>Ville</th>
+                        <th>Devise</th>
+                        <th>État</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in _clients)
+                    {
+                        <tr>
+                            <td><code>@c.CodeClient</code></td>
+                            <td>@c.NomClient</td>
+                            <td>@c.MatriculeFiscale</td>
+                            <td>@c.Tel</td>
+                            <td>@c.Ville</td>
+                            <td>@c.Devise?.SymboleDevise</td>
+                            <td>
+                                <span class="badge @(c.EtatClient == "Actif" ? "bg-success" : "bg-secondary")">
+                                    @c.EtatClient
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <PermissionGuard Permission="clients.update">
+                                    <a href="clients/@c.CodeClient" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
+                                <PermissionGuard Permission="clients.delete">
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(c)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_clients.Any())
+                    {
+                        <tr><td colspan="8" class="text-center text-muted py-4">Aucun client trouvé.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_clients.Count client(s)</div>
+</div>
+
+<ConfirmDialog Title="Supprimer le client"
+               Message="@($"Confirmer la suppression de {_toDelete?.NomClient} ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+<ErrorDialog Title="@_errorTitle"
+             Message="@_errorMessage"
+             Visible="_errorVisible"
+             OnClose="CloseErrorDialog" />
+
+@code {
+    private List<Client> _clients = [];
+    private bool _loading = true;
+    private string? _search;
+    private bool _confirmVisible;
+    private Client? _toDelete;
+    private Notification _notif = default!;
+    private bool _errorVisible;
+    private string _errorTitle = "Erreur";
+    private string _errorMessage = "Une erreur est survenue.";
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _clients = await ClientService.GetAllAsync(_search);
+        _loading = false;
+    }
+
+    private void AskDelete(Client c) { _toDelete = c; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await ClientService.DeleteAsync(_toDelete.CodeClient);
+            _notif.ShowSuccess($"Client {_toDelete.NomClient} supprimé.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorTitle = "Suppression impossible";
+            _errorMessage = DeleteErrorMessageHelper.Build(ex,
+                "Ce client ne peut pas etre supprime car il est lie a des factures ou d'autres documents. Supprimez d'abord les documents lies, puis reessayez.");
+            _errorVisible = true;
+        }
+    }
+
+    private void CloseErrorDialog() => _errorVisible = false;
+}

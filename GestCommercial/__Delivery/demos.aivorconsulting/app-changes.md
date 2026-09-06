@@ -5,7 +5,7 @@ Ces changements permettent à Blazor Server de fonctionner sous un sous-chemin
 
 ---
 
-## 1. `Web_T4C_GestCom/Program.cs`
+## 1. `Web_GestCom/Program.cs`
 
 Ajouter **juste après** `var app = builder.Build();` et **avant** le bloc
 `if (!app.Environment.IsDevelopment())` (ligne ~728) :
@@ -63,7 +63,7 @@ app.Run();
 
 ---
 
-## 2. `Web_T4C_GestCom/Components/App.razor`
+## 2. `Web_GestCom/Components/App.razor`
 
 Remplacer la balise `<base>` statique par une valeur dynamique :
 

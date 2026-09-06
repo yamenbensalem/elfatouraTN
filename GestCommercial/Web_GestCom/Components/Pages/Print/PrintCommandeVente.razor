@@ -1,0 +1,140 @@
+@page "/print/commande-vente/{Numero}"
+@layout PrintLayout
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:commandes-vente.view")]
+@inject AppDbContext Db
+@inject IJSRuntime JS
+
+<PageTitle>Commande Vente @Numero – Impression</PageTitle>
+
+@if (_loading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height:50vh">
+        <div class="spinner-border text-primary me-3"></div>
+        <span>Chargement du document…</span>
+    </div>
+}
+else if (_commande is null)
+{
+    <div class="alert alert-danger m-4">Document introuvable : @Numero</div>
+}
+else
+{
+    <div class="print-toolbar">
+        <button class="btn btn-primary btn-sm" @onclick="@(() => JS.InvokeVoidAsync("window.print"))">
+            <i class="bi bi-printer me-1"></i>Imprimer / PDF
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.close()">
+            <i class="bi bi-x me-1"></i>Fermer
+        </button>
+        <span class="ms-auto text-muted small">COMMANDE VENTE · @_commande.NumeroCommandeVente</span>
+    </div>
+
+    <div class="print-wrapper">
+        <div class="print-document">
+
+            <PrintDocHeader Entreprise="_entreprise"
+                            DocType="BON DE COMMANDE"
+                            Numero="@_commande.NumeroCommandeVente"
+                            Date="_commande.DateCommandeVente"
+                            Etat="@_commande.EtatCommandeVente" />
+
+            <div class="print-parties">
+                <div>
+                    <div class="print-party-label">Client</div>
+                    <div class="print-party-name">@_commande.Client?.NomClient</div>
+                    @foreach (var line in PartyDetailsHelper.ForClient(_commande.Client))
+                    { <div>@line</div> }
+                </div>
+                <div class="text-end">
+                    <div class="print-party-label">État livraison</div>
+                    <div class="print-party-name">@_commande.EtatLivraison</div>
+                </div>
+            </div>
+
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width:40%">Désignation</th>
+                        <th class="text-center" style="width:8%">Qté</th>
+                        <th class="text-end" style="width:13%">Prix HT</th>
+                        <th class="text-center" style="width:8%">Rem%</th>
+                        <th class="text-center" style="width:8%">TVA%</th>
+                        <th class="text-end" style="width:11%">Montant HT</th>
+                        <th class="text-end" style="width:12%">Montant TTC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in _commande.Lignes)
+                    {
+                        var ttc = Math.Round(l.MontantHT * (1 + l.Tva / 100), 3);
+                        <tr>
+                            <td>@(l.Produit?.DesignationProduit ?? l.CodeProduit)</td>
+                            <td class="text-center">@l.Quantite.ToString("0.###")</td>
+                            <td class="text-end">@l.PrixUnitaire.ToString("0.###")</td>
+                            <td class="text-center">@(l.Remise > 0 ? l.Remise.ToString("0.##") + "%" : "—")</td>
+                            <td class="text-center">@l.Tva.ToString("0.##")%</td>
+                            <td class="text-end">@l.MontantHT.ToString("0.###")</td>
+                            <td class="text-end">@ttc.ToString("0.###")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="print-totals-wrap">
+                <table class="print-totals-table">
+                    <tr><td>Total HT</td><td class="text-end">@_commande.MontantHT.ToString("0.###")</td></tr>
+                    @if (_commande.Remise > 0)
+                    {
+                        <tr>
+                            <td>Remise (@_commande.Remise%)</td>
+                            <td class="text-end text-danger">-@((_commande.MontantHT * _commande.Remise / 100).ToString("0.###"))</td>
+                        </tr>
+                    }
+                    <tr><td>TVA</td><td class="text-end">@_commande.MontantTVA.ToString("0.###")</td></tr>
+                    <tr><td>Total TTC</td><td class="text-end fw-semibold">@_commande.MontantTTC.ToString("0.###")</td></tr>
+                    @if (_commande.Timbre > 0)
+                    {
+                        <tr><td>Timbre Fiscal</td><td class="text-end">@_commande.Timbre.ToString("0.###")</td></tr>
+                    }
+                    <tr class="print-totals-net">
+                        <td>Net à Payer</td>
+                        <td class="text-end">@((_commande.MontantTTC + _commande.Timbre).ToString("0.###")) TND</td>
+                    </tr>
+                </table>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_commande.Note))
+            {
+                <div class="print-note"><strong>Note :</strong> @_commande.Note</div>
+            }
+
+            <div class="print-footer">
+                @if (_entreprise is not null)
+                {
+                    <span>@_entreprise.NomEntreprise</span><br />
+                }
+                <small>Imprimé le @DateTime.Now.ToString("dd/MM/yyyy à HH:mm", new System.Globalization.CultureInfo("fr-FR"))</small>
+                <br />
+                <small>Développé par AIVOR Consulting – aivorconsulting.com</small>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Numero { get; set; } = string.Empty;
+    private CommandeVente? _commande;
+    private Entreprise? _entreprise;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _commande = await Db.CommandesVente
+            .Include(c => c.Client)
+            .Include(c => c.Lignes).ThenInclude(l => l.Produit)
+            .FirstOrDefaultAsync(c => c.NumeroCommandeVente == Numero);
+        _entreprise = await Db.Entreprises.FirstOrDefaultAsync();
+        _loading = false;
+    }
+}

@@ -1,0 +1,140 @@
+@page
+@model Web_GestCom.Pages.Compte.MotDePasseOublieModel
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mot de passe oublié – GestCom</title>
+    <link rel="stylesheet" href="~/bootstrap/bootstrap.min.css" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            min-height: 100vh; margin: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(145deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 1.5rem;
+        }
+        .auth-card {
+            background: #ffffff; border-radius: 1.5rem;
+            padding: 2.5rem 2.25rem 2rem; width: 100%; max-width: 440px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+        }
+        .brand {
+            display: flex; flex-direction: column; align-items: center; margin-bottom: 1.5rem;
+        }
+        .brand-icon {
+            width: 64px; height: 64px; border-radius: 1rem;
+            background: linear-gradient(145deg, #6366f1, #8b5cf6);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 0.75rem; box-shadow: 0 6px 16px rgba(99,102,241,0.4);
+        }
+        .brand-name { font-size: 1.4rem; font-weight: 800; color: #1e1b4b; margin: 0; }
+        .brand-sub  { font-size: 0.8rem; color: #6b7280; margin: 0.1rem 0 0; }
+        .auth-title    { font-size: 1.45rem; font-weight: 800; color: #111827; text-align: center; margin: 0 0 0.3rem; }
+        .auth-subtitle { font-size: 0.875rem; color: #6b7280; text-align: center; margin: 0 0 1.75rem; }
+        .input-icon-wrap { position: relative; margin-bottom: 0.85rem; }
+        .field-icon {
+            position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
+            color: #9ca3af; pointer-events: none; display: flex;
+        }
+        .auth-input {
+            width: 100%; padding: 0.85rem 1rem 0.85rem 2.75rem;
+            border: 1.5px solid #e5e7eb; border-radius: 0.65rem;
+            font-size: 0.95rem; background: #f9fafb; color: #111827;
+            outline: none; transition: border-color .2s, box-shadow .2s;
+        }
+        .auth-input:focus { border-color: #8b5cf6; background: #fff; box-shadow: 0 0 0 3px rgba(139,92,246,0.15); }
+        .auth-input::placeholder { color: #9ca3af; }
+        .field-error { font-size: 0.78rem; color: #ef4444; margin: 0.2rem 0 0 0.25rem; display: block; }
+        .btn-auth {
+            width: 100%; padding: 0.875rem; border: none; border-radius: 0.65rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+            color: white; font-size: 1rem; font-weight: 700; cursor: pointer;
+            transition: opacity .2s, transform .15s;
+            box-shadow: 0 4px 15px rgba(139,92,246,0.4); margin-top: 0.5rem;
+        }
+        .btn-auth:hover { opacity: 0.92; transform: translateY(-1px); }
+        .success-box {
+            background: #f0fdf4; border: 1px solid #86efac; color: #166534;
+            border-radius: 0.75rem; padding: 1.25rem 1.5rem;
+            text-align: center; font-size: 0.9rem; line-height: 1.6;
+        }
+        .success-icon {
+            width: 52px; height: 52px; border-radius: 50%;
+            background: #dcfce7; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        .auth-bottom { text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: #6b7280; }
+        .auth-bottom a { color: #8b5cf6; font-weight: 600; text-decoration: none; }
+        .auth-bottom a:hover { text-decoration: underline; }
+        .auth-footer { margin-top: 1.75rem; font-size: 0.75rem; color: rgba(255,255,255,0.65); text-align: center; }
+        .hint-box {
+            background: #f5f3ff; border: 1px solid #ddd6fe; color: #5b21b6;
+            border-radius: 0.65rem; padding: 0.75rem 1rem; font-size: 0.82rem;
+            margin-top: 1rem; line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-card">
+    <div class="brand">
+        <div class="brand-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="white" viewBox="0 0 16 16">
+                <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>
+            </svg>
+        </div>
+        <p class="brand-name">GestCom</p>
+        <p class="brand-sub">Gestion Commerciale</p>
+    </div>
+
+    @if (Model.EmailSent)
+    {
+        <div class="success-box">
+            <div class="success-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#16a34a" viewBox="0 0 16 16">
+                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                </svg>
+            </div>
+            <strong>Demande envoyée !</strong><br />
+            Si cette adresse email est enregistrée, votre administrateur recevra une notification pour réinitialiser votre mot de passe.<br /><br />
+            Contactez votre administrateur système si vous n'avez pas de réponse sous 24h.
+        </div>
+    }
+    else
+    {
+        <h1 class="auth-title">Mot de passe oublié</h1>
+        <p class="auth-subtitle">Entrez votre email pour réinitialiser votre mot de passe</p>
+
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div class="input-icon-wrap">
+                <span class="field-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414zM0 4.697v7.104l5.803-3.558zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586zm3.436-.586L16 11.801V4.697z"/>
+                    </svg>
+                </span>
+                <input asp-for="Input.Email" class="auth-input" type="email" placeholder="Votre adresse email *" autocomplete="email" autofocus />
+            </div>
+            <span asp-validation-for="Input.Email" class="field-error"></span>
+
+            <div class="hint-box">
+                <strong>Note :</strong> La réinitialisation de mot de passe est effectuée par votre administrateur système. Votre demande lui sera transmise.
+            </div>
+
+            <button type="submit" class="btn-auth">Envoyer la demande</button>
+        </form>
+    }
+
+    <div class="auth-bottom">
+        <a href="/compte/connexion">
+            ← Retour à la connexion
+        </a>
+    </div>
+</div>
+
+<footer class="auth-footer">© 2026 GestCom – Tous droits réservés</footer>
+</body>
+</html>

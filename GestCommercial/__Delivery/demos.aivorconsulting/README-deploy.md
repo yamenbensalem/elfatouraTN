@@ -2,7 +2,7 @@
 
 **URL cible** : `https://aivorconsulting.com/demos/gestionscommercial`
 
-Site de démonstration de T4C GestCom Web hébergé en sous-chemin du site aivorconsulting.com.
+Site de démonstration de GestCom Web hébergé en sous-chemin du site aivorconsulting.com.
 
 ---
 

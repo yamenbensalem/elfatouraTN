@@ -1,0 +1,154 @@
+@page "/parametres/tva"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject IReferenceDataService<TvaProduit> Service
+
+<PageTitle>Taux de TVA – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Taux de TVA</h3>
+    <button class="btn btn-primary" @onclick="AskNew">
+        <i class="bi bi-plus-circle"></i> Nouveau Taux
+    </button>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>Nom</th><th class="text-end">Taux (%)</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in _items)
+                    {
+                        <tr>
+                            <td>@t.NomTvaProduit</td>
+                            <td class="text-end">@t.TauxTvaProduit.ToString("0.###")</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AskEdit(t)">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(t)">
+                                    <i class="bi bi-trash me-1"></i>Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_items.Any())
+                    {
+                        <tr><td colspan="3" class="text-center text-muted py-4">Aucun taux de TVA.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_items.Count taux</div>
+</div>
+
+@if (_editVisible)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,0.5)" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="_editing" OnValidSubmit="SaveAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_isNew ? "Nouveau Taux de TVA" : "Modifier le Taux de TVA")</h5>
+                        <button type="button" class="btn-close" @onclick="() => _editVisible = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nom <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_editing!.NomTvaProduit" />
+                            <ValidationMessage For="() => _editing!.NomTvaProduit" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Taux (%)</label>
+                            <InputNumber class="form-control" @bind-Value="_editing!.TauxTvaProduit" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => _editVisible = false">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog Title="Supprimer le taux de TVA"
+               Message="@($"Confirmer la suppression de « {_toDelete?.NomTvaProduit} » ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<TvaProduit> _items = [];
+    private bool _loading = true;
+    private bool _editVisible;
+    private bool _isNew;
+    private TvaProduit? _editing;
+    private bool _confirmVisible;
+    private TvaProduit? _toDelete;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _items = await Service.GetAllAsync();
+        _loading = false;
+    }
+
+    private void AskNew()
+    {
+        _editing = new TvaProduit { TauxTvaProduit = 19 };
+        _isNew = true;
+        _editVisible = true;
+    }
+
+    private void AskEdit(TvaProduit t)
+    {
+        _editing = new TvaProduit { CodeTvaProduit = t.CodeTvaProduit, NomTvaProduit = t.NomTvaProduit, TauxTvaProduit = t.TauxTvaProduit };
+        _isNew = false;
+        _editVisible = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_isNew) await Service.AddAsync(_editing!);
+            else await Service.UpdateAsync(_editing!);
+            _editVisible = false;
+            _notif.ShowSuccess("Enregistré.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private void AskDelete(TvaProduit t) { _toDelete = t; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await Service.DeleteAsync(_toDelete);
+            _notif.ShowSuccess("Supprimé.");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer : ce taux de TVA est utilisé par au moins un produit."));
+        }
+    }
+}

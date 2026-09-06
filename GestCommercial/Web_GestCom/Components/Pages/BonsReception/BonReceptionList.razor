@@ -1,0 +1,198 @@
+@page "/bons-reception"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:bons-reception.view")]
+@inject IBonReceptionService BonService
+@inject NavigationManager Nav
+
+<PageTitle>Bons de Réception – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Bons de Réception</h3>
+    <a href="/bons-reception/nouveau" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nouveau Bon
+    </a>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white d-flex gap-2 flex-wrap align-items-end">
+        <div>
+            <label class="form-label small mb-1">Fournisseur</label>
+            <select class="form-select form-select-sm" style="min-width:160px" @bind="_filterFournisseur">
+                <option value="">Tous</option>
+                @foreach (var f in FournisseursDistincts)
+                { <option value="@f.CodeFournisseur">@f.NomFournisseur</option> }
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">État</label>
+            <select class="form-select form-select-sm" style="min-width:140px" @bind="_filterEtat">
+                <option value="">Tous</option>
+                <option value="Ouvert">Ouvert</option>
+                <option value="Confirmé">Confirmé</option>
+                <option value="Annulé">Annulé</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">Du</label>
+            <input type="date" class="form-control form-control-sm" @bind="_filterDebut" />
+        </div>
+        <div>
+            <label class="form-label small mb-1">Au</label>
+            <input type="date" class="form-control form-control-sm" @bind="_filterFin" />
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mb-0" @onclick="ResetFilters">
+            <i class="bi bi-x-circle"></i> Réinitialiser
+        </button>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>N° Bon</th>
+                        <th>Date</th>
+                        <th>Fournisseur</th>
+                        <th>Commande Achat</th>
+                        <th class="text-end">Montant HT</th>
+                        <th class="text-end">TVA</th>
+                        <th class="text-end">Total TTC</th>
+                        <th>État</th>
+                        <th>Facturation</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in FilteredBons)
+                    {
+                        <tr>
+                            <td><a href="/bons-reception/@b.NumeroBonReception">@b.NumeroBonReception</a></td>
+                            <td>@b.DateBonReception.ToString("dd/MM/yyyy")</td>
+                            <td>@b.Fournisseur?.NomFournisseur</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(b.NumeroCommandeAchat))
+                                {
+                                    <a href="/commandes-achat/@b.NumeroCommandeAchat">@b.NumeroCommandeAchat</a>
+                                }
+                            </td>
+                            <td class="text-end">@b.MontantHT.ToString("0.###")</td>
+                            <td class="text-end">@b.MontantTVA.ToString("0.###")</td>
+                            <td class="text-end fw-bold">@b.MontantTTC.ToString("0.###")</td>
+                            <td><span class="badge bg-secondary">@b.EtatBonReception</span></td>
+                            <td>
+                                <span class="badge @(b.EtatFacture == "Facturé" ? "bg-success" : "bg-warning text-dark")">
+                                    @b.EtatFacture
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <PermissionGuard Permission="bons-reception.update">
+                                    <a href="/bons-reception/@b.NumeroBonReception"
+                                       class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                    </a>
+                                </PermissionGuard>
+                                <button class="btn btn-sm btn-outline-info me-1"
+                                        @onclick="() => CloneBon(b.NumeroBonReception)">
+                                    <i class="bi bi-copy me-1"></i>Cloner
+                                </button>
+                                <PermissionGuard Permission="bons-reception.delete">
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => AskDelete(b)">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </PermissionGuard>
+                            </td>
+                        </tr>
+                    }
+                    @if (!FilteredBons.Any())
+                    {
+                        <tr><td colspan="10" class="text-center text-muted py-4">Aucun bon de réception trouvé.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@FilteredBons.Count() / @_bons.Count bon(s)</div>
+</div>
+
+<ConfirmDialog Title="Supprimer le bon de réception"
+               Message="@($"Confirmer la suppression de {_toDelete?.NumeroBonReception} ? Le stock sera restitué.")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<BonReception> _bons = [];
+    private bool _loading = true;
+    private bool _confirmVisible;
+    private BonReception? _toDelete;
+    private Notification _notif = default!;
+
+    private string? _filterFournisseur;
+    private string? _filterEtat;
+    private DateTime? _filterDebut;
+    private DateTime? _filterFin;
+
+    private IEnumerable<BonReception> FilteredBons => _bons.Where(b =>
+        (string.IsNullOrEmpty(_filterFournisseur) || b.CodeFournisseur == _filterFournisseur) &&
+        (string.IsNullOrEmpty(_filterEtat) || b.EtatBonReception == _filterEtat) &&
+        (!_filterDebut.HasValue || b.DateBonReception.Date >= _filterDebut.Value.Date) &&
+        (!_filterFin.HasValue || b.DateBonReception.Date <= _filterFin.Value.Date));
+
+    private List<Fournisseur> FournisseursDistincts => _bons
+        .Where(b => b.Fournisseur is not null)
+        .Select(b => b.Fournisseur!)
+        .DistinctBy(f => f.CodeFournisseur)
+        .OrderBy(f => f.NomFournisseur)
+        .ToList();
+
+    private void ResetFilters()
+    {
+        _filterFournisseur = null;
+        _filterEtat = null;
+        _filterDebut = null;
+        _filterFin = null;
+    }
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _bons = await BonService.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task CloneBon(string numero)
+    {
+        try
+        {
+            var clone = await BonService.CloneAsync(numero);
+            _notif.ShowSuccess($"Bon cloné : {clone.NumeroBonReception}");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private void AskDelete(BonReception b) { _toDelete = b; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await BonService.DeleteAsync(_toDelete.NumeroBonReception);
+            _notif.ShowSuccess("Bon de réception supprimé.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+}

@@ -1,0 +1,158 @@
+@page "/stock"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:produits.view")]
+@inject IProduitService ProduitService
+@inject AppDbContext Db
+
+<PageTitle>État du Stock – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>État du Stock</h3>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-1 fw-bold text-primary">@_totalProduits</div>
+            <div class="text-muted">Références</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-1 fw-bold text-warning">@_enAlerteCount</div>
+            <div class="text-muted">En alerte stock</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold text-success">@_valeurStockHT.ToString("0.###")</div>
+            <div class="text-muted">Valeur stock (PA TTC)</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold text-info">@_valeurStockVente.ToString("0.###")</div>
+            <div class="text-muted">Valeur stock (PV HT)</div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex gap-2 flex-wrap align-items-center">
+        <div class="input-group" style="max-width:350px">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input class="form-control" placeholder="Code ou désignation..." @bind="_search" @bind:after="FilterAsync" />
+        </div>
+        <select class="form-select" style="max-width:200px" @bind="_categorieCode" @bind:after="FilterAsync">
+            <option value="">Toutes catégories</option>
+            @foreach (var cat in _categories)
+            {
+                <option value="@cat.CodeCategorieProduit">@cat.NomCategorieProduit</option>
+            }
+        </select>
+        <div class="form-check ms-2">
+            <input class="form-check-input" type="checkbox" @bind="_alerteOnly" @bind:after="FilterAsync" id="alerteOnly" />
+            <label class="form-check-label" for="alerteOnly">Alertes uniquement</label>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Désignation</th>
+                        <th>Catégorie</th>
+                        <th class="text-end">Qté Stock</th>
+                        <th class="text-end">Stock Min</th>
+                        <th>Unité</th>
+                        <th class="text-end">PA TTC</th>
+                        <th class="text-end">PV HT</th>
+                        <th class="text-end">Valeur Stock</th>
+                        <th>État</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _filtered)
+                    {
+                        var enAlerte = p.Quantite <= p.StockMinimal;
+                        <tr class="@(enAlerte ? "table-warning" : "")">
+                            <td><code>@p.CodeProduit</code></td>
+                            <td>@p.DesignationProduit</td>
+                            <td>@p.CategorieProduit?.NomCategorieProduit</td>
+                            <td class="text-end @(enAlerte ? "text-danger fw-bold" : "")">@p.Quantite.ToString("0.###")</td>
+                            <td class="text-end">@p.StockMinimal.ToString("0.###")</td>
+                            <td>@p.UniteProduit?.NomUniteProduit</td>
+                            <td class="text-end">@p.PrixAchatTTC.ToString("0.###")</td>
+                            <td class="text-end">@p.PrixVenteHT.ToString("0.###")</td>
+                            <td class="text-end">@((p.Quantite * p.PrixVenteHT).ToString("0.###"))</td>
+                            <td>
+                                @if (enAlerte)
+                                {
+                                    <span class="badge bg-danger">Alerte</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">OK</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (!_filtered.Any())
+                    {
+                        <tr><td colspan="10" class="text-center text-muted py-4">Aucun produit trouvé.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_filtered.Count produit(s) affiché(s)</div>
+</div>
+
+@code {
+    private List<Produit> _all = [];
+    private List<Produit> _filtered = [];
+    private List<CategorieProduit> _categories = [];
+    private bool _loading = true;
+    private string? _search;
+    private int? _categorieCode;
+    private bool _alerteOnly;
+
+    private int _totalProduits;
+    private int _enAlerteCount;
+    private double _valeurStockHT;
+    private double _valeurStockVente;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await Db.CategoriesProduit.ToListAsync();
+        _all = await ProduitService.GetAllAsync();
+        ComputeSummary();
+        ApplyFilter();
+        _loading = false;
+    }
+
+    private void FilterAsync()
+    {
+        ApplyFilter();
+    }
+
+    private void ComputeSummary()
+    {
+        _totalProduits = _all.Count;
+        _enAlerteCount = _all.Count(p => p.Quantite <= p.StockMinimal);
+        _valeurStockHT = _all.Sum(p => p.Quantite * p.PrixAchatTTC);
+        _valeurStockVente = _all.Sum(p => p.Quantite * p.PrixVenteHT);
+    }
+
+    private void ApplyFilter()
+    {
+        _filtered = _all.Where(p =>
+            (string.IsNullOrEmpty(_search) || p.DesignationProduit.Contains(_search, StringComparison.OrdinalIgnoreCase) || p.CodeProduit.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+            (!_categorieCode.HasValue || p.CodeCategorieProduit == _categorieCode) &&
+            (!_alerteOnly || p.Quantite <= p.StockMinimal)
+        ).ToList();
+    }
+}

@@ -1,0 +1,179 @@
+@page "/admin/journal"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@inject IJournalActiviteService JournalService
+
+<PageTitle>Journal d'Activité – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="bi bi-journal-text me-2"></i>Journal d'Activité</h3>
+    <div class="d-flex align-items-end gap-2">
+        <div>
+            <label class="form-label small mb-1">Purger les entrées de plus de</label>
+            <div class="input-group input-group-sm">
+                <input type="number" min="1" class="form-control" style="max-width:70px" @bind="_purgeMonths" />
+                <span class="input-group-text">mois</span>
+            </div>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" @onclick="AskPurge">
+            <i class="bi bi-trash3"></i> Purger
+        </button>
+    </div>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-white d-flex gap-2 flex-wrap align-items-end">
+        <div>
+            <label class="form-label small mb-1">Utilisateur</label>
+            <select class="form-select form-select-sm" style="min-width:160px"
+                    @bind="_filterLogin" @bind:after="LoadAsync">
+                <option value="">Tous</option>
+                @foreach (var l in _logins)
+                { <option value="@l">@l</option> }
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">Entité</label>
+            <select class="form-select form-select-sm" style="min-width:140px"
+                    @bind="_filterEntite" @bind:after="LoadAsync">
+                <option value="">Toutes</option>
+                @foreach (var e in _entites)
+                { <option value="@e">@e</option> }
+            </select>
+        </div>
+        <div>
+            <label class="form-label small mb-1">Du</label>
+            <input type="date" class="form-control form-control-sm"
+                   @bind="_filterDebut" @bind:after="LoadAsync" />
+        </div>
+        <div>
+            <label class="form-label small mb-1">Au</label>
+            <input type="date" class="form-control form-control-sm"
+                   @bind="_filterFin" @bind:after="LoadAsync" />
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mb-0" @onclick="ResetFilters">
+            <i class="bi bi-x-circle"></i> Réinitialiser
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date / Heure</th>
+                        <th>Utilisateur</th>
+                        <th>Action</th>
+                        <th>Entité</th>
+                        <th>Code</th>
+                        <th>Détail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var j in _journal)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@j.DateHeure.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td><code>@j.Login</code></td>
+                            <td>
+                                <span class="badge @GetActionBadge(j.Action)">@j.Action</span>
+                            </td>
+                            <td>@j.Entite</td>
+                            <td><small>@j.CodeEntite</small></td>
+                            <td class="text-muted small">@j.Detail</td>
+                        </tr>
+                    }
+                    @if (!_journal.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">Aucune activité trouvée.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_journal.Count entrée(s) — 1000 max.</div>
+</div>
+
+<ConfirmDialog Title="Purger le journal"
+               Message="@($"Confirmer la suppression définitive des entrées de plus de {_purgeMonths} mois ? Cette action est irréversible.")"
+               Visible="_confirmPurgeVisible"
+               OnConfirm="PurgeConfirmed"
+               OnCancel="() => _confirmPurgeVisible = false" />
+
+@code {
+    private List<JournalActivite> _journal = [];
+    private List<string> _logins = [];
+    private List<string> _entites = [];
+    private bool _loading = true;
+
+    private string? _filterLogin;
+    private string? _filterEntite;
+    private DateTime? _filterDebut;
+    private DateTime? _filterFin;
+
+    private int _purgeMonths = 12;
+    private bool _confirmPurgeVisible;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _logins  = await JournalService.GetLoginsDistinctsAsync();
+        _entites = await JournalService.GetEntitesDistinctesAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _journal = await JournalService.GetAllAsync(_filterLogin, _filterEntite, _filterDebut, _filterFin);
+        _loading = false;
+    }
+
+    private async Task ResetFilters()
+    {
+        _filterLogin = _filterEntite = null;
+        _filterDebut = _filterFin = null;
+        await LoadAsync();
+    }
+
+    private static string GetActionBadge(string action) => action switch
+    {
+        "Ajout"        => "bg-success",
+        "Modification" => "bg-primary",
+        "Suppression"  => "bg-danger",
+        "Connexion"    => "bg-info text-dark",
+        "Clone"        => "bg-secondary",
+        "Purge"        => "bg-dark",
+        _              => "bg-light text-dark"
+    };
+
+    private void AskPurge()
+    {
+        if (_purgeMonths <= 0)
+        {
+            _notif.ShowError("Le seuil doit être d'au moins 1 mois.");
+            return;
+        }
+        _confirmPurgeVisible = true;
+    }
+
+    private async Task PurgeConfirmed()
+    {
+        _confirmPurgeVisible = false;
+        try
+        {
+            var count = await JournalService.PurgeAsync(_purgeMonths);
+            _notif.ShowSuccess(count > 0 ? $"{count} entrée(s) supprimée(s)." : "Aucune entrée à purger.");
+            _logins = await JournalService.GetLoginsDistinctsAsync();
+            _entites = await JournalService.GetEntitesDistinctesAsync();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
+    }
+}

@@ -1,0 +1,146 @@
+@page "/print/bon-livraison/{Numero}"
+@layout PrintLayout
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:bons-livraison.view")]
+@inject AppDbContext Db
+@inject IJSRuntime JS
+
+<PageTitle>Bon de Livraison @Numero – Impression</PageTitle>
+
+@if (_loading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height:50vh">
+        <div class="spinner-border text-primary me-3"></div>
+        <span>Chargement du document…</span>
+    </div>
+}
+else if (_bon is null)
+{
+    <div class="alert alert-danger m-4">Document introuvable : @Numero</div>
+}
+else
+{
+    <div class="print-toolbar">
+        <button class="btn btn-primary btn-sm" @onclick="@(() => JS.InvokeVoidAsync("window.print"))">
+            <i class="bi bi-printer me-1"></i>Imprimer / PDF
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.close()">
+            <i class="bi bi-x me-1"></i>Fermer
+        </button>
+        <span class="ms-auto text-muted small">BON DE LIVRAISON · @_bon.NumeroBonLivraison</span>
+    </div>
+
+    <div class="print-wrapper">
+        <div class="print-document">
+
+            <PrintDocHeader Entreprise="_entreprise"
+                            DocType="BON DE LIVRAISON"
+                            Numero="@_bon.NumeroBonLivraison"
+                            Date="_bon.DateBonLivraison"
+                            Etat="@_bon.EtatBonLivraison" />
+
+            <div class="print-parties">
+                <div>
+                    <div class="print-party-label">Livré à</div>
+                    <div class="print-party-name">@_bon.Client?.NomClient</div>
+                    @foreach (var line in PartyDetailsHelper.ForClient(_bon.Client))
+                    { <div>@line</div> }
+                </div>
+                <div class="text-end">
+                    <div class="print-party-label">État facturation</div>
+                    <div class="print-party-name">@_bon.EtatFacture</div>
+                    @if (!string.IsNullOrWhiteSpace(_bon.NumeroCommandeVente))
+                    {
+                        <div class="small mt-1">Commande : @_bon.NumeroCommandeVente</div>
+                    }
+                </div>
+            </div>
+
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width:42%">Désignation</th>
+                        <th class="text-center" style="width:8%">Qté</th>
+                        <th class="text-end" style="width:13%">Prix HT</th>
+                        <th class="text-center" style="width:8%">Rem%</th>
+                        <th class="text-center" style="width:8%">TVA%</th>
+                        <th class="text-end" style="width:11%">Montant HT</th>
+                        <th class="text-end" style="width:10%">Montant TTC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in _bon.Lignes)
+                    {
+                        var ttc = Math.Round(l.MontantHT * (1 + l.Tva / 100), 3);
+                        <tr>
+                            <td>@(l.Produit?.DesignationProduit ?? l.CodeProduit)</td>
+                            <td class="text-center">@l.Quantite.ToString("0.###")</td>
+                            <td class="text-end">@l.PrixUnitaire.ToString("0.###")</td>
+                            <td class="text-center">@(l.Remise > 0 ? l.Remise.ToString("0.##") + "%" : "—")</td>
+                            <td class="text-center">@l.Tva.ToString("0.##")%</td>
+                            <td class="text-end">@l.MontantHT.ToString("0.###")</td>
+                            <td class="text-end">@ttc.ToString("0.###")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="print-totals-wrap">
+                <table class="print-totals-table">
+                    <tr><td>Total HT</td><td class="text-end">@_bon.MontantHT.ToString("0.###")</td></tr>
+                    @if (_bon.Remise > 0)
+                    {
+                        <tr>
+                            <td>Remise (@_bon.Remise%)</td>
+                            <td class="text-end text-danger">-@((_bon.MontantHT * _bon.Remise / 100).ToString("0.###"))</td>
+                        </tr>
+                    }
+                    <tr><td>TVA</td><td class="text-end">@_bon.MontantTVA.ToString("0.###")</td></tr>
+                    <tr class="print-totals-net">
+                        <td>Total TTC</td>
+                        <td class="text-end">@_bon.MontantTTC.ToString("0.###") TND</td>
+                    </tr>
+                </table>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_bon.Note))
+            {
+                <div class="print-note"><strong>Note :</strong> @_bon.Note</div>
+            }
+
+            <!-- Signature blocks -->
+            <div class="d-flex justify-content-between mt-4" style="font-size:0.82rem">
+                <div class="text-center" style="width:30%">
+                    <div class="border-top pt-2 mt-4">Signature Émetteur</div>
+                </div>
+                <div class="text-center" style="width:30%">
+                    <div class="border-top pt-2 mt-4">Signature Client</div>
+                </div>
+            </div>
+
+            <div class="print-footer">
+                @if (_entreprise is not null) { <span>@_entreprise.NomEntreprise</span><br /> }
+                <small>Imprimé le @DateTime.Now.ToString("dd/MM/yyyy à HH:mm", new System.Globalization.CultureInfo("fr-FR"))</small>
+                <br />
+                <small>Développé par AIVOR Consulting – aivorconsulting.com</small>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Numero { get; set; } = string.Empty;
+    private BonLivraison? _bon;
+    private Entreprise? _entreprise;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _bon = await Db.BonsLivraison
+            .Include(b => b.Client)
+            .Include(b => b.Lignes).ThenInclude(l => l.Produit)
+            .FirstOrDefaultAsync(b => b.NumeroBonLivraison == Numero);
+        _entreprise = await Db.Entreprises.FirstOrDefaultAsync();
+        _loading = false;
+    }
+}

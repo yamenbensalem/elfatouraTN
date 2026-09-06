@@ -1,0 +1,151 @@
+@page "/produits"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:produits.view")]
+@inject IProduitService ProduitService
+@inject AppDbContext Db
+
+<PageTitle>Produits – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Produits</h3>
+    <PermissionGuard Permission="produits.create">
+        <a href="produits/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau Produit
+        </a>
+    </PermissionGuard>
+</div>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex gap-2 flex-wrap">
+        <div class="input-group" style="max-width:350px">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input class="form-control" placeholder="Code ou désignation..." @bind="_search" @bind:after="LoadAsync" />
+        </div>
+        <select class="form-select" style="max-width:200px" @bind="_categorieCode" @bind:after="LoadAsync">
+            <option value="">Toutes catégories</option>
+            @foreach (var cat in _categories)
+            {
+                <option value="@cat.CodeCategorieProduit">@cat.NomCategorieProduit</option>
+            }
+        </select>
+    </div>
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Désignation</th>
+                        <th>Catégorie</th>
+                        <th class="text-end">P.V HT</th>
+                        <th class="text-end">P.V TTC</th>
+                        <th class="text-end">Stock</th>
+                        <th>Unité</th>
+                        <th>TVA</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <Virtualize Items="_produits" Context="p">
+                        <ItemContent>
+                            <tr class="@(p.Quantite <= p.StockMinimal ? "table-warning" : "")">
+                                <td><code>@p.CodeProduit</code></td>
+                                <td>@p.DesignationProduit</td>
+                                <td>@p.CategorieProduit?.NomCategorieProduit</td>
+                                <td class="text-end">@p.PrixVenteHT.ToString("0.###")</td>
+                                <td class="text-end">@p.PrixVenteTTC.ToString("0.###")</td>
+                                <td class="text-end @(p.Quantite <= p.StockMinimal ? "text-danger fw-bold" : "")">
+                                    @p.Quantite.ToString("0.###")
+                                </td>
+                                <td>@p.UniteProduit?.NomUniteProduit</td>
+                                <td>@p.TvaProduit?.TauxTvaProduit%</td>
+                                <td class="text-end">
+                                    <PermissionGuard Permission="produits.update">
+                                        <a href="produits/@p.CodeProduit" class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="bi bi-pencil me-1"></i>Modifier
+                                        </a>
+                                    </PermissionGuard>
+                                    <PermissionGuard Permission="produits.delete">
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(p)">
+                                            <i class="bi bi-trash me-1"></i>Supprimer
+                                        </button>
+                                    </PermissionGuard>
+                                </td>
+                            </tr>
+                        </ItemContent>
+                        <EmptyContent>
+                            <tr><td colspan="9" class="text-center text-muted py-4">Aucun produit trouvé.</td></tr>
+                        </EmptyContent>
+                    </Virtualize>
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_produits.Count produit(s)</div>
+</div>
+
+<ConfirmDialog Title="Supprimer le produit"
+               Message="@($"Confirmer la suppression de {_toDelete?.DesignationProduit} ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+<ErrorDialog Title="@_errorTitle"
+             Message="@_errorMessage"
+             Visible="_errorVisible"
+             OnClose="CloseErrorDialog" />
+
+@code {
+    private List<Produit> _produits = [];
+    private List<CategorieProduit> _categories = [];
+    private bool _loading = true;
+    private string? _search;
+    private int? _categorieCode;
+    private bool _confirmVisible;
+    private Produit? _toDelete;
+    private Notification _notif = default!;
+    private bool _errorVisible;
+    private string _errorTitle = "Erreur";
+    private string _errorMessage = "Une erreur est survenue.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await Db.CategoriesProduit.ToListAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _produits = await ProduitService.GetAllAsync(_search, _categorieCode);
+        _loading = false;
+    }
+
+    private void AskDelete(Produit p) { _toDelete = p; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await ProduitService.DeleteAsync(_toDelete.CodeProduit);
+            _notif.ShowSuccess($"Produit {_toDelete.DesignationProduit} supprimé.");
+            _toDelete = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorTitle = "Suppression impossible";
+            _errorMessage = DeleteErrorMessageHelper.Build(ex,
+                "Ce produit ne peut pas etre supprime car il est utilise dans des lignes de devis, commandes, bons ou factures. Supprimez d'abord les documents lies, puis reessayez.");
+            _errorVisible = true;
+        }
+    }
+
+    private void CloseErrorDialog() => _errorVisible = false;
+}

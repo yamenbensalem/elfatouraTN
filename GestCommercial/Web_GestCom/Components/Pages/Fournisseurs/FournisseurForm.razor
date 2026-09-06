@@ -1,0 +1,167 @@
+@page "/fournisseurs/nouveau"
+@page "/fournisseurs/{Code}"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = "perm:fournisseurs.view")]
+@inject IFournisseurService FournisseurService
+@inject NavigationManager Nav
+@inject AppDbContext Db
+
+<PageTitle>@(_isNew ? "Nouveau Fournisseur" : "Modifier Fournisseur") – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>@(_isNew ? "Nouveau Fournisseur" : $"Fournisseur : {_fournisseur.NomFournisseur}")</h3>
+    <a href="fournisseurs" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+    </a>
+</div>
+
+<Notification @ref="_notif" />
+<LoadingSpinner Loading="@_loading" />
+
+@if (!_loading)
+{
+    <EditForm Model="_fournisseur" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">Informations Générales</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Code Fournisseur</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.CodeFournisseur"
+                                   disabled="@(!_isNew)" placeholder="Auto-généré" />
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Nom <span class="text-danger">*</span></label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.NomFournisseur" />
+                        <ValidationMessage For="() => _fournisseur.NomFournisseur" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Matricule Fiscale</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.MatriculeFiscale" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Devise</label>
+                        <InputSelect class="form-select" @bind-Value="_fournisseur.CodeDevise">
+                            @foreach (var d in _devises)
+                            {
+                                <option value="@d.CodeDevise">@d.NomDevise</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">État</label>
+                        <InputSelect class="form-select" @bind-Value="_fournisseur.EtatFournisseur">
+                            <option value="Actif">Actif</option>
+                            <option value="Inactif">Inactif</option>
+                        </InputSelect>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">Coordonnées</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Adresse</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.Adresse" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Code Postal</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.CodePostal" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Ville</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.Ville" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Pays</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.Pays" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Téléphone</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.Tel" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Mobile</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.TelMobile" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Fax</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.Fax" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Email</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.Email" type="email" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header fw-semibold">Informations Commerciales</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">RIB</label>
+                        <InputText class="form-control" @bind-Value="_fournisseur.Rib" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Note</label>
+                        <InputTextArea class="form-control" @bind-Value="_fournisseur.Note" rows="2" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <PermissionGuard Permission="@(_isNew ? "fournisseurs.create" : "fournisseurs.update")">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Enregistrer
+                </button>
+            </PermissionGuard>
+            <a href="fournisseurs" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public string? Code { get; set; }
+
+    private Fournisseur _fournisseur = new();
+    private List<Devise> _devises = [];
+    private bool _loading = true;
+    private bool _isNew => string.IsNullOrEmpty(Code);
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _devises = await Db.Devises.ToListAsync();
+        if (!_isNew)
+        {
+            var existing = await FournisseurService.GetByCodeAsync(Code!);
+            if (existing is not null) _fournisseur = existing;
+        }
+        _loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_isNew)
+                await FournisseurService.AddAsync(_fournisseur);
+            else
+                await FournisseurService.UpdateAsync(_fournisseur);
+
+            Nav.NavigateTo("fournisseurs");
+        }
+        catch (Exception ex)
+        {
+            _notif.ShowError($"Erreur : {ex.Message}");
+        }
+    }
+}

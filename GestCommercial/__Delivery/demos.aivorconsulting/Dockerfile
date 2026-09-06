@@ -3,13 +3,13 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Restore (couche cachée séparée)
-COPY Web_T4C_GestCom/Web_T4C_GestCom.csproj Web_T4C_GestCom/
-RUN dotnet restore Web_T4C_GestCom/Web_T4C_GestCom.csproj
+COPY Web_GestCom/Web_GestCom.csproj Web_GestCom/
+RUN dotnet restore Web_GestCom/Web_GestCom.csproj
 
 # Copier le reste et publier
-COPY Web_T4C_GestCom/ Web_T4C_GestCom/
-WORKDIR /src/Web_T4C_GestCom
-RUN dotnet publish Web_T4C_GestCom.csproj \
+COPY Web_GestCom/ Web_GestCom/
+WORKDIR /src/Web_GestCom
+RUN dotnet publish Web_GestCom.csproj \
     -c Release \
     -o /app/publish \
     --no-restore \
@@ -32,4 +32,4 @@ ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 
-ENTRYPOINT ["dotnet", "Web_T4C_GestCom.dll"]
+ENTRYPOINT ["dotnet", "Web_GestCom.dll"]
