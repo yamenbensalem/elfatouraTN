@@ -13,6 +13,7 @@ namespace Web_GestCom.Services;
 public interface ICompanyService
 {
     Task<List<Company>> GetAllAsync();
+    Task<Company?> GetByIdAsync(int id);
     Task AddAsync(Company company);
     Task UpdateAsync(Company company);
     Task DeleteAsync(Company company);
@@ -25,6 +26,9 @@ public class CompanyService(AppDbContext db) : ICompanyService
             .Include(c => c.Utilisateurs)
             .OrderBy(c => c.Name)
             .ToListAsync();
+
+    public async Task<Company?> GetByIdAsync(int id)
+        => await db.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
 
     public async Task AddAsync(Company company)
     {

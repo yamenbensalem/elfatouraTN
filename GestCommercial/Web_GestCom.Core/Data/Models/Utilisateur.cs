@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Web_GestCom.Data.Models;
 
 [Table("utilisateurs")]
-public class Utilisateur
+public class Utilisateur : ITenantOwned
 {
     [Key]
     [Column("id_utilisateur")]

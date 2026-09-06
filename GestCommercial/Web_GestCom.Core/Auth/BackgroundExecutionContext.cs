@@ -15,4 +15,5 @@ public sealed class BackgroundExecutionContext : IExecutionContext
     public int?  CurrentCompanyId { get; }
     public bool  IsSuperAdmin     { get; }
     public bool  HasActiveContext => true;
+    public bool  IsAuthenticated  => true;
 }

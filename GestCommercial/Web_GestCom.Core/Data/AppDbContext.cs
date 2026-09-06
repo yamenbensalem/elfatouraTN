@@ -19,8 +19,9 @@ public class AppDbContext : DbContext
         _executionContext = executionContext;
     }
 
-    private int?  CurrentCompanyId     => _executionContext?.CurrentCompanyId;
-    private bool  CurrentIsSuperAdmin  => _executionContext?.IsSuperAdmin == true;
+    private int?  CurrentCompanyId      => _executionContext?.CurrentCompanyId;
+    private bool  CurrentIsSuperAdmin   => _executionContext?.IsSuperAdmin == true;
+    private bool  CurrentIsAuthenticated => _executionContext?.IsAuthenticated == true;
 
     /// <summary>
     /// Tenant filters engage only when there is an active execution context and the principal
@@ -28,6 +29,16 @@ public class AppDbContext : DbContext
     /// </summary>
     private bool ShouldApplyTenantFilter
         => (_executionContext?.HasActiveContext == true) && !CurrentIsSuperAdmin;
+
+    /// <summary>
+    /// Same as ShouldApplyTenantFilter, but also requires an authenticated principal. Used only
+    /// by the Utilisateur query filter: HasActiveContext is true for the anonymous login POST
+    /// too (it just means "an HTTP request exists"), and that request looks up Utilisateur by
+    /// login before any principal/tenant exists — without this extra gate the tenant filter would
+    /// exclude every row (CurrentCompanyId is null pre-login) and login would always fail.
+    /// </summary>
+    private bool ShouldApplyTenantFilterToAuthenticatedUsers
+        => ShouldApplyTenantFilter && CurrentIsAuthenticated;
 
     // ── Reference data ─────────────────────────────────────────────────────
     public DbSet<Entreprise>        Entreprises         => Set<Entreprise>();
@@ -91,7 +102,12 @@ public class AppDbContext : DbContext
 
     private void ApplyTenantOwnershipRules()
     {
-        if (!ShouldApplyTenantFilter)
+        // The anonymous login POST can save changes too (AuthentifierAsync rehashes a legacy
+        // password hash on successful login, before any principal/tenant exists) — skip ownership
+        // enforcement in that case for the same reason the Utilisateur query filter does; there
+        // is no tenant to stamp or check yet, and every other ITenantOwned entity is never
+        // touched outside an authenticated request anyway, so this changes nothing for them.
+        if (!ShouldApplyTenantFilter || !CurrentIsAuthenticated)
             return;
 
         if (!CurrentCompanyId.HasValue)
@@ -220,6 +236,18 @@ public class AppDbContext : DbContext
             .HasQueryFilter(e =>
                 !ShouldApplyTenantFilter ||
                 (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        // Utilisateur: same rule as the business entities above. A non-SuperAdmin session only
+        // ever sees users of its own company (SuperAdmin rows have CompanyId == null, so they're
+        // naturally excluded too). This is a defense-in-depth safety net alongside
+        // UtilisateurService's own manual filtering in GetAllAsync/GetByIdAsync — it also closes a
+        // gap those two methods couldn't cover: FindAsync (used by Activer/Desactiver/
+        // ChangePassword) bypasses query filters by design, but ApplyTenantOwnershipRules below
+        // still rejects the save if the loaded entity turns out to belong to another tenant.
+        modelBuilder.Entity<Utilisateur>()
+            .HasQueryFilter(u =>
+                !ShouldApplyTenantFilterToAuthenticatedUsers ||
+                (CurrentCompanyId.HasValue && u.CompanyId == CurrentCompanyId));
 
         // ── Reference data seed ────────────────────────────────────────────
         modelBuilder.Entity<Devise>().HasData(

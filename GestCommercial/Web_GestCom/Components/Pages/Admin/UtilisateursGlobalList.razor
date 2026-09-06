@@ -1,0 +1,146 @@
+@page "/admin/utilisateurs-global"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IUtilisateurService UtilisateurService
+
+<PageTitle>Tous les Utilisateurs – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="bi bi-people-fill me-2"></i>Tous les Utilisateurs</h3>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Entreprise</label>
+                <select class="form-select" @bind="_filterKey">
+                    <option value="">Toutes les entreprises</option>
+                    @foreach (var key in _filterKeys)
+                    {
+                        <option value="@key">@_filterLabels[key]</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-secondary" @onclick="ResetFilters">
+                    <i class="bi bi-x-circle me-1"></i>Réinitialiser
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Login</th>
+                        <th>Nom Complet</th>
+                        <th>Email</th>
+                        <th>Entreprise</th>
+                        <th>Rôle</th>
+                        <th>État</th>
+                        <th>Créé le</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in FilteredUtilisateurs)
+                    {
+                        <tr>
+                            <td><code>@u.Login</code></td>
+                            <td>@u.NomComplet</td>
+                            <td>@u.Email</td>
+                            <td>
+                                @if (u.IsSuperAdmin)
+                                {
+                                    <span class="badge bg-dark">Compte Système</span>
+                                }
+                                else
+                                {
+                                    @(u.Company?.Name ?? "—")
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @(u.Role switch { "Admin" => "bg-danger", "Manager" => "bg-warning text-dark", _ => "bg-secondary" })">@u.Role</span>
+                            </td>
+                            <td>
+                                <span class="badge @(u.Actif ? "bg-success" : "bg-warning text-dark")">
+                                    @(u.Actif ? "Actif" : "Inactif")
+                                </span>
+                            </td>
+                            <td>@u.DateCreation.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end">
+                                <a href="/admin/utilisateurs/@u.Id" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!FilteredUtilisateurs.Any())
+                    {
+                        <tr><td colspan="8" class="text-center text-muted py-4">Aucun utilisateur.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@FilteredUtilisateurs.Count() / @_utilisateurs.Count utilisateur(s)</div>
+</div>
+
+@code {
+    private const string SystemAccountsFilterKey = "sys";
+
+    private List<Utilisateur> _utilisateurs = [];
+    private bool _loading = true;
+
+    // Company filter dropdown: keyed by string since a company's own Id (int) can't be
+    // distinguished from the "no filter" empty-string sentinel using @bind on a plain <select>,
+    // and we also need a separate key for the null-CompanyId "system accounts" bucket.
+    private string _filterKey = string.Empty;
+    private List<string> _filterKeys = [];
+    private Dictionary<string, string> _filterLabels = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _utilisateurs = await UtilisateurService.GetAllAsync();
+
+        // Group by the same "is this a system account" rule the table uses to display the
+        // Entreprise column (u.IsSuperAdmin), not by raw CompanyId — a SuperAdmin row can carry a
+        // stray non-null CompanyId (e.g. from a direct DB edit bypassing the normal login/save
+        // path, which always clears it), and the filter must stay consistent with what's shown.
+        foreach (var group in _utilisateurs.GroupBy(u => u.IsSuperAdmin ? null : u.CompanyId))
+        {
+            var key = group.Key?.ToString() ?? SystemAccountsFilterKey;
+            var label = group.Key is null
+                ? "Compte(s) Système"
+                : group.First().Company?.Name ?? $"Entreprise #{group.Key}";
+            _filterLabels[key] = label;
+        }
+        _filterKeys = _filterLabels.Keys.OrderBy(k => _filterLabels[k]).ToList();
+
+        _loading = false;
+    }
+
+    private IEnumerable<Utilisateur> FilteredUtilisateurs
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_filterKey))
+                return _utilisateurs;
+
+            if (_filterKey == SystemAccountsFilterKey)
+                return _utilisateurs.Where(u => u.IsSuperAdmin);
+
+            var companyId = int.Parse(_filterKey);
+            return _utilisateurs.Where(u => !u.IsSuperAdmin && u.CompanyId == companyId);
+        }
+    }
+
+    private void ResetFilters() => _filterKey = string.Empty;
+}

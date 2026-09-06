@@ -8,4 +8,5 @@ public sealed class DesktopExecutionContext(UserSession session) : IExecutionCon
     public int?  CurrentCompanyId  => session.CompanyId;
     public bool  IsSuperAdmin      => session.IsSuperAdmin;
     public bool  HasActiveContext  => session.IsAuthenticated;
+    public bool  IsAuthenticated   => session.IsAuthenticated;
 }

@@ -288,6 +288,70 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       "Accès refusé" sans boucle, pour un Admin normal visitant la page SuperAdmin. Suite
       complète : 284/284 tests verts, build 0 erreur.
 
+### Multi-entreprises — assignation fiable + vue globale SuperAdmin ✅
+
+- [x] Fiabiliser l'assignation d'entreprise à la création d'un utilisateur, et donner au
+      SuperAdmin une vue transversale de tous les utilisateurs — **demande utilisateur** faisant
+      suite au constat : "on n'a pas défini d'entreprise pour Manager/Employé, et le SuperAdmin
+      n'a pas de vue globale sur tous les utilisateurs et leur entreprise". Diagnostic confirmé
+      dans le code avant de coder quoi que ce soit (deux problèmes distincts, pas un) :
+      1. `UtilisateurService.EnsureTenantDefaults` assignait déjà silencieusement l'entreprise de
+         l'Admin courant à un nouvel utilisateur, MAIS se rabattait sur "la première entreprise de
+         la table" si le tenant courant ne pouvait pas être résolu — un utilisateur pouvait donc
+         être assigné à la mauvaise entreprise sans aucune alerte. `Utilisateur` n'avait en plus
+         aucun filet de sécurité au niveau base de données (pas de `HasQueryFilter`, contrairement
+         à Client/Produit/Facture), et `UtilisateurForm.razor` n'affichait jamais l'entreprise
+         assignée.
+      2. Aucune vue "tous les utilisateurs + leur entreprise" n'existait pour le SuperAdmin
+         (`/admin/entreprises` n'affiche qu'un compteur, sans détail).
+      - **Correctifs sécurité (partie 1)** :
+        - `EnsureTenantDefaults` (renommé, n'est plus `async` — plus d'`await` restant après le
+          retrait du repli) lève désormais `InvalidOperationException` au lieu de deviner une
+          entreprise, si aucune n'est explicitement fournie et qu'aucun tenant actif n'est
+          disponible.
+        - `Utilisateur` implémente maintenant `ITenantOwned`, avec un `HasQueryFilter` dédié dans
+          `AppDbContext` (même motif que Client/Produit/etc.) — défense en profondeur qui comble
+          aussi une lacune que le filtrage manuel de `UtilisateurService` ne couvrait pas :
+          `FindAsync` (utilisé par `ActiverAsync`/`DesactiverAsync`/`ChangePasswordAsync`)
+          contourne les query filters par conception, mais `ApplyTenantOwnershipRules` rejette
+          quand même la sauvegarde si l'entité chargée appartient à une autre entreprise.
+        - **Piège trouvé et corrigé avant qu'il ne casse la connexion** : `Utilisateur` est la
+          seule entité interrogée AVANT authentification (`AuthentifierAsync`, au login). Un
+          `HasQueryFilter`/`ApplyTenantOwnershipRules` naïf aurait exclu toutes les lignes (aucun
+          tenant résolu pour une requête anonyme) et cassé la connexion pour tout le monde — pire,
+          `AuthentifierAsync` peut aussi déclencher une sauvegarde AVANT authentification (ré-hachage
+          d'un ancien mot de passe), qui aurait levé "Aucun tenant actif" et cassé cette migration
+          de hash silencieusement. Ajouté `IExecutionContext.IsAuthenticated` (implémenté dans
+          `HttpExecutionContext`, `BackgroundExecutionContext`, et `DesktopExecutionContext` côté
+          desktop) ; le filtre et la règle d'écriture pour `Utilisateur` exigent maintenant
+          explicitement une requête authentifiée, pas seulement "une requête HTTP existe".
+        - `UtilisateurForm.razor` affiche désormais l'entreprise : champ texte **lecture seule**
+          (nom de sa propre entreprise) pour un Admin normal, **liste déroulante modifiable**
+          (`ICompanyService.GetAllAsync`) pour le SuperAdmin, avec validation côté page si laissée
+          vide. Nouveau `ICompanyService.GetByIdAsync`.
+      - **Nouvelle vue globale (partie 2)** : `Components/Pages/Admin/UtilisateursGlobalList.razor`
+        (`/admin/utilisateurs-global`), `[Authorize(Roles = "SuperAdmin")]` — liste tous les
+        utilisateurs toutes entreprises confondues (Login, Nom, Email, **Entreprise**, Rôle, État,
+        Créé le), filtrable par entreprise (y compris un filtre dédié "Compte(s) Système" pour les
+        SuperAdmin). Lien ajouté dans le menu Administration, visible uniquement pour SuperAdmin.
+        `UtilisateurService.GetAllAsync` inclut maintenant `.Include(u => u.Company)`.
+      - **Bug de robustesse trouvé en testant** : le regroupement du filtre utilisait `CompanyId`
+        brut, mais l'affichage du tableau utilise `IsSuperAdmin` pour décider "Compte Système" —
+        les deux peuvent diverger si un SuperAdmin porte encore un `CompanyId` non nul (état
+        atteignable seulement via une modification directe de la base, hors du flux applicatif
+        normal, mais reproduit pendant les tests). Corrigé en regroupant/filtrant par
+        `u.IsSuperAdmin ? null : u.CompanyId` partout, cohérent avec l'affichage.
+      8 nouveaux tests service (`UtilisateurServiceTests` : auto-assignation, préservation d'un
+      choix explicite, `IsSuperAdmin` force `CompanyId = null`, échec explicite sans tenant,
+      inclusion de `Company` ; `CompanyServiceTests.GetByIdAsync`). Vérifié de bout en bout dans le
+      navigateur : création d'un utilisateur par un Admin normal (entreprise auto-assignée et
+      affichée en lecture seule, confirmée en base) ; création d'une 2ᵉ entreprise et d'un
+      utilisateur assigné explicitement par un SuperAdmin (confirmée en base) ; vue globale
+      affichant les 3 comptes avec la bonne entreprise pour chacun, filtre par entreprise et par
+      "Compte(s) Système" tous deux vérifiés ; accès direct à `/admin/utilisateurs-global` et
+      `/admin/entreprises` correctement refusé (page "Accès refusé", pas de boucle) pour un Admin
+      normal. Suite complète : 291/291 tests verts (Web + Desktop : 56/56), build 0 erreur.
+
 ### Améliorations UX
 
 - [ ] Pagination sur les listes longues (Clients, Produits, Factures)

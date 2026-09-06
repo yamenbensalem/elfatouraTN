@@ -16,6 +16,30 @@ public class CompanyServiceTests
     }
 
     [Fact]
+    public async Task GetByIdAsync_ReturnsMatchingCompany()
+    {
+        var svc = CreateService(out var db);
+        var company = new Company { Name = "Société Alpha" };
+        db.Companies.Add(company);
+        await db.SaveChangesAsync();
+
+        var found = await svc.GetByIdAsync(company.Id);
+
+        Assert.NotNull(found);
+        Assert.Equal("Société Alpha", found!.Name);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_UnknownId_ReturnsNull()
+    {
+        var svc = CreateService(out _);
+
+        var found = await svc.GetByIdAsync(999999);
+
+        Assert.Null(found);
+    }
+
+    [Fact]
     public async Task AddAsync_PersistsNewCompany()
     {
         var svc = CreateService(out var db);

@@ -33,7 +33,10 @@ public class UtilisateurService(
 
     public async Task<List<Utilisateur>> GetAllAsync()
     {
-        var query = db.Utilisateurs.AsNoTracking().AsQueryable();
+        // Company is included so a SuperAdmin session (where the tenant filter below doesn't
+        // apply, so this legitimately returns every company's users) can display which company
+        // each row belongs to — see Components/Pages/Admin/UtilisateursGlobalList.razor.
+        var query = db.Utilisateurs.AsNoTracking().Include(u => u.Company).AsQueryable();
         if (tenantService?.CurrentCompanyId is int companyId)
             query = query.Where(u => !u.IsSuperAdmin && u.CompanyId == companyId);
 
@@ -80,7 +83,7 @@ public class UtilisateurService(
 
     public async Task AddAsync(Utilisateur utilisateur, string plainPassword)
     {
-        await EnsureTenantDefaultsAsync(utilisateur);
+        EnsureTenantDefaults(utilisateur);
 
         utilisateur.Role = utilisateur.IsSuperAdmin
             ? RoleNameMapper.SuperAdmin
@@ -111,7 +114,7 @@ public class UtilisateurService(
             })
             .FirstOrDefaultAsync();
 
-        await EnsureTenantDefaultsAsync(utilisateur);
+        EnsureTenantDefaults(utilisateur);
 
         utilisateur.Role = utilisateur.IsSuperAdmin
             ? RoleNameMapper.SuperAdmin
@@ -286,7 +289,16 @@ public class UtilisateurService(
         return id;
     }
 
-    private async Task EnsureTenantDefaultsAsync(Utilisateur utilisateur)
+    /// <summary>
+    /// A non-SuperAdmin user must always belong to a company. If the caller (a normal Admin,
+    /// via UtilisateurForm) didn't set one explicitly, inherit the acting admin's own company —
+    /// that's the only company they could legitimately mean, since they can't see any other.
+    /// If neither is available, fail loudly rather than guessing: silently defaulting to
+    /// "whichever company happens to be first in the table" previously meant a misconfigured or
+    /// SuperAdmin-driven request with no explicit company could assign a brand-new user to a
+    /// company nobody chose.
+    /// </summary>
+    private void EnsureTenantDefaults(Utilisateur utilisateur)
     {
         if (utilisateur.IsSuperAdmin)
         {
@@ -303,11 +315,8 @@ public class UtilisateurService(
             return;
         }
 
-        utilisateur.CompanyId = await db.Companies
-            .AsNoTracking()
-            .OrderBy(c => c.Id)
-            .Select(c => (int?)c.Id)
-            .FirstOrDefaultAsync();
+        throw new InvalidOperationException(
+            "Impossible de déterminer l'entreprise de cet utilisateur : aucune entreprise n'a été sélectionnée et aucun tenant actif n'est disponible dans le contexte courant.");
     }
 
     private static string CreateSecurityStamp() => Guid.NewGuid().ToString("N");

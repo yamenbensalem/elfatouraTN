@@ -16,4 +16,5 @@ public sealed class HttpExecutionContext : IExecutionContext
     public int?  CurrentCompanyId => _accessor.HttpContext?.User.GetCompanyId();
     public bool  IsSuperAdmin     => _accessor.HttpContext?.User.IsSuperAdmin() == true;
     public bool  HasActiveContext => _accessor.HttpContext is not null;
+    public bool  IsAuthenticated  => _accessor.HttpContext?.User.Identity?.IsAuthenticated == true;
 }
