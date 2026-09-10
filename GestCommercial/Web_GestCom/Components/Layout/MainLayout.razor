@@ -41,7 +41,27 @@
                 </summary>
 
                 <div class="topbar-user-dropdown">
-                    @if (CanAccessAdministration)
+                    @if (CurrentUserService.IsSuperAdmin)
+                    {
+                        <a class="topbar-user-dropdown-link" href="/admin/entreprises">
+                            <i class="bi bi-diagram-3"></i>
+                            <span>Entreprises</span>
+                        </a>
+                        <a class="topbar-user-dropdown-link" href="/admin/utilisateurs-global">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Utilisateurs</span>
+                        </a>
+                        <a class="topbar-user-dropdown-link" href="/admin/roles">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Rôles &amp; Permissions</span>
+                        </a>
+                        <a class="topbar-user-dropdown-link" href="/admin/journal">
+                            <i class="bi bi-journal-text"></i>
+                            <span>Journal d'Activité</span>
+                        </a>
+                        <div class="topbar-user-dropdown-separator"></div>
+                    }
+                    else if (CanAccessAdministration)
                     {
                         <a class="topbar-user-dropdown-link" href="/admin/utilisateurs">
                             <i class="bi bi-person-lock"></i>

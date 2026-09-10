@@ -327,14 +327,27 @@ function Get-NginxProxyContainer {
 
 function Assert-VhostFileSafe {
     param([string]$LocalVhostFile)
-    # Refuse d'injecter un fichier vhost contenant $connection_upgrade :
-    # cette variable n'est définie que sur certaines versions de nginx-proxy
-    # et provoque un crash nginx [emerg] à l'injection.
     $content = Get-Content $LocalVhostFile -Raw -ErrorAction SilentlyContinue
+
+    # $connection_upgrade: this map variable isn't defined on our nginx-proxy version and
+    # crashes nginx [emerg] at injection.
     if ($content -match '\$connection_upgrade') {
         Write-Status "ERREUR — vhost file uses `$connection_upgrade` which crashes older nginx-proxy!" "Error"
         Write-Status "  Replace: proxy_set_header Connection `$connection_upgrade;" "Warning"
-        Write-Status "  With:    proxy_set_header Connection `$http_upgrade;"     "Warning"
+        Write-Status "  With:    proxy_set_header Connection `"upgrade`";"          "Warning"
+        Write-Status "  File: $LocalVhostFile" "Warning"
+        exit 1
+    }
+
+    # Connection $http_upgrade: bug found 2026-09-06, present unnoticed across several
+    # TijaraFlow modules. This forwards the CLIENT's Upgrade header value (e.g. "websocket")
+    # instead of the literal keyword "upgrade" that Kestrel requires to recognize a WebSocket
+    # upgrade request. Kestrel then answers 200 instead of 101 and SignalR silently falls back
+    # to long-polling — invisible until a reconnect is forced (e.g. nginx-proxy restart).
+    if ($content -match 'Connection\s+\$http_upgrade') {
+        Write-Status "ERREUR — vhost file sets 'Connection `$http_upgrade' — SignalR silently falls back to long-polling!" "Error"
+        Write-Status "  Replace: proxy_set_header Connection `$http_upgrade;" "Warning"
+        Write-Status "  With:    proxy_set_header Connection `"upgrade`";"    "Warning"
         Write-Status "  File: $LocalVhostFile" "Warning"
         exit 1
     }

@@ -243,6 +243,37 @@ using (var scope = app.Services.CreateScope())
         END
         """);
 
+    // SuperAdmin platform-integration storage (Clés d'API / Webhooks) — management pages only,
+    // no functional REST API or webhook-delivery mechanism is wired to these tables.
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'api_key')
+        BEGIN
+            CREATE TABLE api_key (
+                id_api_key            INT IDENTITY(1,1) PRIMARY KEY,
+                name_api_key          NVARCHAR(150) NOT NULL,
+                value_api_key         NVARCHAR(255) NOT NULL,
+                company_id_api_key    INT NULL REFERENCES company(id_company),
+                active_api_key        BIT NOT NULL DEFAULT 1,
+                date_creation_api_key DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+            )
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'webhook')
+        BEGIN
+            CREATE TABLE webhook (
+                id_webhook            INT IDENTITY(1,1) PRIMARY KEY,
+                name_webhook          NVARCHAR(150) NOT NULL,
+                url_webhook           NVARCHAR(500) NOT NULL,
+                event_webhook         NVARCHAR(100) NULL,
+                company_id_webhook    INT NULL REFERENCES company(id_company),
+                active_webhook        BIT NOT NULL DEFAULT 1,
+                date_creation_webhook DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+            )
+        END
+        """);
+
     // Add company_id column to utilisateurs if missing
     db.Database.ExecuteSqlRaw("""
         IF NOT EXISTS (
@@ -759,6 +790,23 @@ using (var scope = app.Services.CreateScope())
             Role   = "Admin",
             Actif  = true
         }, "admin123").GetAwaiter().GetResult();
+    }
+
+    // Seed: créer un compte SuperAdmin dédié si aucun n'existe encore. Un rôle SuperAdmin distinct
+    // (gestion globale de la plateforme uniquement, aucun accès aux données métier — voir
+    // PermissionAuthorizationHandler/ServicePermissionGuard) doit avoir son propre compte plutôt
+    // que de promouvoir le compte "admin" métier existant.
+    if (!db.Utilisateurs.Any(u => u.IsSuperAdmin))
+    {
+        var utilisateurService = scope.ServiceProvider.GetRequiredService<IUtilisateurService>();
+        utilisateurService.AddAsync(new Utilisateur
+        {
+            Login       = "superadmin",
+            Prenom      = "Super",
+            Nom         = "Admin",
+            IsSuperAdmin = true,
+            Actif       = true
+        }, "SuperAdmin123!").GetAwaiter().GetResult();
     }
 
     var seedMockData = app.Configuration.GetValue<bool>("MockData:Enabled") ||

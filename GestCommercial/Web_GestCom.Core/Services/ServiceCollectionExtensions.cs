@@ -46,6 +46,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped(typeof(IReferenceDataService<>), typeof(ReferenceDataService<>));
         services.AddScoped<ICompanyService, CompanyService>();
+        services.AddScoped<IApiKeyService, ApiKeyService>();
+        services.AddScoped<IWebhookService, WebhookService>();
 
         return services;
     }

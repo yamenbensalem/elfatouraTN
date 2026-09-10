@@ -17,7 +17,12 @@ internal static class ServicePermissionGuard
 
         await currentUser.EnsureInitializedAsync();
 
-        if (currentUser.IsAdmin || currentUser.IsSuperAdmin)
+        // Admin bypasses business-permission checks within their own company. SuperAdmin does
+        // NOT — it's a platform-management role with no business-data write access by design
+        // (see PermissionAuthorizationHandler for the matching read-side boundary). A SuperAdmin
+        // falls through to the HasPermissionAsync check below like any other unprivileged role,
+        // and fails it since SuperAdmin only holds the platform-scoped permissions.
+        if (currentUser.IsAdmin)
             return;
 
         if (!currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(currentUser.Login))

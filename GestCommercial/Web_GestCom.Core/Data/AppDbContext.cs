@@ -24,21 +24,27 @@ public class AppDbContext : DbContext
     private bool  CurrentIsAuthenticated => _executionContext?.IsAuthenticated == true;
 
     /// <summary>
-    /// Tenant filters engage only when there is an active execution context and the principal
-    /// is not a SuperAdmin.  Null context (unit tests, migrations) disables all filters.
+    /// Tenant filters for business data engage whenever there is an active execution context —
+    /// including for SuperAdmin. SuperAdmin is a platform-management role with zero business-data
+    /// access by design (see PermissionAuthorizationHandler/ServicePermissionGuard for the matching
+    /// read/write boundary at the permission-check level); since SuperAdmin has no CompanyId, this
+    /// filter naturally excludes every business row for it rather than bypassing tenant isolation.
+    /// Null context (unit tests, migrations) disables all filters.
     /// </summary>
     private bool ShouldApplyTenantFilter
-        => (_executionContext?.HasActiveContext == true) && !CurrentIsSuperAdmin;
+        => _executionContext?.HasActiveContext == true;
 
     /// <summary>
-    /// Same as ShouldApplyTenantFilter, but also requires an authenticated principal. Used only
-    /// by the Utilisateur query filter: HasActiveContext is true for the anonymous login POST
-    /// too (it just means "an HTTP request exists"), and that request looks up Utilisateur by
-    /// login before any principal/tenant exists — without this extra gate the tenant filter would
-    /// exclude every row (CurrentCompanyId is null pre-login) and login would always fail.
+    /// Governs the Utilisateur query filter only. Unlike ShouldApplyTenantFilter above, SuperAdmin
+    /// DOES bypass this one — it needs cross-company visibility for the "Tous les utilisateurs"
+    /// global dashboard (platform-management scope, not business data). Also requires an
+    /// authenticated principal: HasActiveContext is true for the anonymous login POST too (it just
+    /// means "an HTTP request exists"), and that request looks up Utilisateur by login before any
+    /// principal/tenant exists — without this extra gate the filter would exclude every row
+    /// (CurrentCompanyId is null pre-login) and login would always fail.
     /// </summary>
     private bool ShouldApplyTenantFilterToAuthenticatedUsers
-        => ShouldApplyTenantFilter && CurrentIsAuthenticated;
+        => (_executionContext?.HasActiveContext == true) && CurrentIsAuthenticated && !CurrentIsSuperAdmin;
 
     // ── Reference data ─────────────────────────────────────────────────────
     public DbSet<Entreprise>        Entreprises         => Set<Entreprise>();
@@ -86,6 +92,10 @@ public class AppDbContext : DbContext
     public DbSet<RolePermission> RolePermissions  => Set<RolePermission>();
     public DbSet<FeatureFlag>    FeatureFlags     => Set<FeatureFlag>();
 
+    // ── SuperAdmin platform integrations (storage-only, no functional wiring) ──────────────
+    public DbSet<ApiKey>  ApiKeys  => Set<ApiKey>();
+    public DbSet<Webhook> Webhooks => Set<Webhook>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         ApplyTenantOwnershipRules();
@@ -107,7 +117,15 @@ public class AppDbContext : DbContext
         // enforcement in that case for the same reason the Utilisateur query filter does; there
         // is no tenant to stamp or check yet, and every other ITenantOwned entity is never
         // touched outside an authenticated request anyway, so this changes nothing for them.
-        if (!ShouldApplyTenantFilter || !CurrentIsAuthenticated)
+        //
+        // SuperAdmin is skipped too (unlike the read-side ShouldApplyTenantFilter above): its only
+        // legitimate write path is managing Utilisateur rows across companies (platform-management
+        // scope), which requires trusting an explicit, caller-supplied CompanyId rather than
+        // stamping the current tenant (SuperAdmin has none). It has no service-layer path to write
+        // genuine business entities at all — PermissionAuthorizationHandler/ServicePermissionGuard
+        // reject those before SaveChanges is ever reached — so skipping the stamp/check here for
+        // SuperAdmin does not reopen the business-data boundary those enforce.
+        if (_executionContext?.HasActiveContext != true || CurrentIsSuperAdmin || !CurrentIsAuthenticated)
             return;
 
         if (!CurrentCompanyId.HasValue)

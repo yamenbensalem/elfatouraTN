@@ -4,6 +4,54 @@
 
 <div class="sidebar-inner">
 
+@if (CurrentUserService.IsSuperAdmin)
+{
+    <!-- ── SuperAdmin: platform-management nav only. No business section (Ventes/Achats/
+         Stock/Rapports/Paramètres) is ever rendered here — SuperAdmin has zero access to
+         business/functional data by design (see PermissionAuthorizationHandler /
+         ServicePermissionGuard / AppDbContext's tenant query filters). ── -->
+    <div class="sidebar-section-item">
+        <NavLink class="sidebar-link" href="" Match="NavLinkMatch.All">
+            <i class="bi bi-speedometer2 sidebar-icon"></i>
+            <span>Tableau de bord</span>
+        </NavLink>
+    </div>
+
+    <div class="sidebar-separator"></div>
+
+    <div class="sidebar-group">
+        <div class="sidebar-group-header">
+            <div class="sidebar-group-title">
+                <i class="bi bi-hdd-network sidebar-icon"></i>
+                <span>Plateforme</span>
+            </div>
+        </div>
+        <div class="sidebar-group-items-wrap">
+            <div class="sidebar-group-items">
+                <NavLink class="sidebar-link sidebar-link-sub" href="admin/entreprises">
+                    <i class="bi bi-diagram-3 sidebar-icon"></i> Entreprises
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="admin/utilisateurs-global">
+                    <i class="bi bi-people-fill sidebar-icon"></i> Utilisateurs
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="admin/roles">
+                    <i class="bi bi-person-badge sidebar-icon"></i> Rôles &amp; Permissions
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="admin/journal">
+                    <i class="bi bi-journal-text sidebar-icon"></i> Journal d'Activité
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="admin/cles-api">
+                    <i class="bi bi-key sidebar-icon"></i> Clés d'API
+                </NavLink>
+                <NavLink class="sidebar-link sidebar-link-sub" href="admin/webhooks">
+                    <i class="bi bi-broadcast sidebar-icon"></i> Webhooks
+                </NavLink>
+            </div>
+        </div>
+    </div>
+}
+else
+{
     <!-- Dashboard -->
     <div class="sidebar-section-item">
         <NavLink class="sidebar-link" href="" Match="NavLinkMatch.All">
@@ -170,7 +218,7 @@
         </div>
     }
 
-    <!-- ── ADMINISTRATION (Admin only) ───────── -->
+    <!-- ── ADMINISTRATION (Admin only — SuperAdmin gets its own "Plateforme" nav above) ── -->
     @if (CanAccessAdministration)
     {
         <div class="sidebar-group">
@@ -194,19 +242,11 @@
                     <NavLink class="sidebar-link sidebar-link-sub" href="admin/journal">
                         <i class="bi bi-journal-text sidebar-icon"></i> Journal d'Activité
                     </NavLink>
-                    @if (CurrentUserService.IsSuperAdmin)
-                    {
-                        <NavLink class="sidebar-link sidebar-link-sub" href="admin/entreprises">
-                            <i class="bi bi-diagram-3 sidebar-icon"></i> Entreprises
-                        </NavLink>
-                        <NavLink class="sidebar-link sidebar-link-sub" href="admin/utilisateurs-global">
-                            <i class="bi bi-people-fill sidebar-icon"></i> Tous les Utilisateurs
-                        </NavLink>
-                    }
                 </div>
             </div>
         </div>
     }
+}
 
     <!-- ── User footer ────────────────────────── -->
     <div class="sidebar-user-strip">

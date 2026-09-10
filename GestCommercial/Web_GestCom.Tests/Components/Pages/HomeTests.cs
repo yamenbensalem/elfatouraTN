@@ -15,6 +15,7 @@ public sealed class HomeTests : TestContext
     private readonly Mock<IProduitService>       _produits     = new();
     private readonly Mock<IFournisseurService>   _fournisseurs = new();
     private readonly Mock<IFactureClientService> _factures     = new();
+    private readonly Mock<ICompanyService>       _companies    = new();
     private readonly Mock<ICurrentUserService>   _currentUser  = new();
     private readonly Mock<IPermissionService>    _permissions  = new();
 
@@ -24,6 +25,7 @@ public sealed class HomeTests : TestContext
         Services.AddScoped(_ => _produits.Object);
         Services.AddScoped(_ => _fournisseurs.Object);
         Services.AddScoped(_ => _factures.Object);
+        Services.AddScoped(_ => _companies.Object);
         Services.AddScoped(_ => _currentUser.Object);
         Services.AddSingleton(_permissions.Object);
 
@@ -34,7 +36,9 @@ public sealed class HomeTests : TestContext
         _fournisseurs.Setup(s => s.GetAllAsync(null)).ReturnsAsync([]);
         _factures.Setup(s => s.GetAllAsync(false, null)).ReturnsAsync([]);
         _factures.Setup(s => s.GetAllAsync(true, null)).ReturnsAsync([]);
+        _companies.Setup(s => s.GetAllAsync()).ReturnsAsync([]);
         _currentUser.Setup(s => s.Login).Returns("testuser");
+        _currentUser.Setup(s => s.IsSuperAdmin).Returns(false);
     }
 
     private void AuthorizeAdmin()

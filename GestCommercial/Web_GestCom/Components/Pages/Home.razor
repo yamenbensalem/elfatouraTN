@@ -6,20 +6,101 @@
 @inject IProduitService ProduitService
 @inject IFournisseurService FournisseurService
 @inject IFactureClientService FactureService
+@inject ICompanyService CompanyService
 @inject ICurrentUserService CurrentUserService
 
 <PageTitle>Tableau de bord – GestCom</PageTitle>
 
-<!-- Greeting -->
-<div class="mb-4">
-    <h4 class="fw-bold mb-1">Bienvenue, <span class="text-primary">@CurrentUserService.Login</span> 👋</h4>
-    <p class="text-muted mb-0">Voici un aperçu de votre activité commerciale</p>
-</div>
-
-<LoadingSpinner Loading="@_loading" />
-
-@if (!_loading)
+@if (CurrentUserService.IsSuperAdmin)
 {
+    <!-- SuperAdmin dashboard: platform-management summary only — no business data (clients,
+         factures, produits, ...) is ever loaded or shown here, per its zero-business-access
+         design (see PermissionAuthorizationHandler / ServicePermissionGuard / AppDbContext). -->
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1">Bienvenue, <span class="text-primary">@CurrentUserService.Login</span> 👋</h4>
+        <p class="text-muted mb-0">Gestion globale de la plateforme</p>
+    </div>
+
+    <LoadingSpinner Loading="@_platformLoading" />
+
+    @if (!_platformLoading)
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="card kpi-card h-100">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrap" style="background:#e8f0fe">
+                            <i class="bi bi-diagram-3" style="color:#1a73e8;font-size:1.4rem"></i>
+                        </div>
+                        <div>
+                            <div class="kpi-value">@_nbEntreprises</div>
+                            <div class="kpi-label">Entreprises</div>
+                        </div>
+                    </div>
+                    <div class="kpi-footer">
+                        <a href="admin/entreprises" class="text-decoration-none text-muted small">
+                            <i class="bi bi-arrow-right me-1"></i>Gérer les entreprises
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="card kpi-card h-100">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrap" style="background:#f3e8ff">
+                            <i class="bi bi-people-fill" style="color:#7c3aed;font-size:1.4rem"></i>
+                        </div>
+                        <div>
+                            <div class="kpi-value">@_nbUtilisateurs</div>
+                            <div class="kpi-label">Utilisateurs</div>
+                        </div>
+                    </div>
+                    <div class="kpi-footer">
+                        <a href="admin/utilisateurs-global" class="text-decoration-none text-muted small">
+                            <i class="bi bi-arrow-right me-1"></i>Voir tous les utilisateurs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-hdd-network me-1 text-primary"></i>
+                Accès rapides
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="admin/roles" class="btn btn-outline-secondary btn-action-quick">
+                        <i class="bi bi-person-badge me-2"></i>Rôles &amp; Permissions
+                    </a>
+                    <a href="admin/journal" class="btn btn-outline-secondary btn-action-quick">
+                        <i class="bi bi-journal-text me-2"></i>Journal d'Activité
+                    </a>
+                    <a href="admin/cles-api" class="btn btn-outline-secondary btn-action-quick">
+                        <i class="bi bi-key me-2"></i>Clés d'API
+                    </a>
+                    <a href="admin/webhooks" class="btn btn-outline-secondary btn-action-quick">
+                        <i class="bi bi-broadcast me-2"></i>Webhooks
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <!-- Greeting -->
+    <div class="mb-4">
+        <h4 class="fw-bold mb-1">Bienvenue, <span class="text-primary">@CurrentUserService.Login</span> 👋</h4>
+        <p class="text-muted mb-0">Voici un aperçu de votre activité commerciale</p>
+    </div>
+
+    <LoadingSpinner Loading="@_loading" />
+
+    @if (!_loading)
+    {
     <!-- ── KPI Cards ───────────────────────────── -->
     <div class="row g-3 mb-4">
 
@@ -265,6 +346,7 @@
             }
         </div>
     </div>
+    }
 }
 
 @code {
@@ -279,8 +361,21 @@
     private List<Produit> _alerteStock = [];
     private List<(string Label, double Montant)> _caMensuel = [];
 
+    private bool _platformLoading = true;
+    private int _nbEntreprises;
+    private int _nbUtilisateurs;
+
     protected override async Task OnInitializedAsync()
     {
+        if (CurrentUserService.IsSuperAdmin)
+        {
+            var companies = await CompanyService.GetAllAsync();
+            _nbEntreprises  = companies.Count;
+            _nbUtilisateurs = companies.Sum(c => c.Utilisateurs.Count);
+            _platformLoading = false;
+            return;
+        }
+
         var clients      = await ClientService.GetAllAsync();
         var produits     = await ProduitService.GetAllAsync();
         var fournisseurs = await FournisseurService.GetAllAsync();

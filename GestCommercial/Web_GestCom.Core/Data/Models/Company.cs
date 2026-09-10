@@ -34,4 +34,6 @@ public class Company
     public ICollection<Utilisateur> Utilisateurs { get; set; } = [];
     public ICollection<AppRole>     Roles         { get; set; } = [];
     public ICollection<FeatureFlag> FeatureFlags  { get; set; } = [];
+    public ICollection<ApiKey>      ApiKeys       { get; set; } = [];
+    public ICollection<Webhook>     Webhooks      { get; set; } = [];
 }

@@ -80,9 +80,12 @@ public class AppDbContextTenantIsolationTests
     }
 
     [Fact]
-    public async Task QueryFilter_WhenSuperAdmin_ShouldBypassTenantFilter()
+    public async Task QueryFilter_WhenSuperAdmin_ShouldSeeNoBusinessData()
     {
-        // Arrange
+        // Arrange — SuperAdmin is a platform-management role with zero business-data access by
+        // design: it must not see Client (or any other business entity) rows from any company,
+        // unlike the Utilisateur query filter which deliberately does let it see all companies'
+        // users (platform scope, not business data — see ShouldApplyTenantFilterToAuthenticatedUsers).
         var options = CreateOptions();
 
         await using (var seed = new AppDbContext(options))
@@ -100,7 +103,7 @@ public class AppDbContextTenantIsolationTests
         var visibleClients = await context.Clients.OrderBy(c => c.CodeClient).ToListAsync();
 
         // Assert
-        Assert.Equal(2, visibleClients.Count);
+        Assert.Empty(visibleClients);
     }
 
     private static DbContextOptions<AppDbContext> CreateOptions()

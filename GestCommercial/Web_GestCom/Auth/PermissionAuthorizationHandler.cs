@@ -22,8 +22,12 @@ public class PermissionAuthorizationHandler
             return;
         }
 
-        // Privileged roles always grant all permissions.
-        if (context.User.IsInRole(RoleNameMapper.Admin) || context.User.IsInRole(RoleNameMapper.SuperAdmin))
+        // Admin always grants all business permissions within their own company. SuperAdmin does
+        // NOT get this bypass — it's a platform-management role (companies, users, access rights)
+        // with no business-data access by design, and only holds the superAdminModules
+        // permissions (tenants/users-global/roles-global/journal-global) seeded in RolePermission.
+        // Falling through to HasPermissionAsync below is what actually enforces that boundary.
+        if (context.User.IsInRole(RoleNameMapper.Admin))
         {
             context.Succeed(requirement);
             return;

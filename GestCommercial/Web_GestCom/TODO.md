@@ -352,6 +352,69 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       `/admin/entreprises` correctement refusé (page "Accès refusé", pas de boucle) pour un Admin
       normal. Suite complète : 291/291 tests verts (Web + Desktop : 56/56), build 0 erreur.
 
+### SuperAdmin — rôle dédié à la gestion de plateforme (zéro accès métier) ✅
+
+- [x] Corriger une faille de sécurité critique découverte en cours de route : `PermissionAuthorizationHandler`
+      (lecture, policy `perm:X`) et `ServicePermissionGuard` (écriture, services) traitaient
+      `IsInRole(SuperAdmin)` comme un bypass complet de toutes les permissions métier — comme
+      `Admin`. Un SuperAdmin pouvait donc accéder à `/clients`, `/factures-client`, etc. par URL
+      directe malgré les liens de nav masqués. Contradiction directe avec l'exigence explicite de
+      l'utilisateur : "[SuperAdmin] ne doit avoir aucun accès aux fonctionnalités métier ni aux
+      données fonctionnelles des entreprises". Retiré le bypass SuperAdmin des deux fichiers (bypass
+      Admin conservé) : un SuperAdmin retombe désormais sur `HasPermissionAsync`, qui échoue
+      puisqu'il ne détient que les permissions plateforme (`tenants`, `users-global`,
+      `roles-global`, `journal-global`).
+- [x] Faille de défense en profondeur trouvée en creusant : `AppDbContext.ShouldApplyTenantFilter`
+      bypassait aussi les *query filters* EF Core pour SuperAdmin sur les 10 entités métier (Client,
+      Fournisseur, Produit, DevisClient, CommandeVente, BonLivraison, FactureClient, CommandeAchat,
+      BonReception, FactureFournisseur) — un SuperAdmin voyait donc TOUTES les lignes de TOUTES les
+      entreprises dès qu'une requête EF passait, indépendamment des vérifications de permission
+      ci-dessus. Séparé en deux flags : `ShouldApplyTenantFilter` (business data, plus de bypass
+      SuperAdmin — `CurrentCompanyId` étant `null` pour un SuperAdmin, le filtre exclut alors
+      naturellement toutes les lignes) et `ShouldApplyTenantFilterToAuthenticatedUsers` (Utilisateur
+      uniquement, conserve le bypass SuperAdmin — nécessaire pour la vue globale
+      `/admin/utilisateurs-global`). `ApplyTenantOwnershipRules` (écriture) garde aussi le skip
+      SuperAdmin : son seul chemin d'écriture légitime (créer/éditer un `Utilisateur` pour
+      n'importe quelle entreprise via `UtilisateurForm`) exige de faire confiance à un `CompanyId`
+      explicite plutôt que de tamponner le tenant courant (qu'un SuperAdmin n'a pas) — les entités
+      métier restent de toute façon inatteignables en écriture par un SuperAdmin (guard de
+      permission ci-dessus, avant même `SaveChanges`).
+- [x] Sidebar dédiée SuperAdmin (`NavMenu.razor`) : plus aucune section métier (Ventes/Achats/
+      Stock/Rapports/Paramètres) n'est rendue — uniquement "Plateforme" (Entreprises, Utilisateurs
+      → `/admin/utilisateurs-global`, Rôles & Permissions, Journal d'Activité, Clés d'API,
+      Webhooks). Même correction apportée au menu déroulant du topbar (`MainLayout.razor`), qui
+      dupliquait l'ancien lien admin "Utilisateurs" (`/admin/utilisateurs`, scope entreprise) au
+      lieu de la vue globale.
+- [x] `Home.razor` (`/`) rendu SuperAdmin-safe : branche dédiée qui ne charge et n'affiche plus
+      aucune donnée métier (KPI clients/produits/factures) — remplacée par un résumé plateforme
+      (nombre d'entreprises, nombre d'utilisateurs via `ICompanyService.GetAllAsync`) et des accès
+      rapides vers les pages Plateforme.
+- [x] Nouvelles entités `ApiKey`/`Webhook` (`Web_GestCom.Core/Data/Models/`) + services
+      (`ApiKeyService`/`WebhookService`) + pages CRUD `admin/cles-api` et `admin/webhooks`
+      (`[Authorize(Roles = "SuperAdmin")]`, même pattern que `CompaniesList.razor`) — **stockage/
+      gestion uniquement**, aucune API ni mécanisme d'envoi de webhook réel (choix explicite de
+      l'utilisateur : "Page de gestion seulement, pas de fonctionnalité"). `CompanyId` optionnel
+      (tag informatif, pas d'appartenance tenant — ni l'une ni l'autre n'implémente `ITenantOwned`
+      puisque le SuperAdmin doit voir toutes les lignes de toutes les entreprises). Tables créées
+      via bloc SQL idempotent dans `Program.cs` (`api_key`, `webhook`), suivant la convention
+      "pas de migrations EF".
+- [x] Compte `superadmin` dédié seedé dans `Program.cs` (login `superadmin` / mot de passe
+      `SuperAdmin123!`, `IsSuperAdmin = true`, `CompanyId` forcé `null` par
+      `UtilisateurService.EnsureTenantDefaults`) — créé uniquement si aucun SuperAdmin n'existe
+      encore. Un compte séparé plutôt que de promouvoir `admin` : demande explicite de
+      l'utilisateur.
+      Vérifié de bout en bout dans le navigateur avec le compte `superadmin` : sidebar et menu
+      topbar affichant uniquement "Plateforme" ; tableau de bord dédié (1 entreprise, 1
+      utilisateur, accès rapides) ; accès direct à `/clients` et `/factures-client` par URL
+      correctement bloqué ("Accès refusé", pas de boucle) — la régression de sécurité corrigée
+      ci-dessus est bien fermée ; pages Entreprises, Utilisateurs (globale, affiche `superadmin` en
+      "Compte Système" et `admin` avec son entreprise), Rôles & Permissions, Journal d'Activité
+      (entrées de connexion des deux comptes), Clés d'API et Webhooks toutes chargées sans erreur.
+      13 nouveaux tests service (`ApiKeyServiceTests`, `WebhookServiceTests`,
+      `AppDbContextTenantIsolationTests.QueryFilter_WhenSuperAdmin_ShouldSeeNoBusinessData` —
+      remplace l'ancien test qui affirmait à tort le comportement de bypass). Suite complète :
+      299/299 tests verts, build 0 erreur.
+
 ### Améliorations UX
 
 - [ ] Pagination sur les listes longues (Clients, Produits, Factures)

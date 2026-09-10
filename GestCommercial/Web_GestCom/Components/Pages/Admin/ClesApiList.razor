@@ -1,0 +1,193 @@
+@page "/admin/cles-api"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IApiKeyService ApiKeyService
+@inject ICompanyService CompanyService
+
+<PageTitle>Clés d'API – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="bi bi-key me-2"></i>Clés d'API</h3>
+    <button class="btn btn-primary" @onclick="AskNew">
+        <i class="bi bi-plus-circle"></i> Nouvelle Clé
+    </button>
+</div>
+
+<p class="text-muted small">
+    Page de gestion et de stockage des clés d'API uniquement — aucune API ou intégration
+    fonctionnelle n'est reliée à ces clés.
+</p>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Clé</th>
+                        <th>Entreprise</th>
+                        <th>Statut</th>
+                        <th>Créée le</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var k in _items)
+                    {
+                        <tr>
+                            <td>@k.Name</td>
+                            <td><code>@k.Value</code></td>
+                            <td>@(k.Company?.Name ?? "Plateforme (toutes entreprises)")</td>
+                            <td>
+                                <span class="badge @(k.Active ? "bg-success" : "bg-secondary")">
+                                    @(k.Active ? "Active" : "Désactivée")
+                                </span>
+                            </td>
+                            <td>@k.DateCreation.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AskEdit(k)">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(k)">
+                                    <i class="bi bi-trash me-1"></i>Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_items.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">Aucune clé d'API.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_items.Count clé(s)</div>
+</div>
+
+@if (_editVisible)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,0.5)" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="_editing" OnValidSubmit="SaveAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_isNew ? "Nouvelle Clé d'API" : "Modifier la Clé d'API")</h5>
+                        <button type="button" class="btn-close" @onclick="() => _editVisible = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nom <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_editing!.Name" />
+                            <ValidationMessage For="() => _editing!.Name" />
+                        </div>
+                        @if (!_isNew)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Clé</label>
+                                <input class="form-control" value="@_editing!.Value" readonly />
+                            </div>
+                        }
+                        <div class="mb-3">
+                            <label class="form-label">Entreprise</label>
+                            <InputSelect class="form-select" @bind-Value="_editing!.CompanyId">
+                                <option value="">Plateforme (toutes entreprises)</option>
+                                @foreach (var c in _companies)
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="form-check form-switch">
+                            <InputCheckbox class="form-check-input" @bind-Value="_editing!.Active" id="apiKeyActive" />
+                            <label class="form-check-label" for="apiKeyActive">Active</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => _editVisible = false">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog Title="Supprimer la clé d'API"
+               Message="@($"Confirmer la suppression de « {_toDelete?.Name} » ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<ApiKey> _items = [];
+    private List<Company> _companies = [];
+    private bool _loading = true;
+    private bool _editVisible;
+    private bool _isNew;
+    private ApiKey? _editing;
+    private bool _confirmVisible;
+    private ApiKey? _toDelete;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _companies = await CompanyService.GetAllAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _items = await ApiKeyService.GetAllAsync();
+        _loading = false;
+    }
+
+    private void AskNew()
+    {
+        _editing = new ApiKey { Active = true };
+        _isNew = true;
+        _editVisible = true;
+    }
+
+    private void AskEdit(ApiKey k)
+    {
+        _editing = new ApiKey { Id = k.Id, Name = k.Name, Value = k.Value, CompanyId = k.CompanyId, Active = k.Active, DateCreation = k.DateCreation };
+        _isNew = false;
+        _editVisible = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_isNew) await ApiKeyService.AddAsync(_editing!);
+            else await ApiKeyService.UpdateAsync(_editing!);
+            _editVisible = false;
+            _notif.ShowSuccess("Enregistré.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private void AskDelete(ApiKey k) { _toDelete = k; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await ApiKeyService.DeleteAsync(_toDelete);
+            _notif.ShowSuccess("Supprimé.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer cette clé.")); }
+    }
+}

@@ -1,0 +1,195 @@
+@page "/admin/webhooks"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IWebhookService WebhookService
+@inject ICompanyService CompanyService
+
+<PageTitle>Webhooks – GestCom</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="bi bi-broadcast me-2"></i>Webhooks</h3>
+    <button class="btn btn-primary" @onclick="AskNew">
+        <i class="bi bi-plus-circle"></i> Nouveau Webhook
+    </button>
+</div>
+
+<p class="text-muted small">
+    Page de gestion et de stockage des webhooks uniquement — aucun mécanisme d'envoi
+    n'est relié à ces enregistrements.
+</p>
+
+<Notification @ref="_notif" />
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <LoadingSpinner Loading="@_loading" />
+        @if (!_loading)
+        {
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>URL</th>
+                        <th>Événement</th>
+                        <th>Entreprise</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var w in _items)
+                    {
+                        <tr>
+                            <td>@w.Name</td>
+                            <td><code>@w.Url</code></td>
+                            <td>@w.EventType</td>
+                            <td>@(w.Company?.Name ?? "Plateforme (toutes entreprises)")</td>
+                            <td>
+                                <span class="badge @(w.Active ? "bg-success" : "bg-secondary")">
+                                    @(w.Active ? "Actif" : "Désactivé")
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => AskEdit(w)">
+                                    <i class="bi bi-pencil me-1"></i>Modifier
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(w)">
+                                    <i class="bi bi-trash me-1"></i>Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!_items.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">Aucun webhook.</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+    <div class="card-footer text-muted small">@_items.Count webhook(s)</div>
+</div>
+
+@if (_editVisible)
+{
+    <div class="modal fade show d-block" style="background:rgba(0,0,0,0.5)" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="_editing" OnValidSubmit="SaveAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_isNew ? "Nouveau Webhook" : "Modifier le Webhook")</h5>
+                        <button type="button" class="btn-close" @onclick="() => _editVisible = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nom <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_editing!.Name" />
+                            <ValidationMessage For="() => _editing!.Name" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">URL <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_editing!.Url" placeholder="https://..." />
+                            <ValidationMessage For="() => _editing!.Url" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Événement</label>
+                            <InputText class="form-control" @bind-Value="_editing!.EventType" placeholder="ex. facture.creee" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Entreprise</label>
+                            <InputSelect class="form-select" @bind-Value="_editing!.CompanyId">
+                                <option value="">Plateforme (toutes entreprises)</option>
+                                @foreach (var c in _companies)
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="form-check form-switch">
+                            <InputCheckbox class="form-check-input" @bind-Value="_editing!.Active" id="webhookActive" />
+                            <label class="form-check-label" for="webhookActive">Actif</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => _editVisible = false">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmDialog Title="Supprimer le webhook"
+               Message="@($"Confirmer la suppression de « {_toDelete?.Name} » ?")"
+               Visible="_confirmVisible"
+               OnConfirm="DeleteConfirmed"
+               OnCancel="() => _confirmVisible = false" />
+
+@code {
+    private List<Webhook> _items = [];
+    private List<Company> _companies = [];
+    private bool _loading = true;
+    private bool _editVisible;
+    private bool _isNew;
+    private Webhook? _editing;
+    private bool _confirmVisible;
+    private Webhook? _toDelete;
+    private Notification _notif = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _companies = await CompanyService.GetAllAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _items = await WebhookService.GetAllAsync();
+        _loading = false;
+    }
+
+    private void AskNew()
+    {
+        _editing = new Webhook { Active = true };
+        _isNew = true;
+        _editVisible = true;
+    }
+
+    private void AskEdit(Webhook w)
+    {
+        _editing = new Webhook { Id = w.Id, Name = w.Name, Url = w.Url, EventType = w.EventType, CompanyId = w.CompanyId, Active = w.Active, DateCreation = w.DateCreation };
+        _isNew = false;
+        _editVisible = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_isNew) await WebhookService.AddAsync(_editing!);
+            else await WebhookService.UpdateAsync(_editing!);
+            _editVisible = false;
+            _notif.ShowSuccess("Enregistré.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private void AskDelete(Webhook w) { _toDelete = w; _confirmVisible = true; }
+
+    private async Task DeleteConfirmed()
+    {
+        _confirmVisible = false;
+        if (_toDelete is null) return;
+        try
+        {
+            await WebhookService.DeleteAsync(_toDelete);
+            _notif.ShowSuccess("Supprimé.");
+            await LoadAsync();
+        }
+        catch (Exception ex) { _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer ce webhook.")); }
+    }
+}
