@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Connexion – GestCom</title>
-    <link rel="stylesheet" href="~/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/bootstrap/bootstrap.min.css?v=@Web_GestCom.AssetVersion.Value" />
     <style>
         *, *::before, *::after { box-sizing: border-box; }
 
@@ -14,53 +14,60 @@
             min-height: 100vh;
             margin: 0;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(145deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%);
+            background: #f4f6fb;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             padding: 1.5rem;
         }
 
-        .auth-card {
+        /* ── Shell: two-panel card ── */
+        .auth-shell {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 100%;
+            max-width: 920px;
             background: #ffffff;
             border-radius: 1.5rem;
-            padding: 2.5rem 2.25rem 2rem;
-            width: 100%;
-            max-width: 440px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+            box-shadow: 0 25px 60px rgba(15,23,42,0.14);
+            overflow: hidden;
+        }
+
+        .auth-form-panel {
+            padding: 3rem 2.75rem 2rem;
         }
 
         /* ── App brand ── */
         .brand {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            margin-bottom: 1.75rem;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
         }
 
         .brand-icon {
-            width: 68px;
-            height: 68px;
+            width: 52px;
+            height: 52px;
+            flex-shrink: 0;
             border-radius: 1.1rem;
-            background: linear-gradient(145deg, #6366f1, #8b5cf6);
+            background: linear-gradient(145deg, #2563eb, #3b82f6);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0.85rem;
-            box-shadow: 0 8px 20px rgba(99,102,241,0.4);
+            box-shadow: 0 8px 20px rgba(37,99,235,0.35);
         }
 
         .brand-name {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 800;
             color: #1e1b4b;
             letter-spacing: -0.02em;
             margin: 0;
+            line-height: 1.1;
         }
 
         .brand-sub {
-            font-size: 0.82rem;
+            font-size: 0.75rem;
             color: #6b7280;
             margin: 0.1rem 0 0;
         }
@@ -70,14 +77,12 @@
             font-size: 1.55rem;
             font-weight: 800;
             color: #111827;
-            text-align: center;
             margin: 0 0 0.3rem;
         }
 
         .auth-subtitle {
             font-size: 0.875rem;
             color: #6b7280;
-            text-align: center;
             margin: 0 0 1.75rem;
         }
 
@@ -126,9 +131,9 @@
         }
 
         .auth-input:focus {
-            border-color: #8b5cf6;
+            border-color: #3b82f6;
             background: #fff;
-            box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
         }
 
         .auth-input.has-toggle { padding-right: 2.75rem; }
@@ -156,10 +161,9 @@
             gap: 0.5rem;
         }
 
-        /* ── Remember / Forgot row ── */
+        /* ── Remember row ── */
         .remember-row {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             margin: 0.5rem 0 1.5rem;
         }
@@ -177,18 +181,9 @@
         .remember-label input[type=checkbox] {
             width: 16px;
             height: 16px;
-            accent-color: #8b5cf6;
+            accent-color: #3b82f6;
             cursor: pointer;
         }
-
-        .auth-link {
-            font-size: 0.875rem;
-            color: #8b5cf6;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .auth-link:hover { color: #6d28d9; text-decoration: underline; }
 
         /* ── Submit button ── */
         .btn-auth {
@@ -196,14 +191,14 @@
             padding: 0.9rem;
             border: none;
             border-radius: 0.65rem;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+            background: linear-gradient(135deg, #2563eb, #3b82f6, #6366f1);
             color: white;
             font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             letter-spacing: 0.02em;
             transition: opacity .2s, transform .15s;
-            box-shadow: 0 4px 15px rgba(139,92,246,0.4);
+            box-shadow: 0 4px 15px rgba(59,130,246,0.4);
         }
 
         .btn-auth:hover { opacity: 0.92; transform: translateY(-1px); }
@@ -218,127 +213,259 @@
         }
 
         .auth-bottom a {
-            color: #8b5cf6;
+            color: #2563eb;
             font-weight: 600;
             text-decoration: none;
         }
 
         .auth-bottom a:hover { text-decoration: underline; }
 
-        /* ── Footer ── */
+        /* ── Footer (inside the form panel) ── */
         .auth-footer {
             margin-top: 1.75rem;
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.65);
+            font-size: 0.72rem;
+            color: #9ca3af;
             text-align: center;
         }
 
         .auth-footer a {
-            color: rgba(255,255,255,0.85);
-            text-decoration: underline;
+            color: #2563eb;
+            font-weight: 600;
+            text-decoration: none;
         }
 
-        .auth-footer a:hover { color: #fff; }
+        .auth-footer a:hover { text-decoration: underline; }
+
+        /* ── Decorative panel ── */
+        .auth-decor {
+            position: relative;
+            background: linear-gradient(160deg, #2563eb 0%, #3b82f6 55%, #6366f1 100%);
+            padding: 3rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .auth-decor .decor-shape-1 {
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .auth-decor .decor-shape-2 {
+            position: absolute;
+            bottom: -90px;
+            left: -40px;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+        }
+
+        .auth-decor .decor-shape-3 {
+            position: absolute;
+            top: 35%;
+            right: 15%;
+            width: 90px;
+            height: 90px;
+            border-radius: 1.5rem;
+            background: rgba(255,255,255,0.06);
+            transform: rotate(18deg);
+        }
+
+        .auth-decor-content { position: relative; }
+
+        .auth-decor-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.35;
+            margin: 0 0 0.9rem;
+        }
+
+        .auth-decor-subtitle {
+            font-size: 0.88rem;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.6;
+            margin: 0 0 2rem;
+        }
+
+        .auth-decor-features {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .auth-decor-feature {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .auth-decor-feature .feature-check {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            border-radius: 0.55rem;
+            background: rgba(255,255,255,0.16);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-decor-feature span {
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        @@media (max-width: 860px) {
+            .auth-shell { grid-template-columns: 1fr; max-width: 440px; }
+            .auth-decor { display: none; }
+        }
     </style>
 </head>
 <body>
 
-<div class="auth-card">
+<div class="auth-shell">
 
-    <!-- Brand -->
-    <div class="brand">
-        <div class="brand-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" fill="white" viewBox="0 0 16 16">
-                <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>
-            </svg>
+    <!-- ── Panneau formulaire ── -->
+    <div class="auth-form-panel">
+
+        <div class="brand">
+            <div class="brand-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="white" viewBox="0 0 16 16">
+                    <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="brand-name">GestCom</p>
+                <p class="brand-sub">Gestion Commerciale</p>
+            </div>
         </div>
-        <p class="brand-name">GestCom</p>
-        <p class="brand-sub">Gestion Commerciale</p>
+
+        <h1 class="auth-title">Connexion</h1>
+        <p class="auth-subtitle">Accédez à votre espace de gestion</p>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="auth-alert">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                    <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+                </svg>
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Input.ReturnUrl" />
+
+            <!-- Email / Login -->
+            <div class="input-icon-wrap">
+                <span class="field-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414zM0 4.697v7.104l5.803-3.558zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586zm3.436-.586L16 11.801V4.697z"/>
+                    </svg>
+                </span>
+                <input asp-for="Input.Login"
+                       class="auth-input"
+                       type="text"
+                       placeholder="Email *"
+                       autocomplete="username"
+                       autofocus />
+            </div>
+            <span asp-validation-for="Input.Login" class="field-error"></span>
+
+            <!-- Password -->
+            <div class="input-icon-wrap" style="margin-top:0.5rem">
+                <span class="field-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
+                    </svg>
+                </span>
+                <input asp-for="Input.Password"
+                       id="passwordInput"
+                       class="auth-input has-toggle"
+                       type="password"
+                       placeholder="Mot de passe *"
+                       autocomplete="current-password" />
+                <button type="button" class="toggle-password" onclick="togglePassword()" title="Afficher / masquer">
+                    <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
+                        <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
+                        <path d="M3.35 5.47q-.27.238-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709z"/>
+                        <path fill-rule="evenodd" d="M13.646 14.354l-12-12 .708-.708 12 12z"/>
+                    </svg>
+                </button>
+            </div>
+            <span asp-validation-for="Input.Password" class="field-error"></span>
+
+            <!-- Remember -->
+            <div class="remember-row">
+                <label class="remember-label">
+                    <input type="checkbox" asp-for="Input.RememberMe" />
+                    Se souvenir de moi
+                </label>
+            </div>
+
+            <button type="submit" class="btn-auth">Se connecter</button>
+        </form>
+
+        @if (Model.AllowPublicSignup)
+        {
+            <div class="auth-bottom">
+                Vous n'avez pas de compte ?
+                <a href="/compte/inscription">Créer un compte</a>
+            </div>
+        }
+
+        <footer class="auth-footer">
+            © 2026 GestCom – Tous droits réservés<br />
+            Développé par <a href="https://aivorconsulting.com/" target="_blank" rel="noopener noreferrer">AIVOR Consulting</a>
+        </footer>
     </div>
 
-    <h1 class="auth-title">Connexion</h1>
-    <p class="auth-subtitle">Accédez à votre espace de gestion</p>
+    <!-- ── Panneau décoratif ── -->
+    <div class="auth-decor">
+        <div class="decor-shape-1"></div>
+        <div class="decor-shape-2"></div>
+        <div class="decor-shape-3"></div>
 
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-    {
-        <div class="auth-alert">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
-            </svg>
-            @Model.ErrorMessage
+        <div class="auth-decor-content">
+            <h2 class="auth-decor-title">La gestion commerciale simplifiée pour les entreprises tunisiennes</h2>
+            <p class="auth-decor-subtitle">Ventes, achats, stock et rapports fiscaux réunis dans une seule plateforme.</p>
+
+            <div class="auth-decor-features">
+                <div class="auth-decor-feature">
+                    <div class="feature-check">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                    <span>Devis, factures, bons de livraison</span>
+                </div>
+                <div class="auth-decor-feature">
+                    <div class="feature-check">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                    <span>Suivi de stock en temps réel</span>
+                </div>
+                <div class="auth-decor-feature">
+                    <div class="feature-check">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </div>
+                    <span>TVA, timbre fiscal, retenue à la source</span>
+                </div>
+            </div>
         </div>
-    }
+    </div>
 
-    <form method="post">
-        @Html.AntiForgeryToken()
-        <input type="hidden" asp-for="Input.ReturnUrl" />
-
-        <!-- Email / Login -->
-        <div class="input-icon-wrap">
-            <span class="field-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414zM0 4.697v7.104l5.803-3.558zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586zm3.436-.586L16 11.801V4.697z"/>
-                </svg>
-            </span>
-            <input asp-for="Input.Login"
-                   class="auth-input"
-                   type="text"
-                   placeholder="Email *"
-                   autocomplete="username"
-                   autofocus />
-        </div>
-        <span asp-validation-for="Input.Login" class="field-error"></span>
-
-        <!-- Password -->
-        <div class="input-icon-wrap" style="margin-top:0.5rem">
-            <span class="field-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>
-                </svg>
-            </span>
-            <input asp-for="Input.Password"
-                   id="passwordInput"
-                   class="auth-input has-toggle"
-                   type="password"
-                   placeholder="Mot de passe *"
-                   autocomplete="current-password" />
-            <button type="button" class="toggle-password" onclick="togglePassword()" title="Afficher / masquer">
-                <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A6 6 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486z"/>
-                    <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829"/>
-                    <path d="M3.35 5.47q-.27.238-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709z"/>
-                    <path fill-rule="evenodd" d="M13.646 14.354l-12-12 .708-.708 12 12z"/>
-                </svg>
-            </button>
-        </div>
-        <span asp-validation-for="Input.Password" class="field-error"></span>
-
-        <!-- Remember + Forgot -->
-        <div class="remember-row">
-            <label class="remember-label">
-                <input type="checkbox" asp-for="Input.RememberMe" />
-                Se souvenir de moi
-            </label>
-            <a href="/compte/mot-de-passe-oublie" class="auth-link">Mot de passe oublié ?</a>
-        </div>
-
-        <button type="submit" class="btn-auth">Se connecter</button>
-    </form>
-
-    @if (Model.AllowPublicSignup)
-    {
-        <div class="auth-bottom">
-            Vous n'avez pas de compte ?
-            <a href="/compte/inscription">Créer un compte</a>
-        </div>
-    }
 </div>
-
-<footer class="auth-footer">
-    © 2026 GestCom – Tous droits réservés<br />
-    Développé par <a href="https://aivorconsulting.com/" target="_blank" rel="noopener noreferrer">AIVOR Consulting</a>
-</footer>
 
 <script>
     function togglePassword() {
