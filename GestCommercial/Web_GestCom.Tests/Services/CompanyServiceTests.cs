@@ -50,6 +50,38 @@ public class CompanyServiceTests
         Assert.Equal(baseline + 1, await db.Companies.CountAsync());
     }
 
+    [Theory]
+    [InlineData("Standard", 1, 1, 2)]
+    [InlineData("Pro", 2, 3, 10)]
+    [InlineData("Enterprise", 2, 3, 10)]
+    public async Task AddAsync_SeedsSelfServiceQuotas_FromPlan(string plan, int maxAdmins, int maxManagers, int maxEmployes)
+    {
+        var svc = CreateService(out var db);
+        var company = new Company { Name = "Société Alpha", Plan = plan };
+
+        await svc.AddAsync(company);
+
+        Assert.Equal(maxAdmins, company.MaxAdmins);
+        Assert.Equal(maxManagers, company.MaxManagers);
+        Assert.Equal(maxEmployes, company.MaxEmployes);
+    }
+
+    [Fact]
+    public async Task AddAsync_WithExplicitQuota_DoesNotOverrideWithPlanDefaults()
+    {
+        var svc = CreateService(out var db);
+        var company = new Company { Name = "Société Alpha", Plan = "Standard", MaxAdmins = 5 };
+
+        await svc.AddAsync(company);
+
+        Assert.Equal(5, company.MaxAdmins);
+        // Only MaxAdmins was set explicitly; MaxManagers/MaxEmployes stay null (illimité) rather
+        // than falling back to the Standard defaults, since the caller already opted out of the
+        // auto-seeded set by setting one of the three fields itself.
+        Assert.Null(company.MaxManagers);
+        Assert.Null(company.MaxEmployes);
+    }
+
     [Fact]
     public async Task GetAllAsync_ReturnsCompaniesOrderedByName()
     {

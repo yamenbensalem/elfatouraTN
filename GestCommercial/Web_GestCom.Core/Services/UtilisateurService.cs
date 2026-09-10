@@ -27,7 +27,8 @@ public interface IUtilisateurService
 public class UtilisateurService(
     AppDbContext db,
     ITenantService? tenantService = null,
-    IPermissionService? permissionService = null) : IUtilisateurService
+    IPermissionService? permissionService = null,
+    ICurrentUserService? currentUser = null) : IUtilisateurService
 {
     private const string HashPrefixBcryptV1 = "v2$bcrypt$";
 
@@ -89,6 +90,8 @@ public class UtilisateurService(
             ? RoleNameMapper.SuperAdmin
             : RoleNameMapper.NormalizeKnownRoleName(utilisateur.Role);
 
+        await EnsureRoleQuotaNotExceededAsync(utilisateur);
+
         utilisateur.PasswordHash = HashPassword(plainPassword);
         utilisateur.DateCreation = DateTime.Now;
         utilisateur.SecurityStamp = CreateSecurityStamp();
@@ -130,6 +133,12 @@ public class UtilisateurService(
                                (previous.Role != utilisateur.Role ||
                                 previous.CompanyId != utilisateur.CompanyId ||
                                 previous.IsSuperAdmin != utilisateur.IsSuperAdmin);
+
+        // Only re-check the quota when the role/company actually changes (e.g. promoting an
+        // Employé to Admin) — a no-op save of a user who already holds this role in this company
+        // was already counted when they first got it, so there's nothing new to validate.
+        if (authStateChanged)
+            await EnsureRoleQuotaNotExceededAsync(utilisateur);
 
         if (authStateChanged)
         {
@@ -317,6 +326,46 @@ public class UtilisateurService(
 
         throw new InvalidOperationException(
             "Impossible de déterminer l'entreprise de cet utilisateur : aucune entreprise n'a été sélectionnée et aucun tenant actif n'est disponible dans le contexte courant.");
+    }
+
+    /// <summary>
+    /// Enforces each company's self-service quota per role (Company.MaxAdmins/MaxManagers/
+    /// MaxEmployes — null = illimité): a company's own Admin can create/promote at most that many
+    /// accounts of a given role. SuperAdmin is never subject to this — it's the escape valve once
+    /// a company's quota is reached. Counts every account ever created for that role in that
+    /// company, active or deactivated (deactivating someone doesn't free up a slot).
+    /// </summary>
+    private async Task EnsureRoleQuotaNotExceededAsync(Utilisateur utilisateur)
+    {
+        if (currentUser?.IsSuperAdmin == true)
+            return;
+
+        if (utilisateur.IsSuperAdmin || !utilisateur.CompanyId.HasValue)
+            return;
+
+        var quota = await db.Companies
+            .AsNoTracking()
+            .Where(c => c.Id == utilisateur.CompanyId.Value)
+            .Select(c => utilisateur.Role == RoleNameMapper.Admin ? c.MaxAdmins
+                       : utilisateur.Role == RoleNameMapper.Manager ? c.MaxManagers
+                       : c.MaxEmployes)
+            .FirstOrDefaultAsync();
+
+        if (!quota.HasValue)
+            return;
+
+        var currentCount = await db.Utilisateurs
+            .AsNoTracking()
+            .Where(u => u.CompanyId == utilisateur.CompanyId
+                     && !u.IsSuperAdmin
+                     && u.Role == utilisateur.Role
+                     && u.Id != utilisateur.Id)
+            .CountAsync();
+
+        if (currentCount >= quota.Value)
+            throw new InvalidOperationException(
+                $"Quota de comptes « {utilisateur.Role} » atteint pour cette entreprise (max {quota.Value}). " +
+                "Seul le SuperAdmin peut créer un nouveau compte de ce rôle au-delà de ce quota.");
     }
 
     private static string CreateSecurityStamp() => Guid.NewGuid().ToString("N");

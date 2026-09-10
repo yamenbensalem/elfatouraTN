@@ -414,6 +414,72 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       `AppDbContextTenantIsolationTests.QueryFilter_WhenSuperAdmin_ShouldSeeNoBusinessData` —
       remplace l'ancien test qui affirmait à tort le comportement de bypass). Suite complète :
       299/299 tests verts, build 0 erreur.
+- [x] Bug trouvé et corrigé après coup : créer une nouvelle Entreprise (`CompaniesList.razor`) ne
+      créait aucun utilisateur — l'entreprise était donc inaccessible (aucun Admin ne pouvait s'y
+      connecter), et `UtilisateursGlobalList.razor` n'avait de toute façon aucun bouton "Nouvel
+      Utilisateur" (le lien vers `/admin/utilisateurs` — qui en a un — a été retiré de la nav
+      SuperAdmin dans le redesign ci-dessus, sans remplacement). Corrigé : le modal "Nouvelle
+      Entreprise" collecte désormais aussi un compte Admin initial (prénom, nom, login, email,
+      mot de passe) et crée l'entreprise puis l'admin en deux étapes séquentielles (même
+      `AppDbContext` scopé, pas de vraie transaction — si la création de l'admin échoue après
+      coup, ex. login déjà pris malgré la vérification préalable, l'entreprise reste créée et un
+      message explicite invite à ajouter l'admin manuellement plutôt que de masquer l'échec).
+      `UtilisateursGlobalList.razor` a aussi gagné un bouton "Nouvel Utilisateur" (route
+      `/admin/utilisateurs/nouveau`, déjà autorisée pour SuperAdmin et déjà capable de choisir
+      n'importe quelle entreprise) pour pouvoir ajouter un 2ᵉ admin/manager à une entreprise
+      existante. `UtilisateurForm.razor` renvoyait toujours vers `/admin/utilisateurs` (page
+      Admin, scope entreprise) après un ajout/annulation — changé pour renvoyer vers
+      `/admin/utilisateurs-global` quand l'acteur est SuperAdmin.
+      Vérifié de bout en bout dans le navigateur : création d'"Société Test Beta" avec un admin
+      `karim.beta` depuis le compte `superadmin` → message "Entreprise et compte admin créés." →
+      visible dans la vue globale avec le bon rôle/entreprise → déconnexion et connexion réussie
+      en tant que `karim.beta` → atterrit bien sur le tableau de bord métier normal (Ventes/
+      Achats/Stock complets, données vides comme attendu pour une entreprise neuve), pas sur le
+      tableau de bord Plateforme. 299/299 tests verts, build 0 erreur.
+
+### Quotas de comptes en libre-service, par entreprise ✅
+
+- [x] Demande utilisateur : par défaut, l'Admin d'une entreprise ne peut créer/promouvoir en
+      libre-service qu'1 Admin, 1 Manager et 2 Employés — au-delà, seul le SuperAdmin peut créer
+      un nouveau compte de ce rôle pour cette entreprise. Choix affinés en discussion : quotas
+      configurables **par entreprise** (pas seulement par Plan), seedés par défaut selon le Plan
+      (Standard 1/1/2, Pro 2/3/10, Enterprise aligné sur Pro pour l'instant — l'utilisateur
+      tranchera plus tard au cas par cas plutôt que de figer "Enterprise = illimité"), et le
+      comptage inclut les comptes désactivés (désactiver quelqu'un ne libère pas de place).
+- [x] `Company` (`Web_GestCom.Core/Data/Models/Company.cs`) gagne 3 colonnes nullables —
+      `MaxAdmins`/`MaxManagers`/`MaxEmployes` — `null` = illimité. Colonnes ajoutées via bloc SQL
+      idempotent dans `Program.cs` (`ALTER TABLE company ADD ...`), donc les entreprises déjà
+      existantes en prod restent illimitées tant qu'un SuperAdmin ne configure pas leurs quotas
+      explicitement (aucun changement rétroactif).
+- [x] `CompanyService.AddAsync` seede ces 3 champs depuis le `Plan` de l'entreprise **uniquement**
+      si aucun des trois n'a été positionné explicitement par l'appelant (sinon les valeurs
+      fournies gagnent telles quelles, sans compléter les deux autres avec les défauts du Plan).
+      Un changement de `Plan` après coup (via `UpdateAsync`) ne retouche jamais ces champs — une
+      fois seedés ou configurés à la main, ils ne bougent plus tout seuls.
+- [x] Application de la règle dans `UtilisateurService` (nouveau paramètre optionnel
+      `ICurrentUserService? currentUser`, même pattern que `ClientService`) : une nouvelle méthode
+      privée `EnsureRoleQuotaNotExceededAsync` s'exécute dans `AddAsync` (toujours) et `UpdateAsync`
+      (seulement si `authStateChanged` — rôle/entreprise/IsSuperAdmin a changé ; resauvegarder un
+      utilisateur sans toucher son rôle ne redéclenche pas la vérification). Compte tous les
+      comptes du rôle visé dans l'entreprise (actifs + désactivés), exclut l'utilisateur en cours
+      d'édition de son propre décompte (gère nativement le cas promotion sans branche spéciale).
+      `currentUser?.IsSuperAdmin == true` court-circuite entièrement la vérification.
+- [x] `CompaniesList.razor` : le modal "Modifier" (pas "Nouvelle Entreprise") expose les 3 champs
+      numériques nullables (`InputNumber`, placeholder "Illimité") — c'est là que le SuperAdmin
+      configure les quotas au cas par cas, entreprise par entreprise, comme demandé. `AskEdit`
+      copie bien les 3 valeurs existantes pour ne pas les écraser à l'ouverture du modal.
+      10 nouveaux tests service (`CompanyServiceTests` : seed par Plan pour Standard/Pro/
+      Enterprise, non-écrasement si déjà positionné explicitement ; `UtilisateurServiceTests` :
+      quota atteint bloque un acteur non-SuperAdmin, SuperAdmin le contourne, quota `null` reste
+      illimité, comptes désactivés comptent quand même, promotion de rôle bloquée au quota,
+      resauvegarde sans changement de rôle ne redéclenche pas la vérification).
+      Vérifié de bout en bout dans le navigateur : SuperAdmin configure `MaxAdmins = 1` sur
+      « Société Test Beta » (entreprise déjà existante, illimitée par défaut car créée avant cette
+      fonctionnalité) → l'Admin de cette entreprise (`karim.beta`) tente de créer un 2ᵉ Admin →
+      bloqué avec le message « Quota de comptes « Admin » atteint pour cette entreprise (max 1).
+      Seul le SuperAdmin peut créer un nouveau compte de ce rôle au-delà de ce quota. » → le
+      SuperAdmin crée ensuite ce même compte sans aucun blocage (bypass confirmé). 309/309 tests
+      verts, build 0 erreur.
 
 ### Améliorations UX
 

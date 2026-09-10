@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "SuperAdmin")]
 @inject ICompanyService CompanyService
+@inject IUtilisateurService UtilisateurService
 
 <PageTitle>Entreprises – GestCom</PageTitle>
 
@@ -87,6 +88,64 @@
                                 <option value="Enterprise">Enterprise</option>
                             </InputSelect>
                         </div>
+                        @if (!_isNew)
+                        {
+                            <hr />
+                            <p class="text-muted small mb-2">
+                                Quotas de comptes en libre-service — au-delà, seul le SuperAdmin
+                                peut créer un nouveau compte de ce rôle pour cette entreprise.
+                                Laisser vide = illimité.
+                            </p>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label">Max Admin</label>
+                                    <InputNumber class="form-control" @bind-Value="_editing!.MaxAdmins" placeholder="Illimité" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Max Manager</label>
+                                    <InputNumber class="form-control" @bind-Value="_editing!.MaxManagers" placeholder="Illimité" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Max Employé</label>
+                                    <InputNumber class="form-control" @bind-Value="_editing!.MaxEmployes" placeholder="Illimité" />
+                                </div>
+                            </div>
+                        }
+                        @if (_isNew)
+                        {
+                            <hr />
+                            <p class="text-muted small mb-2">
+                                Compte Admin initial — une entreprise sans utilisateur est
+                                inaccessible, ce compte permet de s'y connecter dès la création.
+                            </p>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                                    <InputText class="form-control" @bind-Value="_adminPrenom" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Nom <span class="text-danger">*</span></label>
+                                    <InputText class="form-control" @bind-Value="_adminNom" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Login <span class="text-danger">*</span></label>
+                                    <InputText class="form-control" @bind-Value="_adminLogin" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <InputText class="form-control" @bind-Value="_adminEmail" type="email" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="password" @bind="_adminPassword"
+                                           placeholder="Min. 6 caractères" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Confirmer <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="password" @bind="_adminConfirmPassword" />
+                                </div>
+                            </div>
+                        }
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" @onclick="() => _editVisible = false">Annuler</button>
@@ -114,6 +173,13 @@
     private Company? _toDelete;
     private Notification _notif = default!;
 
+    private string _adminPrenom = string.Empty;
+    private string _adminNom = string.Empty;
+    private string _adminLogin = string.Empty;
+    private string _adminEmail = string.Empty;
+    private string _adminPassword = string.Empty;
+    private string _adminConfirmPassword = string.Empty;
+
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
@@ -127,24 +193,78 @@
     {
         _editing = new Company { Plan = "Standard" };
         _isNew = true;
+        _adminPrenom = _adminNom = _adminLogin = _adminEmail = _adminPassword = _adminConfirmPassword = string.Empty;
         _editVisible = true;
     }
 
     private void AskEdit(Company c)
     {
-        _editing = new Company { Id = c.Id, Name = c.Name, Slug = c.Slug, Plan = c.Plan, SettingsJson = c.SettingsJson };
+        _editing = new Company
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Slug = c.Slug,
+            Plan = c.Plan,
+            SettingsJson = c.SettingsJson,
+            MaxAdmins = c.MaxAdmins,
+            MaxManagers = c.MaxManagers,
+            MaxEmployes = c.MaxEmployes
+        };
         _isNew = false;
         _editVisible = true;
     }
 
     private async Task SaveAsync()
     {
+        if (_isNew)
+        {
+            if (string.IsNullOrWhiteSpace(_adminPrenom) || string.IsNullOrWhiteSpace(_adminNom) || string.IsNullOrWhiteSpace(_adminLogin))
+            { _notif.ShowError("Veuillez renseigner le prénom, le nom et le login du compte admin."); return; }
+            if (_adminPassword.Length < 6)
+            { _notif.ShowError("Le mot de passe du compte admin doit faire au moins 6 caractères."); return; }
+            if (_adminPassword != _adminConfirmPassword)
+            { _notif.ShowError("Les mots de passe du compte admin ne correspondent pas."); return; }
+            if (await UtilisateurService.LoginExistsAsync(_adminLogin))
+            { _notif.ShowError("Ce login est déjà utilisé."); return; }
+        }
+
         try
         {
-            if (_isNew) await CompanyService.AddAsync(_editing!);
-            else await CompanyService.UpdateAsync(_editing!);
+            if (_isNew)
+            {
+                await CompanyService.AddAsync(_editing!);
+
+                try
+                {
+                    var admin = new Utilisateur
+                    {
+                        Login = _adminLogin,
+                        Prenom = _adminPrenom,
+                        Nom = _adminNom,
+                        Email = string.IsNullOrWhiteSpace(_adminEmail) ? null : _adminEmail,
+                        Role = "Admin",
+                        CompanyId = _editing!.Id,
+                        Actif = true
+                    };
+                    await UtilisateurService.AddAsync(admin, _adminPassword);
+                }
+                catch (Exception adminEx)
+                {
+                    _notif.ShowError($"Entreprise créée, mais la création du compte admin a échoué : {adminEx.Message} — ajoutez-en un manuellement depuis « Tous les Utilisateurs ».");
+                    _editVisible = false;
+                    await LoadAsync();
+                    return;
+                }
+
+                _notif.ShowSuccess("Entreprise et compte admin créés.");
+            }
+            else
+            {
+                await CompanyService.UpdateAsync(_editing!);
+                _notif.ShowSuccess("Enregistré.");
+            }
+
             _editVisible = false;
-            _notif.ShowSuccess("Enregistré.");
             await LoadAsync();
         }
         catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }

@@ -11,10 +11,13 @@ namespace Web_GestCom.Tests.Services;
 
 public class UtilisateurServiceTests
 {
-    private static UtilisateurService CreateService(out AppDbContext db, ITenantService? tenantService = null)
+    private static UtilisateurService CreateService(
+        out AppDbContext db,
+        ITenantService? tenantService = null,
+        ICurrentUserService? currentUser = null)
     {
         db = DbContextFactory.Create();
-        return new UtilisateurService(db, tenantService ?? new StubTenantService());
+        return new UtilisateurService(db, tenantService ?? new StubTenantService(), currentUser: currentUser);
     }
 
     private static Utilisateur MakeUser(string login, string role = "Employé")
@@ -83,6 +86,110 @@ public class UtilisateurServiceTests
 
         var stored = await db.Utilisateurs.SingleAsync(u => u.Login == "superadmin-user");
         Assert.Null(stored.CompanyId);
+    }
+
+    [Fact]
+    public async Task AddAsync_WhenRoleQuotaReached_NonSuperAdminActor_Throws()
+    {
+        var svc = CreateService(out var db, new StubTenantService(companyId: 100), new StubCurrentUserService("admin1", isAdmin: true));
+        db.Companies.Add(new Company { Id = 100, Name = "Société Alpha", MaxAdmins = 1 });
+        db.Utilisateurs.Add(MakeUserWithCompany("existing-admin", "Admin", 100));
+        await db.SaveChangesAsync();
+
+        var newAdmin = MakeUser("second-admin", "Admin");
+        newAdmin.CompanyId = 100;
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.AddAsync(newAdmin, "P@ssw0rd!"));
+        Assert.Contains("Quota", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AddAsync_WhenRoleQuotaReached_SuperAdminActor_Succeeds()
+    {
+        var svc = CreateService(out var db, new StubTenantService(companyId: 100), new StubCurrentUserService("superadmin", isSuperAdmin: true));
+        db.Companies.Add(new Company { Id = 100, Name = "Société Alpha", MaxAdmins = 1 });
+        db.Utilisateurs.Add(MakeUserWithCompany("existing-admin", "Admin", 100));
+        await db.SaveChangesAsync();
+
+        var newAdmin = MakeUser("second-admin", "Admin");
+        newAdmin.CompanyId = 100;
+
+        await svc.AddAsync(newAdmin, "P@ssw0rd!");
+
+        Assert.Equal(2, await db.Utilisateurs.CountAsync(u => u.CompanyId == 100 && u.Role == "Admin"));
+    }
+
+    [Fact]
+    public async Task AddAsync_WhenQuotaIsNull_Illimite_Succeeds()
+    {
+        var svc = CreateService(out var db, new StubTenantService(companyId: 100), new StubCurrentUserService("admin1", isAdmin: true));
+        db.Companies.Add(new Company { Id = 100, Name = "Société Alpha", MaxAdmins = null });
+        db.Utilisateurs.Add(MakeUserWithCompany("existing-admin", "Admin", 100));
+        await db.SaveChangesAsync();
+
+        var newAdmin = MakeUser("second-admin", "Admin");
+        newAdmin.CompanyId = 100;
+
+        await svc.AddAsync(newAdmin, "P@ssw0rd!");
+
+        Assert.Equal(2, await db.Utilisateurs.CountAsync(u => u.CompanyId == 100 && u.Role == "Admin"));
+    }
+
+    [Fact]
+    public async Task AddAsync_QuotaCountsDeactivatedUsersToo()
+    {
+        var svc = CreateService(out var db, new StubTenantService(companyId: 100), new StubCurrentUserService("admin1", isAdmin: true));
+        db.Companies.Add(new Company { Id = 100, Name = "Société Alpha", MaxEmployes = 1 });
+        var deactivated = MakeUserWithCompany("old-employe", "Employé", 100);
+        deactivated.Actif = false;
+        db.Utilisateurs.Add(deactivated);
+        await db.SaveChangesAsync();
+
+        var newEmploye = MakeUser("new-employe", "Employé");
+        newEmploye.CompanyId = 100;
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.AddAsync(newEmploye, "P@ssw0rd!"));
+        Assert.Contains("Quota", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PromotingToRoleAtQuota_NonSuperAdminActor_Throws()
+    {
+        var svc = CreateService(out var db, new StubTenantService(companyId: 100), new StubCurrentUserService("admin1", isAdmin: true));
+        db.Companies.Add(new Company { Id = 100, Name = "Société Alpha", MaxAdmins = 1 });
+        db.Utilisateurs.Add(MakeUserWithCompany("existing-admin", "Admin", 100));
+        var employe = MakeUserWithCompany("to-be-promoted", "Employé", 100);
+        db.Utilisateurs.Add(employe);
+        await db.SaveChangesAsync();
+        db.Entry(employe).State = EntityState.Detached;
+
+        employe.Role = "Admin";
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => svc.UpdateAsync(employe));
+        Assert.Contains("Quota", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ResavingSameRoleAtQuota_DoesNotThrow()
+    {
+        var svc = CreateService(out var db, new StubTenantService(companyId: 100), new StubCurrentUserService("admin1", isAdmin: true));
+        var admin = MakeUserWithCompany("existing-admin", "Admin", 100);
+        db.Companies.Add(new Company { Id = 100, Name = "Société Alpha", MaxAdmins = 1 });
+        db.Utilisateurs.Add(admin);
+        await db.SaveChangesAsync();
+        db.Entry(admin).State = EntityState.Detached;
+
+        admin.Prenom = "Renommé";
+        await svc.UpdateAsync(admin);
+
+        var reloaded = await db.Utilisateurs.AsNoTracking().SingleAsync(u => u.Id == admin.Id);
+        Assert.Equal("Renommé", reloaded.Prenom);
+    }
+
+    private static Utilisateur MakeUserWithCompany(string login, string role, int companyId)
+    {
+        var user = MakeUser(login, role);
+        user.CompanyId = companyId;
+        return user;
     }
 
     [Fact]

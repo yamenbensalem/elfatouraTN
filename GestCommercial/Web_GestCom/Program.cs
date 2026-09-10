@@ -178,12 +178,47 @@ using (var scope = app.Services.CreateScope())
         IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'company')
         BEGIN
             CREATE TABLE company (
-                id_company       INT IDENTITY(1,1) PRIMARY KEY,
-                name_company     NVARCHAR(100) NOT NULL,
-                slug_company     NVARCHAR(50)  NULL,
-                plan_company     NVARCHAR(50)  NOT NULL DEFAULT 'Standard',
-                settings_company NVARCHAR(MAX) NULL
+                id_company         INT IDENTITY(1,1) PRIMARY KEY,
+                name_company       NVARCHAR(100) NOT NULL,
+                slug_company       NVARCHAR(50)  NULL,
+                plan_company       NVARCHAR(50)  NOT NULL DEFAULT 'Standard',
+                settings_company   NVARCHAR(MAX) NULL,
+                max_admins_company   INT NULL,
+                max_managers_company INT NULL,
+                max_employes_company INT NULL
             )
+        END
+        """);
+
+    // Quotas de comptes par rôle, par entreprise (libre-service Admin, illimité si NULL) — ajoutés
+    // après coup, idempotent pour les bases déjà déployées.
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'company' AND COLUMN_NAME = 'max_admins_company'
+        )
+        BEGIN
+            ALTER TABLE company ADD max_admins_company INT NULL
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'company' AND COLUMN_NAME = 'max_managers_company'
+        )
+        BEGIN
+            ALTER TABLE company ADD max_managers_company INT NULL
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'company' AND COLUMN_NAME = 'max_employes_company'
+        )
+        BEGIN
+            ALTER TABLE company ADD max_employes_company INT NULL
         END
         """);
 

@@ -12,7 +12,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>@(_isNew ? "Nouvel Utilisateur" : $"Utilisateur : {_utilisateur.Login}")</h3>
-    <a href="/admin/utilisateurs" class="btn btn-outline-secondary">
+    <a href="@BackUrl" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Retour
     </a>
 </div>
@@ -120,7 +120,7 @@
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-save"></i> Enregistrer
             </button>
-            <a href="/admin/utilisateurs" class="btn btn-outline-secondary">Annuler</a>
+            <a href="@BackUrl" class="btn btn-outline-secondary">Annuler</a>
         </div>
     </EditForm>
 }
@@ -136,6 +136,7 @@
     private Notification _notif = default!;
     private List<Company> _companies = [];
     private string? _ownCompanyName;
+    private string BackUrl => CurrentUserService.IsSuperAdmin ? "/admin/utilisateurs-global" : "/admin/utilisateurs";
 
     protected override async Task OnInitializedAsync()
     {
@@ -145,7 +146,7 @@
             if (existing is not null)
                 _utilisateur = existing;
             else
-                Nav.NavigateTo("/admin/utilisateurs");
+                Nav.NavigateTo(BackUrl);
         }
 
         if (CurrentUserService.IsSuperAdmin)
@@ -178,7 +179,7 @@
             {
                 await UtilisateurService.UpdateAsync(_utilisateur);
             }
-            Nav.NavigateTo("/admin/utilisateurs");
+            Nav.NavigateTo(BackUrl);
         }
         catch (Exception ex)
         {

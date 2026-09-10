@@ -32,8 +32,28 @@ public class CompanyService(AppDbContext db) : ICompanyService
 
     public async Task AddAsync(Company company)
     {
+        ApplyDefaultQuotasIfUnset(company);
         db.Companies.Add(company);
         await db.SaveChangesGuardedAsync();
+    }
+
+    /// <summary>
+    /// Seeds the per-role self-service user quotas from the company's Plan the first time it's
+    /// created, unless the caller already set them explicitly. Purely a starting point: a
+    /// SuperAdmin can freely edit these afterward (UpdateAsync never touches them), and a null
+    /// value always means "illimité" regardless of Plan.
+    /// </summary>
+    private static void ApplyDefaultQuotasIfUnset(Company company)
+    {
+        if (company.MaxAdmins.HasValue || company.MaxManagers.HasValue || company.MaxEmployes.HasValue)
+            return;
+
+        (company.MaxAdmins, company.MaxManagers, company.MaxEmployes) = company.Plan switch
+        {
+            "Pro" => (2, 3, 10),
+            "Enterprise" => (2, 3, 10), // Aligné sur Pro pour l'instant — à ajuster au cas par cas.
+            _ => (1, 1, 2) // Standard (et tout Plan inconnu) — quota d'origine demandé.
+        };
     }
 
     public async Task UpdateAsync(Company company)
