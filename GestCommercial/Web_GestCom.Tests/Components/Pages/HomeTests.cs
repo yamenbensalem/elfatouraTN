@@ -38,6 +38,7 @@ public sealed class HomeTests : TestContext
         _factures.Setup(s => s.GetAllAsync(true, null)).ReturnsAsync([]);
         _companies.Setup(s => s.GetAllAsync()).ReturnsAsync([]);
         _currentUser.Setup(s => s.Login).Returns("testuser");
+        _currentUser.Setup(s => s.IsAuthenticated).Returns(true);
         _currentUser.Setup(s => s.IsSuperAdmin).Returns(false);
     }
 
@@ -46,6 +47,24 @@ public sealed class HomeTests : TestContext
         var auth = this.AddTestAuthorization();
         auth.SetAuthorized("testuser");
         auth.SetRoles("Admin");
+    }
+
+    // ── Anonymous landing page ───────────────────────────────────────────
+
+    [Fact]
+    public void AnonymousVisitor_SeesPublicLandingPage_NotTheDashboard()
+    {
+        _currentUser.Setup(s => s.IsAuthenticated).Returns(false);
+        var auth = this.AddTestAuthorization();
+        auth.SetNotAuthorized();
+
+        var cut = RenderComponent<Home>();
+
+        Assert.Contains("Se connecter", cut.Markup);
+        Assert.Contains("La gestion commerciale simplifiée", cut.Markup);
+        Assert.DoesNotContain("Bienvenue,", cut.Markup);
+        _clients.Verify(s => s.GetAllAsync(null), Times.Never);
+        _companies.Verify(s => s.GetAllAsync(), Times.Never);
     }
 
     // ── Greeting ──────────────────────────────────────────────────────────

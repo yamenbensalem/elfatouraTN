@@ -3,6 +3,14 @@
 @inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
 
+@if (!CurrentUserService.IsAuthenticated)
+{
+    <!-- Anonymous visitor: no app shell (topbar/sidebar) — the public landing page (Home.razor)
+         defines its own full-bleed layout, same treatment as the login screen. -->
+    @Body
+}
+else
+{
 <div class="layout-wrapper">
     <input id="sidebar-toggle" class="sidebar-toggle-input" type="checkbox" />
 
@@ -98,6 +106,7 @@
     </main>
 
 </div>
+}
 
 <div id="blazor-error-ui">
     Une erreur s'est produite.

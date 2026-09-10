@@ -1,5 +1,4 @@
 @page "/"
-@attribute [Authorize]
 @rendermode InteractiveServer
 @using System.Globalization
 @inject IClientService ClientService
@@ -9,10 +8,171 @@
 @inject ICompanyService CompanyService
 @inject ICurrentUserService CurrentUserService
 
-<PageTitle>Tableau de bord – GestCom</PageTitle>
-
-@if (CurrentUserService.IsSuperAdmin)
+@if (!CurrentUserService.IsAuthenticated)
 {
+    <!-- Public landing page — anonymous visitors only. MainLayout itself omits the topbar/
+         sidebar app shell for anonymous visitors, so this renders full-bleed like the login
+         screen. Matches Direction A of the design mockup approved by the user, with the blue
+         gradient they picked over the login screen's violet one. -->
+    <PageTitle>GestCom – Gestion Commerciale</PageTitle>
+
+    <div style="background:#ffffff;">
+
+            <!-- ── Header ── -->
+            <header style="display:flex; align-items:center; justify-content:space-between; padding:1.1rem 4rem; border-bottom:1px solid #f0f0f4;">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div style="width:42px; height:42px; border-radius:0.9rem; background:linear-gradient(145deg,#2563eb,#3b82f6); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(37,99,235,0.35);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="white" viewBox="0 0 16 16">
+                            <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-size:1.25rem; font-weight:800; color:#1e1b4b; letter-spacing:-0.02em; line-height:1.1;">GestCom</div>
+                        <div style="font-size:0.72rem; color:#6b7280;">Gestion Commerciale</div>
+                    </div>
+                </div>
+                <a href="/compte/connexion" style="padding:0.65rem 1.5rem; border-radius:0.65rem; background:linear-gradient(135deg,#2563eb,#3b82f6,#6366f1); color:#fff; font-weight:700; font-size:0.9rem; box-shadow:0 4px 15px rgba(59,130,246,0.35); text-decoration:none;">Se connecter</a>
+            </header>
+
+            <!-- ── Hero ── -->
+            <section style="background:linear-gradient(145deg,#2563eb 0%,#3b82f6 55%,#6366f1 100%); padding:5.5rem 4rem 6.5rem; text-align:center;">
+                <div style="max-width:760px; margin:0 auto;">
+                    <div style="display:inline-flex; align-items:center; gap:0.5rem; background:rgba(255,255,255,0.16); color:#fff; padding:0.4rem 0.9rem; border-radius:2rem; font-size:0.8rem; font-weight:600; margin-bottom:1.75rem;">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Pensé pour la fiscalité tunisienne
+                    </div>
+                    <h1 style="font-size:3rem; font-weight:800; color:#fff; letter-spacing:-0.02em; line-height:1.15; margin:0 0 1.25rem;">La gestion commerciale simplifiée pour les entreprises tunisiennes</h1>
+                    <p style="font-size:1.15rem; color:rgba(255,255,255,0.88); line-height:1.6; margin:0 0 2.25rem;">Devis, commandes, factures, stock et rapports — tout votre cycle commercial dans une seule plateforme, avec la TVA, le timbre fiscal et la retenue à la source déjà pris en compte.</p>
+                    <a href="/compte/connexion" style="display:inline-block; padding:0.95rem 2.25rem; border-radius:0.65rem; background:#fff; color:#1d4ed8; font-weight:700; font-size:1rem; box-shadow:0 12px 30px rgba(0,0,0,0.2); text-decoration:none;">Se connecter</a>
+                </div>
+            </section>
+
+            <!-- ── Fiscal band ── -->
+            <section style="padding:2.75rem 4rem; border-bottom:1px solid #f0f0f4;">
+                <div style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:2rem;">
+                    <div style="display:flex; align-items:center; gap:0.85rem;">
+                        <div style="width:44px; height:44px; flex-shrink:0; border-radius:0.65rem; background:#dbeafe; color:#2563eb; display:flex; align-items:center; justify-content:center;">
+                            <i class="bi bi-percent" style="font-size:1.2rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; color:#111827; font-size:0.92rem;">TVA 19 · 13 · 7 %</div>
+                            <div style="font-size:0.78rem; color:#6b7280;">Taux tunisiens intégrés</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.85rem;">
+                        <div style="width:44px; height:44px; flex-shrink:0; border-radius:0.65rem; background:#e0e7ff; color:#4f46e5; display:flex; align-items:center; justify-content:center;">
+                            <i class="bi bi-patch-check-fill" style="font-size:1.2rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; color:#111827; font-size:0.92rem;">Timbre fiscal</div>
+                            <div style="font-size:0.78rem; color:#6b7280;">Appliqué automatiquement</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.85rem;">
+                        <div style="width:44px; height:44px; flex-shrink:0; border-radius:0.65rem; background:#ede9fe; color:#7c3aed; display:flex; align-items:center; justify-content:center;">
+                            <i class="bi bi-cash-coin" style="font-size:1.2rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; color:#111827; font-size:0.92rem;">Retenue à la source</div>
+                            <div style="font-size:0.78rem; color:#6b7280;">Calculée sur chaque facture</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.85rem;">
+                        <div style="width:44px; height:44px; flex-shrink:0; border-radius:0.65rem; background:#dbeafe; color:#1d4ed8; display:flex; align-items:center; justify-content:center;">
+                            <i class="bi bi-currency-exchange" style="font-size:1.2rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:700; color:#111827; font-size:0.92rem;">Dinar Tunisien (TND)</div>
+                            <div style="font-size:0.78rem; color:#6b7280;">Devise par défaut, multi-devises</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── Modules ── -->
+            <section style="padding:5rem 4rem; background:#fafafc;">
+                <div style="max-width:1100px; margin:0 auto;">
+                    <div style="text-align:center; margin-bottom:3rem;">
+                        <h2 style="font-size:2rem; font-weight:800; color:#111827; letter-spacing:-0.01em; margin:0 0 0.6rem;">Tout votre cycle commercial, en un seul endroit</h2>
+                        <p style="font-size:1rem; color:#6b7280; margin:0;">Quatre modules qui couvrent la vente, l'achat, le stock et le pilotage de l'activité.</p>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:1.5rem;">
+
+                        <div style="background:#fff; border:1px solid #f0f0f4; border-radius:1.25rem; padding:1.75rem; box-shadow:0 4px 20px rgba(0,0,0,0.04);">
+                            <div style="width:48px; height:48px; border-radius:0.7rem; background:#e8f0fe; color:#1a73e8; display:flex; align-items:center; justify-content:center; margin-bottom:1.1rem;">
+                                <i class="bi bi-cart3" style="font-size:1.4rem;"></i>
+                            </div>
+                            <h3 style="font-size:1.15rem; font-weight:700; color:#111827; margin:0 0 0.4rem;">Ventes</h3>
+                            <p style="font-size:0.85rem; color:#6b7280; margin:0 0 1rem; line-height:1.5;">Du devis à la facture, avec livraison et avoirs.</p>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Clients</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Devis</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Commandes Vente</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Bons de Livraison</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Factures</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Avoirs</span>
+                            </div>
+                        </div>
+
+                        <div style="background:#fff; border:1px solid #f0f0f4; border-radius:1.25rem; padding:1.75rem; box-shadow:0 4px 20px rgba(0,0,0,0.04);">
+                            <div style="width:48px; height:48px; border-radius:0.7rem; background:#d1fae5; color:#059669; display:flex; align-items:center; justify-content:center; margin-bottom:1.1rem;">
+                                <i class="bi bi-building" style="font-size:1.4rem;"></i>
+                            </div>
+                            <h3 style="font-size:1.15rem; font-weight:700; color:#111827; margin:0 0 0.4rem;">Achats</h3>
+                            <p style="font-size:0.85rem; color:#6b7280; margin:0 0 1rem; line-height:1.5;">Du fournisseur à la facture, avec réception contrôlée.</p>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Fournisseurs</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Commandes Achat</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Bons de Réception</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Factures Fournisseur</span>
+                            </div>
+                        </div>
+
+                        <div style="background:#fff; border:1px solid #f0f0f4; border-radius:1.25rem; padding:1.75rem; box-shadow:0 4px 20px rgba(0,0,0,0.04);">
+                            <div style="width:48px; height:48px; border-radius:0.7rem; background:#f3e8ff; color:#7c3aed; display:flex; align-items:center; justify-content:center; margin-bottom:1.1rem;">
+                                <i class="bi bi-boxes" style="font-size:1.4rem;"></i>
+                            </div>
+                            <h3 style="font-size:1.15rem; font-weight:700; color:#111827; margin:0 0 0.4rem;">Stock</h3>
+                            <p style="font-size:0.85rem; color:#6b7280; margin:0 0 1rem; line-height:1.5;">Mouvements automatiques et alertes de seuil minimal.</p>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Produits</span>
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">État du Stock</span>
+                            </div>
+                        </div>
+
+                        <div style="background:#fff; border:1px solid #f0f0f4; border-radius:1.25rem; padding:1.75rem; box-shadow:0 4px 20px rgba(0,0,0,0.04);">
+                            <div style="width:48px; height:48px; border-radius:0.7rem; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; margin-bottom:1.1rem;">
+                                <i class="bi bi-file-earmark-ruled" style="font-size:1.4rem;"></i>
+                            </div>
+                            <h3 style="font-size:1.15rem; font-weight:700; color:#111827; margin:0 0 0.4rem;">Rapports</h3>
+                            <p style="font-size:0.85rem; color:#6b7280; margin:0 0 1rem; line-height:1.5;">Le suivi fiscal spécifique à l'activité tunisienne.</p>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                <span style="background:#f3f4f6; color:#374151; font-size:0.76rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:2rem;">Retenues à la Source</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── CTA band ── -->
+            <section style="background:linear-gradient(145deg,#2563eb 0%,#3b82f6 55%,#6366f1 100%); padding:4rem; text-align:center;">
+                <h2 style="font-size:1.75rem; font-weight:800; color:#fff; margin:0 0 1.5rem;">Accédez à votre espace de gestion</h2>
+                <a href="/compte/connexion" style="display:inline-block; padding:0.95rem 2.25rem; border-radius:0.65rem; background:#fff; color:#1d4ed8; font-weight:700; font-size:1rem; box-shadow:0 12px 30px rgba(0,0,0,0.2); text-decoration:none;">Se connecter</a>
+            </section>
+
+            <!-- ── Footer ── -->
+            <footer style="text-align:center; padding:2rem; font-size:0.8rem; color:#9ca3af;">
+                © 2026 GestCom – Tous droits réservés<br />
+                Développé par <a href="https://aivorconsulting.com/" target="_blank" rel="noopener noreferrer" style="color:#2563eb; font-weight:600;">AIVOR Consulting</a>
+            </footer>
+
+    </div>
+}
+else if (CurrentUserService.IsSuperAdmin)
+{
+    <PageTitle>Tableau de bord – GestCom</PageTitle>
     <!-- SuperAdmin dashboard: platform-management summary only — no business data (clients,
          factures, produits, ...) is ever loaded or shown here, per its zero-business-access
          design (see PermissionAuthorizationHandler / ServicePermissionGuard / AppDbContext). -->
@@ -91,6 +251,7 @@
 }
 else
 {
+    <PageTitle>Tableau de bord – GestCom</PageTitle>
     <!-- Greeting -->
     <div class="mb-4">
         <h4 class="fw-bold mb-1">Bienvenue, <span class="text-primary">@CurrentUserService.Login</span> 👋</h4>
@@ -367,6 +528,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Anonymous visitors get the public landing page (see the markup above) — no business
+        // or platform data is ever loaded for them.
+        if (!CurrentUserService.IsAuthenticated)
+            return;
+
         if (CurrentUserService.IsSuperAdmin)
         {
             var companies = await CompanyService.GetAllAsync();
