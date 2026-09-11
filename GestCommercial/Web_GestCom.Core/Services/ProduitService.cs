@@ -60,8 +60,8 @@ public class ProduitService(
 
         if (string.IsNullOrWhiteSpace(produit.CodeProduit))
         {
-            var count = await db.Produits.CountAsync();
-            produit.CodeProduit = $"PR{(count + 1):D5}";
+            produit.CodeProduit = await AppDbContextSaveExtensions.GenerateNextCodeAsync(
+                db.Produits.Select(p => p.CodeProduit), "PR", 5);
         }
         db.Produits.Add(produit);
         await db.SaveChangesGuardedAsync();

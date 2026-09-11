@@ -41,8 +41,8 @@ public class FournisseurService(
 
         if (string.IsNullOrWhiteSpace(fournisseur.CodeFournisseur))
         {
-            var count = await db.Fournisseurs.CountAsync();
-            fournisseur.CodeFournisseur = $"FO{(count + 1):D5}";
+            fournisseur.CodeFournisseur = await AppDbContextSaveExtensions.GenerateNextCodeAsync(
+                db.Fournisseurs.Select(f => f.CodeFournisseur), "FO", 5);
         }
         db.Fournisseurs.Add(fournisseur);
         await db.SaveChangesGuardedAsync();

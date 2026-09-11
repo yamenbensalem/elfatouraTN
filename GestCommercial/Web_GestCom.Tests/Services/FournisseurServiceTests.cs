@@ -53,6 +53,25 @@ public class FournisseurServiceTests
         Assert.Equal("FO00002", code);
     }
 
+    [Fact]
+    public async Task AddAsync_AfterDeletingAMiddleFournisseur_DoesNotCollideWithTheSurvivingHighestCode()
+    {
+        // Real production bug (see ProduitServiceTests for the exact reported error): code
+        // generation used COUNT(*) + 1. With FO00001/02/03 present (count=3) and FO00002 deleted
+        // (count=2), the next auto-generated code recomputed count+1 = "FO00003" — which still
+        // existed — causing a primary-key violation. Must be based on the MAX existing number,
+        // not the row count.
+        var svc = CreateService(out _);
+        await svc.AddAsync(MakeFournisseur("FO00001", "First"));
+        await svc.AddAsync(MakeFournisseur("FO00002", "Second"));
+        await svc.AddAsync(MakeFournisseur("FO00003", "Third"));
+        await svc.DeleteAsync("FO00002");
+
+        var code = await svc.AddAsync(new Fournisseur { CodeFournisseur = "", NomFournisseur = "Fourth", CodeDevise = 1 });
+
+        Assert.Equal("FO00004", code);
+    }
+
     // ── GetAll ───────────────────────────────────────────────────────────────
 
     [Fact]

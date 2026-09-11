@@ -44,8 +44,8 @@ public class ClientService(
         // Auto-generate code if empty
         if (string.IsNullOrWhiteSpace(client.CodeClient))
         {
-            var count = await db.Clients.CountAsync();
-            client.CodeClient = $"CL{(count + 1):D5}";
+            client.CodeClient = await AppDbContextSaveExtensions.GenerateNextCodeAsync(
+                db.Clients.Select(c => c.CodeClient), "CL", 5);
         }
         db.Clients.Add(client);
         await db.SaveChangesGuardedAsync();

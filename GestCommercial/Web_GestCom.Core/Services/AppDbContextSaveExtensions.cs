@@ -48,4 +48,23 @@ public static class AppDbContextSaveExtensions
         if (staleEntry is not null)
             staleEntry.State = EntityState.Detached;
     }
+
+    /// <summary>
+    /// Computes the next "PREFIX#####"-style code from the MAX existing number under that prefix —
+    /// never from COUNT(*). COUNT(*) breaks the moment any row is deleted: a lower count can
+    /// recompute a number that still exists on a surviving row, causing a primary-key violation on
+    /// insert (real bug hit in production: "PR00001" re-generated after PR00002/.../PR0000N had
+    /// been deleted but PR00001 itself was still there). Mirrors DocumentNumberService's approach
+    /// for document numbers. Codes that don't parse as "prefix + digits" (e.g. a custom code typed
+    /// by the user) are simply ignored rather than breaking generation.
+    /// </summary>
+    public static async Task<string> GenerateNextCodeAsync(IQueryable<string> existingCodes, string prefix, int numberLength)
+    {
+        var codes = await existingCodes.Where(c => c.StartsWith(prefix)).ToListAsync();
+        var maxNumber = codes
+            .Select(c => int.TryParse(c.AsSpan(prefix.Length), out var n) ? n : 0)
+            .DefaultIfEmpty(0)
+            .Max();
+        return $"{prefix}{(maxNumber + 1).ToString($"D{numberLength}")}";
+    }
 }

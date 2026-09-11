@@ -109,6 +109,28 @@ public class ProduitServiceTests
         Assert.Equal("PR00002", code);
     }
 
+    [Fact]
+    public async Task AddAsync_AfterDeletingAMiddleProduit_DoesNotCollideWithTheSurvivingHighestCode()
+    {
+        // Real production bug: code generation used COUNT(*) + 1. With PR00001/02/03 present
+        // (count=3) and PR00002 deleted (count=2), the next auto-generated code recomputed
+        // count+1 = "PR00003" — which still existed (PR00001 and PR00003 survived the delete) —
+        // and SaveChangesAsync threw "Violation of PRIMARY KEY constraint 'PK_produit'. Cannot
+        // insert duplicate key ... (PR00003)." (the reported production error used PR00001, but
+        // the mechanism is identical). Must be based on the MAX existing number, not the row
+        // count, so a gap left by a deleted row never causes the next code to collide with a
+        // still-surviving higher-numbered row.
+        var svc = CreateService(out _);
+        await svc.AddAsync(MakeProduit("PR00001", "First"));
+        await svc.AddAsync(MakeProduit("PR00002", "Second"));
+        await svc.AddAsync(MakeProduit("PR00003", "Third"));
+        await svc.DeleteAsync("PR00002");
+
+        var code = await svc.AddAsync(MakeProduit("", "Fourth"));
+
+        Assert.Equal("PR00004", code);
+    }
+
     // ── GetAll ───────────────────────────────────────────────────────────────
 
     [Fact]

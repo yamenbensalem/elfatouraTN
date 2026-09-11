@@ -724,6 +724,34 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       build 0 erreur. **Même remarque que ci-dessus : si ce commit n'est pas encore déployé, l'édition
       d'un Client/Fournisseur/Produit/Utilisateur ajouté dans la même session reste cassée en prod
       jusqu'au déploiement.**
+- [x] **BUG DE RÉGRESSION CORRIGÉ (encore un, signalé juste après le précédent)** — utilisateur à
+      juste titre inquiet du nombre de régressions coup sur coup : « Erreur : ... Violation of
+      PRIMARY KEY constraint 'PK_produit'. Cannot insert duplicate key ... (PR00001). » Cette fois
+      le message était exploitable directement grâce au fix `InnerException` du point précédent —
+      root cause trouvée sans devoir redeviner à l'aveugle. Cause : `ProduitService.AddAsync` (et
+      **`ClientService`/`FournisseurService`, exactement le même code copié-collé**) génère le code
+      automatique via `COUNT(*) + 1` au lieu du numéro maximum existant. Dès qu'une fiche est
+      supprimée, le compte baisse et peut recalculer un numéro déjà pris par une fiche encore
+      présente (ex. 3 fiches, suppression de la 2ᵉ → compte=2 → prochain code = numéro de la 3ᵉ,
+      qui existe toujours → violation de clé primaire à l'insertion). `DocumentNumberService`
+      (numérotation des devis/commandes/BL/factures) n'a jamais eu ce problème car il se base déjà
+      sur le numéro maximum existant, pas sur un COUNT — nouvelle fonction partagée
+      `AppDbContextSaveExtensions.GenerateNextCodeAsync(existingCodes, prefix, numberLength)`
+      reprenant le même principe, utilisée par les 3 services. Recherche exhaustive (`grep` sur
+      tous les services) confirmant qu'aucun autre endroit du code n'a ce même anti-pattern.
+      **Limite assumée, non corrigée ici** : deux insertions strictement simultanées (deux
+      utilisateurs ou deux onglets) peuvent en théorie encore calculer le même prochain numéro
+      avant que l'une des deux ne commite — un vrai correctif demanderait soit une séquence SQL
+      dédiée soit une boucle de nouvelle tentative sur violation de clé, ni l'un ni l'autre présent
+      non plus dans `DocumentNumberService` aujourd'hui ; décision délibérée de ne pas complexifier
+      au-delà de ce qui corrige le bug réellement rencontré (un COUNT qui ne tient pas compte des
+      suppressions), pas un cas de concurrence qui n'a pas été signalé.
+      3 nouveaux tests (`AddAsync_AfterDeletingAMiddle{Produit,Client,Fournisseur}_
+      DoesNotCollideWithTheSurvivingHighestCode`) reproduisant exactement ce scénario 3 fiches →
+      suppression de la 2ᵉ → ajout d'une 4ᵉ, vérifiés comme échouant sans le fix avant d'être
+      confirmés verts avec. Reproduit et corrigé de bout en bout dans le navigateur avec exactement
+      ce scénario (3 produits, suppression du 2ᵉ, 4ᵉ produit créé sans collision). Suite complète :
+      322/322 tests verts, build 0 erreur.
 - [x] Ajouter la gestion des erreurs de concurrence EF Core (`DbUpdateConcurrencyException`) —
       `AppDbContextSaveExtensions.SaveChangesGuardedAsync()` (Core) remplace les 58 appels
       `db.SaveChangesAsync()` des services et traduit `DbUpdateConcurrencyException` (ex. un
