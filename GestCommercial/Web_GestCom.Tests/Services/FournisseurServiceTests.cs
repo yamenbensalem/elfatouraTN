@@ -179,6 +179,26 @@ public class FournisseurServiceTests
         Assert.Equal("New Name", (await db.Fournisseurs.FindAsync("FO00001"))!.NomFournisseur);
     }
 
+    [Fact]
+    public async Task UpdateAsync_ImmediatelyAfterAddAsync_InSameCircuit_DoesNotThrowIdentityConflict()
+    {
+        // Real Blazor Server bug: a scoped DbContext lives for the whole circuit — it is NEVER
+        // cleared between actions (unlike the test above, which calls ChangeTracker.Clear() to
+        // simulate a fresh circuit and therefore never exercised this path). Adding a fournisseur
+        // then immediately editing it in the same browser session left the Added entity tracked;
+        // GetByCodeAsync's AsNoTracking() instance then collided with it on Update().
+        var svc = CreateService(out var db);
+        await svc.AddAsync(MakeFournisseur("FO00001", "Old Name"));
+
+        var fournisseur = await svc.GetByCodeAsync("FO00001");
+        fournisseur!.NomFournisseur = "New Name";
+
+        var ex2 = await Record.ExceptionAsync(() => svc.UpdateAsync(fournisseur));
+
+        Assert.Null(ex2);
+        Assert.Equal("New Name", (await db.Fournisseurs.FindAsync("FO00001"))!.NomFournisseur);
+    }
+
     // ── Delete ───────────────────────────────────────────────────────────────
 
     [Fact]

@@ -85,6 +85,11 @@ public class ProduitService(
         produit.CategorieProduit = null;
         produit.FabriquantProduit = null;
 
+        // Détacher aussi une éventuelle entrée trackée sous le même CodeProduit (ex. ce même
+        // produit ajouté plus tôt dans ce circuit Blazor via AddAsync) — sinon Update() lève
+        // "The instance of entity type 'Produit' cannot be tracked because another instance
+        // with the same key value ... is already being tracked".
+        db.DetachStaleTrackedEntry(produit);
         db.Produits.Update(produit);
         await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Produit", produit.CodeProduit, produit.DesignationProduit);

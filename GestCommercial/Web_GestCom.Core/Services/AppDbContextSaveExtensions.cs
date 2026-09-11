@@ -20,6 +20,15 @@ public static class AppDbContextSaveExtensions
         {
             throw new ConcurrencyConflictException(ex);
         }
+        catch (DbUpdateException ex) when (ex.InnerException is not null)
+        {
+            // EF Core's default DbUpdateException.Message is the unhelpful generic "An error
+            // occurred while saving the entity changes. See the inner exception for details." —
+            // the real SQL error (constraint violation, truncation, etc.) is only ever in
+            // InnerException.Message, which the UI's generic `catch (Exception ex) { ex.Message }`
+            // blocks never see. Surface it here once instead of duplicating this in every page.
+            throw new DbUpdateException($"{ex.Message} {ex.InnerException.Message}", ex);
+        }
     }
 
     /// <summary>

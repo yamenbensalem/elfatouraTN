@@ -146,6 +146,11 @@ public class UtilisateurService(
             utilisateur.SecurityStamp = CreateSecurityStamp();
         }
 
+        // Détacher aussi une éventuelle entrée trackée sous le même Id (ex. ce même utilisateur
+        // ajouté plus tôt dans ce circuit Blazor via AddAsync) — sinon Update() lève
+        // "The instance of entity type 'Utilisateur' cannot be tracked because another instance
+        // with the same key value ... is already being tracked".
+        db.DetachStaleTrackedEntry(utilisateur);
         db.Utilisateurs.Update(utilisateur);
         await db.SaveChangesGuardedAsync();
 

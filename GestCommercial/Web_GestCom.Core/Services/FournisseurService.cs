@@ -62,6 +62,11 @@ public class FournisseurService(
         fournisseur.Devise = null;
         fournisseur.Company = null;
 
+        // Détacher aussi une éventuelle entrée trackée sous le même CodeFournisseur (ex. ce même
+        // fournisseur ajouté plus tôt dans ce circuit Blazor via AddAsync) — sinon Update() lève
+        // "The instance of entity type 'Fournisseur' cannot be tracked because another instance
+        // with the same key value ... is already being tracked".
+        db.DetachStaleTrackedEntry(fournisseur);
         db.Fournisseurs.Update(fournisseur);
         await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Fournisseur", fournisseur.CodeFournisseur, fournisseur.NomFournisseur);

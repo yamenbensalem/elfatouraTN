@@ -688,6 +688,42 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       nouveau. **À vérifier : si le commit qui a introduit `AsNoTracking()` sur ces 3 services a
       déjà été déployé chez le client, l'édition de Client/Fournisseur/Produit y était cassée
       jusqu'à ce fix — prévoir un déploiement correctif si c'est le cas.**
+- [x] **BUG DE RÉGRESSION CORRIGÉ (suite du point ci-dessus)** — signalé par l'utilisateur en
+      production : « lors de sauvegarde de produit : Erreur : An error occurred while saving the
+      entity changes. See the inner exception for details. » Reproduit en local avec le scénario
+      le plus simple qui soit : créer un produit puis cliquer « Modifier » sur ce même produit
+      **dans la même session** (aucune raison pour un utilisateur de ne pas faire ça). Le message
+      réel derrière ce texte générique était `The instance of entity type 'Produit' cannot be
+      tracked because another instance with the same key value ... is already being tracked`.
+      **Root cause distincte du point ci-dessus** : nuller les propriétés de navigation avant
+      `Update()` protège contre un conflit sur le *graphe* (Devise/Catégorie/etc. déjà trackées
+      par le chargement des listes de select), mais pas contre un conflit sur la *clé primaire de
+      l'entité elle-même* quand elle a déjà été trackée plus tôt dans le même circuit Blazor Server
+      (ici, par le `db.Produits.Add(produit)` de `AddAsync`, dont l'entité reste trackée après
+      `SaveChangesAsync`). `DetachStaleTrackedEntry` existe déjà précisément pour ce cas et est
+      déjà utilisé par `AbonnementService`/`ApiKeyService`/`CompanyService`/`WebhookService`/
+      `ReferenceDataService` — mais **n'avait jamais été ajouté à `ClientService`,
+      `FournisseurService`, `ProduitService` ni `UtilisateurService`**, les 4 services qui ont reçu
+      `AsNoTracking()` sur leurs lectures dans un point antérieur de cette liste. Corrigé en
+      ajoutant `db.DetachStaleTrackedEntry(entity)` juste avant `Update()` dans les 4. En passant,
+      `AppDbContextSaveExtensions.SaveChangesGuardedAsync` traduit maintenant aussi tout
+      `DbUpdateException` générique en y annexant `InnerException.Message` — le message par défaut
+      d'EF Core ne montre jamais la vraie cause SQL, ce qui a rendu ce bug beaucoup plus long à
+      diagnostiquer côté production que nécessaire.
+      - **Pourquoi la suite de tests existante n'avait rien détecté** : le test de régression du
+        point précédent (`UpdateAsync_AfterFormLoadsReferenceListsAndGetByCode_...`) appelle
+        `db.ChangeTracker.Clear()` juste après `AddAsync` pour « simuler un circuit neuf » — ce qui
+        élimine artificiellement exactement le scénario cassé, puisqu'un vrai circuit Blazor Server
+        ne vide jamais son tracker entre deux actions. 4 nouveaux tests
+        (`UpdateAsync_ImmediatelyAfterAddAsync_InSameCircuit_DoesNotThrowIdentityConflict` dans
+        `ProduitServiceTests`/`ClientServiceTests`/`FournisseurServiceTests`/
+        `UtilisateurServiceTests`) reproduisent le vrai enchaînement Add → GetByCode/GetById →
+        Update **sans** ce `Clear()`.
+      Revérifié dans le navigateur avec le scénario exact rapporté : créer un produit, cliquer
+      « Modifier » immédiatement, enregistrer — fonctionne. Suite complète : 319/319 tests verts,
+      build 0 erreur. **Même remarque que ci-dessus : si ce commit n'est pas encore déployé, l'édition
+      d'un Client/Fournisseur/Produit/Utilisateur ajouté dans la même session reste cassée en prod
+      jusqu'au déploiement.**
 - [x] Ajouter la gestion des erreurs de concurrence EF Core (`DbUpdateConcurrencyException`) —
       `AppDbContextSaveExtensions.SaveChangesGuardedAsync()` (Core) remplace les 58 appels
       `db.SaveChangesAsync()` des services et traduit `DbUpdateConcurrencyException` (ex. un

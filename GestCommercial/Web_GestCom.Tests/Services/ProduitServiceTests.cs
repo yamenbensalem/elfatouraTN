@@ -52,6 +52,28 @@ public class ProduitServiceTests
         Assert.Equal("Clavier USB Sans Fil", (await db.Produits.FindAsync("PR00001"))!.DesignationProduit);
     }
 
+    [Fact]
+    public async Task UpdateAsync_ImmediatelyAfterAddAsync_InSameCircuit_DoesNotThrowIdentityConflict()
+    {
+        // Real Blazor Server bug: a scoped DbContext lives for the whole circuit — it is NEVER
+        // cleared between actions (unlike the test above, which calls ChangeTracker.Clear() to
+        // simulate a fresh circuit and therefore never exercised this path). Adding a product then
+        // immediately editing it in the same browser session — a completely normal user flow —
+        // left the Added entity tracked; GetByCodeAsync's AsNoTracking() instance then collided
+        // with it on Update(), throwing "The instance of entity type 'Produit' cannot be tracked
+        // because another instance with the same key value ... is already being tracked."
+        var svc = CreateService(out var db);
+        await svc.AddAsync(MakeProduit("PR00001", "Clavier USB"));
+
+        var produit = await svc.GetByCodeAsync("PR00001");
+        produit!.DesignationProduit = "Clavier USB Sans Fil";
+
+        var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(produit));
+
+        Assert.Null(ex);
+        Assert.Equal("Clavier USB Sans Fil", (await db.Produits.FindAsync("PR00001"))!.DesignationProduit);
+    }
+
     // ── Add ─────────────────────────────────────────────────────────────────
 
     [Fact]

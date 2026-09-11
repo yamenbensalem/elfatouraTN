@@ -179,6 +179,26 @@ public class ClientServiceTests
         Assert.Equal("New Name", (await db.Clients.FindAsync("CL00001"))!.NomClient);
     }
 
+    [Fact]
+    public async Task UpdateAsync_ImmediatelyAfterAddAsync_InSameCircuit_DoesNotThrowIdentityConflict()
+    {
+        // Real Blazor Server bug: a scoped DbContext lives for the whole circuit — it is NEVER
+        // cleared between actions (unlike the test above, which calls ChangeTracker.Clear() to
+        // simulate a fresh circuit and therefore never exercised this path). Adding a client then
+        // immediately editing it in the same browser session left the Added entity tracked;
+        // GetByCodeAsync's AsNoTracking() instance then collided with it on Update().
+        var svc = CreateService(out var db);
+        await svc.AddAsync(MakeClient("CL00001", "Old Name"));
+
+        var client = await svc.GetByCodeAsync("CL00001");
+        client!.NomClient = "New Name";
+
+        var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(client));
+
+        Assert.Null(ex);
+        Assert.Equal("New Name", (await db.Clients.FindAsync("CL00001"))!.NomClient);
+    }
+
     // ── Delete ───────────────────────────────────────────────────────────────
 
     [Fact]

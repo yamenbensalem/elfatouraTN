@@ -65,6 +65,11 @@ public class ClientService(
         client.Devise = null;
         client.Company = null;
 
+        // Détacher aussi une éventuelle entrée trackée sous le même CodeClient (ex. ce même
+        // client ajouté plus tôt dans ce circuit Blazor via AddAsync) — sinon Update() lève
+        // "The instance of entity type 'Client' cannot be tracked because another instance
+        // with the same key value ... is already being tracked".
+        db.DetachStaleTrackedEntry(client);
         db.Clients.Update(client);
         await db.SaveChangesGuardedAsync();
         await journal.EnregistrerAsync("Modification", "Client", client.CodeClient, client.NomClient);

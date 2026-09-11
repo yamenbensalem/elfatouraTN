@@ -48,6 +48,28 @@ public class UtilisateurServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_ImmediatelyAfterAddAsync_InSameCircuit_DoesNotThrowIdentityConflict()
+    {
+        // Real Blazor Server bug: a scoped DbContext lives for the whole circuit — it is NEVER
+        // cleared between actions. Adding a user then immediately editing it in the same browser
+        // session (e.g. from CompaniesList's "Nouvelle Entreprise" flow, which creates the admin
+        // right after the company) left the Added entity tracked; GetByIdAsync's AsNoTracking()
+        // instance then collided with it on Update() — see ProduitService/ClientService/
+        // FournisseurService for the same class of bug, fixed the same way.
+        var svc = CreateService(out var db);
+        var user = MakeUser("stale-tracking-user");
+        await svc.AddAsync(user, "P@ssw0rd!");
+
+        var reloaded = await svc.GetByIdAsync(user.Id);
+        reloaded!.Nom = "Nom Modifié";
+
+        var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(reloaded));
+
+        Assert.Null(ex);
+        Assert.Equal("Nom Modifié", (await db.Utilisateurs.FindAsync(user.Id))!.Nom);
+    }
+
+    [Fact]
     public async Task AddAsync_WithoutExplicitCompany_InheritsActingAdminsTenant()
     {
         var svc = CreateService(out var db, new StubTenantService(companyId: 7));
