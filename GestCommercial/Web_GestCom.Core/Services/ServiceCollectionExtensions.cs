@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICompanyService, CompanyService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IWebhookService, WebhookService>();
+        services.AddScoped<IAbonnementService, AbonnementService>();
 
         return services;
     }

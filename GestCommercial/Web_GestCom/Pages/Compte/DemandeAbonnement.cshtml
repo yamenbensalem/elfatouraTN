@@ -1,0 +1,172 @@
+@page "/demande-abonnement"
+@model Web_GestCom.Pages.Compte.DemandeAbonnementModel
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demande d'abonnement – GestCom</title>
+    <link rel="stylesheet" href="~/bootstrap/bootstrap.min.css?v=@Web_GestCom.AssetVersion.Value" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            min-height: 100vh; margin: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(145deg, #2563eb 0%, #3b82f6 55%, #6366f1 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 2rem 1.5rem;
+        }
+        .demande-card {
+            background: #ffffff; border-radius: 1.5rem;
+            padding: 2.5rem 2.5rem 2rem; width: 100%; max-width: 560px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+        }
+        .brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.75rem; }
+        .brand-icon {
+            width: 46px; height: 46px; border-radius: 1rem; flex-shrink: 0;
+            background: linear-gradient(145deg, #2563eb, #3b82f6);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 16px rgba(37,99,235,0.35);
+        }
+        .brand-name { font-size: 1.15rem; font-weight: 800; color: #1e1b4b; margin: 0; line-height: 1.1; }
+        .brand-sub  { font-size: 0.75rem; color: #6b7280; margin: 0; }
+        .page-title    { font-size: 1.5rem; font-weight: 800; color: #111827; margin: 0 0 0.3rem; }
+        .page-subtitle { font-size: 0.9rem; color: #6b7280; margin: 0 0 1.75rem; }
+        .form-label { font-weight: 600; font-size: 0.85rem; color: #374151; }
+        .form-control, .form-select {
+            border: 1.5px solid #e5e7eb; border-radius: 0.6rem; padding: 0.7rem 0.9rem;
+            font-size: 0.92rem; background: #f9fafb;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+        .btn-submit {
+            width: 100%; padding: 0.85rem; border: none; border-radius: 0.65rem;
+            background: linear-gradient(135deg, #2563eb, #3b82f6, #6366f1);
+            color: white; font-size: 1rem; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59,130,246,0.35); margin-top: 0.5rem;
+            transition: opacity .2s, transform .15s;
+        }
+        .btn-submit:hover { opacity: 0.92; transform: translateY(-1px); }
+        .info-box {
+            background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a;
+            border-radius: 0.65rem; padding: 0.85rem 1rem; font-size: 0.8rem;
+            margin-top: 1.25rem; line-height: 1.55;
+        }
+        .success-icon {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: #dcfce7; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.1rem;
+        }
+        .success-box { text-align: center; }
+        .steps { text-align: left; background: #f9fafb; border-radius: 0.75rem; padding: 1.1rem 1.3rem; margin-top: 1.25rem; }
+        .steps li { font-size: 0.85rem; color: #374151; margin-bottom: 0.4rem; }
+        .back-link { text-align: center; margin-top: 1.5rem; font-size: 0.85rem; }
+        .back-link a { color: #2563eb; font-weight: 600; text-decoration: none; }
+        .back-link a:hover { text-decoration: underline; }
+        .page-footer { margin-top: 1.75rem; font-size: 0.75rem; color: rgba(255,255,255,0.7); text-align: center; }
+        .field-error { font-size: 0.78rem; color: #ef4444; margin: 0.2rem 0 0 0.1rem; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="demande-card">
+    <div class="brand">
+        <div class="brand-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 16 16">
+                <path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>
+            </svg>
+        </div>
+        <div>
+            <p class="brand-name">GestCom</p>
+            <p class="brand-sub">Gestion Commerciale</p>
+        </div>
+    </div>
+
+    @if (Model.DemandeEnvoyee)
+    {
+        <div class="success-box">
+            <div class="success-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#16a34a" viewBox="0 0 16 16">
+                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                </svg>
+            </div>
+            <h1 class="page-title">Demande envoyée !</h1>
+            <p class="page-subtitle">Merci, votre demande d'abonnement au plan <strong>@Model.Input.Plan</strong> a bien été enregistrée.</p>
+            <ol class="steps">
+                <li>Notre équipe vous recontacte sous 24 à 48h pour confirmer votre abonnement.</li>
+                <li>L'activation se fait après règlement — par virement bancaire pour l'instant (les coordonnées vous seront communiquées lors du contact).</li>
+                <li>Votre compte administrateur est créé dès l'activation, avec accès immédiat.</li>
+            </ol>
+        </div>
+    }
+    else
+    {
+        <h1 class="page-title">Demande d'abonnement</h1>
+        <p class="page-subtitle">Renseignez vos informations, nous vous recontactons sous 24 à 48h pour finaliser votre abonnement.</p>
+
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="form-label">Nom de l'entreprise *</label>
+                <input asp-for="Input.NomEntreprise" class="form-control" autofocus />
+                <span asp-validation-for="Input.NomEntreprise" class="field-error"></span>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nom du contact *</label>
+                    <input asp-for="Input.NomContact" class="form-control" />
+                    <span asp-validation-for="Input.NomContact" class="field-error"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Téléphone</label>
+                    <input asp-for="Input.TelephoneContact" class="form-control" />
+                </div>
+            </div>
+            <div class="mb-3 mt-3">
+                <label class="form-label">Email *</label>
+                <input asp-for="Input.EmailContact" type="email" class="form-control" />
+                <span asp-validation-for="Input.EmailContact" class="field-error"></span>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Plan souhaité *</label>
+                    <select asp-for="Input.Plan" class="form-select">
+                        <option value="Standard">Standard</option>
+                        <option value="Pro">Pro</option>
+                        <option value="Enterprise">Enterprise</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Mode de paiement souhaité</label>
+                    <select asp-for="Input.ModePaiementSouhaite" class="form-select">
+                        <option value="">À discuter</option>
+                        <option value="Virement bancaire">Virement bancaire</option>
+                        <option value="Carte bancaire">Carte bancaire (à venir)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-3 mt-3">
+                <label class="form-label">Message (optionnel)</label>
+                <textarea asp-for="Input.Message" class="form-control" rows="3" placeholder="Besoin particulier, nombre d'utilisateurs prévu, questions..."></textarea>
+            </div>
+
+            <div class="info-box">
+                <strong>Comment ça se passe ensuite ?</strong> Aucun paiement n'est demandé ici. Notre équipe vous
+                recontacte pour confirmer votre abonnement, puis active votre compte après règlement (virement
+                bancaire pour l'instant).
+            </div>
+
+            <button type="submit" class="btn-submit">Envoyer la demande</button>
+        </form>
+    }
+
+    <div class="back-link">
+        <a href="/">← Retour à l'accueil</a>
+    </div>
+</div>
+
+<footer class="page-footer">© 2026 GestCom – Tous droits réservés</footer>
+
+</body>
+</html>

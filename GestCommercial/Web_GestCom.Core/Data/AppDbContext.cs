@@ -96,6 +96,9 @@ public class AppDbContext : DbContext
     public DbSet<ApiKey>  ApiKeys  => Set<ApiKey>();
     public DbSet<Webhook> Webhooks => Set<Webhook>();
 
+    // ── Subscription requests (manual follow-up — no payment gateway wired yet) ────────────
+    public DbSet<Abonnement> Abonnements => Set<Abonnement>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         ApplyTenantOwnershipRules();

@@ -531,6 +531,78 @@ Fonctionnalités restantes à implémenter, classées par priorité.
 
 ---
 
+## PAIEMENT / ABONNEMENT
+
+### Page d'accueil publique — tarifs + demande d'abonnement (V1, sans passerelle de paiement) ✅
+
+- [x] Refonte de la page d'accueil publique (`Home.razor`) pour se rapprocher d'une vraie landing
+      page SaaS B2B (inspirée d'une maquette de référence fournie par l'utilisateur) : nav avec
+      ancre « Tarifs », hero avec un mockup illustratif de tableau de bord (aucune capture réelle
+      disponible dans `wwwroot` — schéma reconstitué à partir du vrai layout du dashboard
+      authentifié, chiffres clairement illustratifs, pas une capture ni une donnée client réelle),
+      mini-aperçus sous chaque carte de module, section « Comment ça marche » avec connecteurs
+      flèche, et une nouvelle **section Tarifs** (`#tarifs`) avec 3 plans + un encart « Comment ça
+      se passe ? ».
+- [x] **Décision utilisateur (3 questions posées avant de coder, vu l'enjeu financier/architecture)** :
+      1. **Approche paiement V1 = demande manuelle.** « Choisir ce plan » n'encaisse rien : ça
+         envoie une demande d'abonnement, suivie et activée à la main par le SuperAdmin. Aucune
+         intégration de passerelle de paiement à ce stade.
+      2. **Aucun compte marchand actif** chez un prestataire tunisien (ClicToPay/SPS, Paymee,
+         Flouci, e-DINAR Poste Tunisienne) — confirmé par l'utilisateur. Point ouvert pour une
+         future itération : choisir un prestataire, ouvrir le compte, valider le KYC marchand.
+      3. **Nouvelle entité `Abonnement`** créée dès maintenant (pas seulement `Company.Plan` comme
+         avant) pour modéliser le cycle de vie complet : demande → contact → activation → échéance,
+         avec historique (plusieurs lignes par entreprise dans le temps).
+- [x] `Web_GestCom.Core/Data/Models/Abonnement.cs` — nouvelle entité, **volontairement PAS
+      `ITenantOwned`** (même convention que `ApiKey`/`Webhook` : le SuperAdmin doit voir toutes les
+      demandes de toutes les entreprises, y compris avant qu'une entreprise n'existe). Champs :
+      identité du demandeur (nom entreprise/contact/email/téléphone), `Plan`, `ModePaiementSouhaite`
+      (indicatif, aucun paiement réel traité), `Message`, `Statut` (EnAttente/Contactee/Active/
+      Refusee), dates (demande/début/échéance/traitement), `NotesAdmin`, `CompanyId` optionnel
+      (lien vers l'entreprise une fois créée/identifiée — nullable tant qu'elle n'existe pas encore).
+      Table `abonnement` créée via le bloc SQL idempotent habituel dans `Program.cs` (pas de
+      migration EF, convention du projet).
+- [x] `Web_GestCom.Core/Services/AbonnementService.cs` (`IAbonnementService`) — CRUD simple,
+      `CreateDemandeAsync` force `Statut = "EnAttente"` et `CompanyId = null` côté serveur (ignore
+      toute valeur envoyée par l'appelant, la demande publique ne doit jamais pouvoir s'auto-activer
+      ou se lier à une entreprise). Enregistré dans `AddGestComServices`. 5 tests service.
+- [x] **Page publique `Pages/Compte/DemandeAbonnement.cshtml`** (route `/demande-abonnement`,
+      `?plan=Standard|Pro|Enterprise` pré-sélectionne le plan) — Razor Page anonyme, même patron que
+      `Connexion.cshtml`/`MotDePasseOublie.cshtml` (page HTML autonome, pas de layout partagé,
+      `AssetVersion.Value` sur le CSS). Formulaire : entreprise, contact, email, téléphone, plan,
+      mode de paiement souhaité (Virement bancaire / Carte bancaire (à venir) / À discuter),
+      message libre. Écran de succès explicite sur les 3 étapes suivantes (recontact sous 24-48h,
+      activation après règlement par virement bancaire pour l'instant, création du compte admin à
+      l'activation) — aucune ambiguïté sur le fait qu'aucun paiement n'a eu lieu.
+- [x] **Page admin `Components/Pages/Admin/AbonnementsList.razor`** (`/admin/demandes-abonnement`,
+      `[Authorize(Roles = "SuperAdmin")]`, lien ajouté dans la section Plateforme du menu) — liste
+      toutes les demandes (toutes entreprises), bannière rappelant explicitement qu'aucun paiement
+      n'est traité automatiquement. Modal « Traiter » : changer le statut, lier une entreprise
+      existante (dropdown `ICompanyService.GetAllAsync`), fixer date de début/échéance, notes
+      internes. Ne crée PAS automatiquement l'entreprise — le SuperAdmin la crée séparément depuis
+      « Entreprises » (flux déjà existant, avec compte admin initial) puis revient la lier ici ;
+      choix délibéré pour ne pas dupliquer/complexifier le flux de création d'entreprise existant.
+- [x] Ce qui reste **explicitement hors scope** de cette itération, à trancher plus tard :
+      - Choisir un prestataire de paiement tunisien et ouvrir un compte marchand (carte bancaire,
+        e-DINAR, Flouci) — bloqué tant que l'utilisateur n'a pas ce compte.
+      - Webhooks de confirmation de paiement, réconciliation automatique.
+      - Envoi d'email automatique à la soumission d'une demande — **aucune infrastructure email
+        n'existe dans ce projet actuellement** (recherché : aucun `IEmailSender`/`SmtpClient`/
+        MailKit ni équivalent) ; pour l'instant le SuperAdmin doit consulter `/admin/
+        demandes-abonnement` manuellement pour voir les nouvelles demandes.
+      - Génération de facture/reçu.
+      - Renouvellement automatique à l'échéance (`DateEcheance` est stockée mais rien ne l'exploite
+        encore — pas d'alerte, pas de désactivation automatique du compte à expiration).
+      - **Montants tarifaires à confirmer** : 390 DT/an (Standard) et 690 DT/an (Pro) repris tels
+        quels de la maquette de référence approuvée par l'utilisateur — à valider/ajuster, ce sont
+        des montants métier que je ne peux pas fixer moi-même.
+      Vérifié de bout en bout dans le navigateur : demande soumise depuis `/demande-abonnement?
+      plan=Pro` → visible immédiatement dans `/admin/demandes-abonnement` (compte `superadmin`) →
+      passage du statut à « Contactée » avec note interne → persistance confirmée après rechargement
+      de la liste. Suite complète : 315/315 tests verts, build 0 erreur.
+
+---
+
 ## DETTE TECHNIQUE
 
 - [~] Ajouter `AsNoTracking()` sur toutes les requêtes en lecture seule dans les services — fait sur

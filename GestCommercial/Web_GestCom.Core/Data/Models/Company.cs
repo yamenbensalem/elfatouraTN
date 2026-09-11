@@ -51,4 +51,5 @@ public class Company
     public ICollection<FeatureFlag> FeatureFlags  { get; set; } = [];
     public ICollection<ApiKey>      ApiKeys       { get; set; } = [];
     public ICollection<Webhook>     Webhooks      { get; set; } = [];
+    public ICollection<Abonnement>  Abonnements   { get; set; } = [];
 }

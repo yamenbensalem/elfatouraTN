@@ -57,11 +57,12 @@ public sealed class HomeTests : TestContext
         _currentUser.Setup(s => s.IsAuthenticated).Returns(false);
         var auth = this.AddTestAuthorization();
         auth.SetNotAuthorized();
+        JSInterop.SetupVoid("gcInitLandingReveal");
 
         var cut = RenderComponent<Home>();
 
         Assert.Contains("Se connecter", cut.Markup);
-        Assert.Contains("La gestion commerciale simplifiée", cut.Markup);
+        Assert.Contains("La gestion commerciale, simplement.", cut.Markup);
         Assert.DoesNotContain("Bienvenue,", cut.Markup);
         _clients.Verify(s => s.GetAllAsync(null), Times.Never);
         _companies.Verify(s => s.GetAllAsync(), Times.Never);

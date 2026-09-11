@@ -309,6 +309,31 @@ using (var scope = app.Services.CreateScope())
         END
         """);
 
+    // Demandes d'abonnement soumises depuis la page publique des tarifs — suivi manuel par le
+    // SuperAdmin, aucune passerelle de paiement réelle branchée (voir TODO.md, section Paiement).
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'abonnement')
+        BEGIN
+            CREATE TABLE abonnement (
+                id_abonnement            INT IDENTITY(1,1) PRIMARY KEY,
+                nom_entreprise_abonnement    NVARCHAR(200) NOT NULL,
+                nom_contact_abonnement       NVARCHAR(150) NOT NULL,
+                email_contact_abonnement     NVARCHAR(150) NOT NULL,
+                telephone_contact_abonnement NVARCHAR(30) NULL,
+                plan_abonnement              NVARCHAR(50) NOT NULL,
+                mode_paiement_abonnement     NVARCHAR(50) NULL,
+                message_abonnement           NVARCHAR(1000) NULL,
+                statut_abonnement            NVARCHAR(30) NOT NULL DEFAULT 'EnAttente',
+                date_demande_abonnement      DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                date_debut_abonnement        DATETIME2 NULL,
+                date_echeance_abonnement     DATETIME2 NULL,
+                date_traitement_abonnement   DATETIME2 NULL,
+                notes_admin_abonnement       NVARCHAR(1000) NULL,
+                company_id_abonnement        INT NULL REFERENCES company(id_company)
+            )
+        END
+        """);
+
     // Add company_id column to utilisateurs if missing
     db.Database.ExecuteSqlRaw("""
         IF NOT EXISTS (
