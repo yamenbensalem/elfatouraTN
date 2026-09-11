@@ -62,7 +62,7 @@ public sealed class HomeTests : TestContext
         var cut = RenderComponent<Home>();
 
         Assert.Contains("Se connecter", cut.Markup);
-        Assert.Contains("La gestion commerciale, simplement.", cut.Markup);
+        Assert.Contains("Des tarifs simples", cut.Markup);
         Assert.DoesNotContain("Bienvenue,", cut.Markup);
         _clients.Verify(s => s.GetAllAsync(null), Times.Never);
         _companies.Verify(s => s.GetAllAsync(), Times.Never);

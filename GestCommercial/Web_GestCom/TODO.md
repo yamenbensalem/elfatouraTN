@@ -601,6 +601,57 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       passage du statut à « Contactée » avec note interne → persistance confirmée après rechargement
       de la liste. Suite complète : 315/315 tests verts, build 0 erreur.
 
+### Correction post-déploiement — fidélité à la maquette de référence + essai gratuit réel
+
+- [x] **Retour utilisateur après le premier déploiement** : « t'as pas respecté l'image donné » — la
+      première version avait dévié de la maquette de référence sur plusieurs points sans que ce soit
+      assez mis en avant : le hero reprenait l'ancien texte générique au lieu du hero « offres » de
+      la maquette, « Pourquoi choisir GestCom » était en grille de 4 cartes au lieu de 3 items reliés
+      par des flèches, et le tableau comparatif des fonctionnalités sous les cartes de prix manquait
+      entièrement. 3 décisions demandées avant de corriger (vu l'impact business du badge
+      « essai gratuit » et du panneau paiement) :
+      1. **Hero + comparatif** → corrigés pour coller à la maquette, mais aperçu montré avant mise en
+         prod (pas de redéploiement direct).
+      2. **« 14 jours d'essai gratuit »** → l'utilisateur confirme que c'est une vraie offre, pas
+         juste un élément de maquette à ignorer.
+      3. **Panneau « Modes de paiement / sécurisé par notre partenaire »** → reste sur la version
+         honnête (« Comment ça se passe ? ») puisqu'il n'y a toujours pas de prestataire de paiement
+         réel, conformément à la décision prise plus haut.
+- [x] Hero réécrit pour reprendre le texte de la maquette : badge « 🎁 Des offres adaptées aux
+      entreprises tunisiennes », titre « Des tarifs simples, une solution complète. », CTA
+      « Commencer maintenant → » (ancre `#tarifs`) et « Voir les fonctionnalités » (ancre
+      `#fonctionnalites`), ligne « ✓ 14 jours d'essai gratuit ».
+- [x] Section « Pourquoi choisir GestCom » reconstruite en 3 items reliés par des flèches (au lieu de
+      la grille de 4 cartes) : Pensé pour la Tunisie / Simple à prendre en main / Une vision claire de
+      votre activité — mêmes libellés courts que la maquette.
+- [x] Section Tarifs : titre déplacé vers le hero, la section elle-même reprend « Des plans adaptés à
+      votre croissance » (titre de la maquette pour cette section précise). Le panneau « Comment ça
+      se passe ? » est sorti de la grille des 3 cartes de prix (qui redevient 3 colonnes égales comme
+      sur la maquette) et devient un bandeau horizontal compact juste en dessous, mentionnant
+      explicitement l'essai de 14 jours dans l'étape 2.
+- [x] **Nouveau tableau « Comparatif des fonctionnalités »** sous les cartes de prix, comme sur la
+      maquette — mais avec un contenu **honnête** : Ventes/Achats/Stock/Rapports cochés identiquement
+      sur les 3 plans (c'est la vérité : l'app ne bride aucune fonctionnalité par plan aujourd'hui),
+      seules les lignes « Comptes utilisateurs inclus » (quotas réels) et « Accompagnement à la mise
+      en route » (réservé Enterprise, promesse raisonnable vu que ce plan est négocié au cas par cas)
+      différencient réellement les plans. Pas de fausses coches suggérant des fonctionnalités
+      Pro/Enterprise qui n'existent pas.
+- [x] **Essai gratuit rendu réellement actionnable**, pas juste un badge marketing : `Abonnement`
+      accepte désormais le statut `"Essai"` en plus de EnAttente/Contactee/Active/Refusee (simple
+      valeur de chaîne, aucun changement de schéma nécessaire). `AbonnementsList.razor` : nouvelle
+      option « Essai (14 jours) » dans le select Statut, badge dédié, et un bouton « Remplir 14 jours
+      à partir d'aujourd'hui » qui pré-remplit Date de début/Date d'échéance. La page publique
+      `/demande-abonnement` explique maintenant le vrai parcours : contact sous 24-48h → démarrage de
+      l'essai avec accès immédiat → poursuite payante après les 14 jours.
+      - **Limite assumée, documentée dans la bannière admin** : rien ne désactive automatiquement un
+        essai arrivé à échéance (`DateEcheance` reste une simple donnée informative) — le SuperAdmin
+        doit surveiller `/admin/demandes-abonnement` manuellement. Automatiser cette désactivation
+        demanderait une tâche planifiée/un middleware de vérification à l'ouverture de session, hors
+        scope de cette correction ciblée.
+      Vérifié en local (build + suite de tests) avant toute proposition d'aperçu — pas encore
+      redéployé en production à ce stade, conformément à la demande explicite de montrer un aperçu
+      d'abord.
+
 ---
 
 ## DETTE TECHNIQUE

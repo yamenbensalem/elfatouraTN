@@ -49,7 +49,7 @@ public class Abonnement
     [Column("message_abonnement")]
     public string? Message { get; set; }
 
-    /// <summary>EnAttente, Contactee, Active, Refusee.</summary>
+    /// <summary>EnAttente, Contactee, Essai, Active, Refusee.</summary>
     [Required, MaxLength(30)]
     [Column("statut_abonnement")]
     public string Statut { get; set; } = "EnAttente";

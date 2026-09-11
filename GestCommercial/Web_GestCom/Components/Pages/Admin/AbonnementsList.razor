@@ -13,8 +13,10 @@
 <div class="alert alert-info small">
     <i class="bi bi-info-circle me-1"></i>
     Aucun paiement en ligne n'est traité automatiquement (pas de passerelle de paiement branchée —
-    voir TODO.md). Chaque demande est à traiter manuellement : contacter le prospect, puis marquer
-    « Active » une fois le règlement reçu et l'entreprise créée/liée.
+    voir TODO.md). Chaque demande est à traiter manuellement : contacter le prospect, créer/lier son
+    entreprise, marquer « Essai » pour démarrer les 14 jours d'accès gratuit annoncés sur la page
+    d'accueil, puis « Active » une fois le règlement reçu. Rien ne désactive automatiquement un essai
+    à son échéance pour l'instant — à surveiller manuellement.
 </div>
 
 <Notification @ref="_notif" />
@@ -106,9 +108,21 @@
                                 <InputSelect class="form-select" @bind-Value="_editing.Statut">
                                     <option value="EnAttente">En attente</option>
                                     <option value="Contactee">Contactée</option>
+                                    <option value="Essai">Essai (14 jours)</option>
                                     <option value="Active">Active</option>
                                     <option value="Refusee">Refusée</option>
                                 </InputSelect>
+                                @if (_editing.Statut == "Essai")
+                                {
+                                    <div class="form-text">
+                                        Pensez à fixer une date de début et une date d'échéance (+14 jours) ci-dessous —
+                                        rien ne bascule automatiquement en « Refusée » à l'échéance, la désactivation
+                                        reste manuelle pour l'instant (voir TODO.md).
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mt-1" @onclick="ApplyTrialDates">
+                                            Remplir 14 jours à partir d'aujourd'hui
+                                        </button>
+                                    </div>
+                                }
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Entreprise liée</label>
@@ -198,9 +212,16 @@
         catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
     }
 
+    private void ApplyTrialDates()
+    {
+        _editing!.DateDebut = DateTime.Today;
+        _editing.DateEcheance = DateTime.Today.AddDays(14);
+    }
+
     private static string GetStatutBadge(string statut) => statut switch
     {
         "Active"    => "bg-success",
+        "Essai"     => "bg-primary",
         "Contactee" => "bg-info text-dark",
         "Refusee"   => "bg-danger",
         _           => "bg-warning text-dark"
@@ -209,6 +230,7 @@
     private static string GetStatutLabel(string statut) => statut switch
     {
         "Active"    => "Active",
+        "Essai"     => "Essai (14 jours)",
         "Contactee" => "Contactée",
         "Refusee"   => "Refusée",
         _           => "En attente"
