@@ -1,0 +1,246 @@
+[15:22:26] =======================================
+[15:22:26]  VPS Deployment - gestioncom.tijaraflow.fr
+[15:22:26]  Action : deploy-all
+[15:22:26]  Target : ubuntu@vps-bf0b3440.vps.ovh.net:/home/ubuntu/docker/gestcom
+[15:22:26] =======================================
+[15:22:26] 
+[15:22:26] === CHECKING PREREQUISITES ===
+[15:22:28] SSH OK (passwordless)
+[15:22:29] Docker rights OK (no sudo needed)
+[15:22:29] 
+[15:22:29] === STEP 0: SYNC CONFIG FILES ===
+[15:22:29] Copying .env to VPS:/home/ubuntu/docker/gestcom/
+[15:22:30] Copy OK
+[15:22:30] Copying gestioncom.tijaraflow.fr to VPS:/home/ubuntu/docker/gestcom/vhost.d/
+[15:22:31] Copy OK
+[15:22:31] Copying docker-compose.infra.yml to VPS:/home/ubuntu/docker/gestcom/
+[15:22:31] Copy OK
+[15:22:31] Copying docker-compose_sql_prod.yml to VPS:/home/ubuntu/docker/gestcom/
+[15:22:32] Copy OK
+[15:22:32] Copying docker-compose.app.yml to VPS:/home/ubuntu/docker/gestcom/
+[15:22:33] Copy OK
+[15:22:33] Injecting nginx vhost override (SignalR/WebSocket config)...
+[15:22:34]   nginx-proxy container: nginx-proxy
+[15:22:34] Copying gestioncom.tijaraflow.fr to VPS:/tmp/gestcom-vhost-override
+[15:22:34] Copy OK
+nginx-proxy
+[15:22:36] vhost override injected — nginx reloaded
+[15:22:36] Config sync complete
+
+[15:22:36] === CHECKING SSL CERTIFICATES ===
+[15:22:37]   gestioncom.tijaraflow.fr cert MISSING - Let's Encrypt will generate it on first start
+[15:22:37] 
+[15:22:37] === STEP 2: SETUP DOCKER NETWORK ===
+[15:22:37] Network ntw_gestcom_prod already exists
+[15:22:38] Connecting nginx-proxy to ntw_gestcom_prod...
+Error response from daemon: endpoint with name nginx-proxy already exists in network ntw_gestcom_prod
+[15:22:40]   Connected nginx-proxy to ntw_gestcom_prod
+[15:22:42]   nginx-letsencrypt already connected to ntw_gestcom_prod
+[15:22:42] 
+[15:22:42] === BUILD DOCKER IMAGE ===
+[15:22:42] Project root: D:\Entreprise\Projets\GitProjects\ElFatoura\ElFatourTN_TTN\elfatouraTN\GestCommercial\Web_GestCom
+[15:22:42] Building gestcom/app:prod ...
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.18kB 0.0s done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.8s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#3 CACHED
+
+#4 [internal] load metadata for mcr.microsoft.com/dotnet/sdk:8.0
+#4 ...
+
+#5 [context core] load .dockerignore
+#5 transferring core: 64B 0.0s done
+#5 DONE 0.0s
+
+#6 [internal] load metadata for mcr.microsoft.com/dotnet/aspnet:8.0
+#6 DONE 0.2s
+
+#4 [internal] load metadata for mcr.microsoft.com/dotnet/sdk:8.0
+#4 DONE 0.2s
+
+#7 [internal] load .dockerignore
+#7 transferring context: 155B 0.0s done
+#7 DONE 0.0s
+
+#8 [build 1/7] FROM mcr.microsoft.com/dotnet/sdk:8.0@sha256:5ef85cc12cb25be6ec319a7392d1e9efd53c3bc8abb971c53d8058a473f09053
+#8 DONE 0.0s
+
+#9 [runtime 1/3] FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:9a464e9a7e8c6144631020975f703c89034fe386417cb740620df69c2c6cfe24
+#9 DONE 0.0s
+
+#10 [context core] load from client
+#10 transferring core: 20.32kB 0.0s done
+#10 DONE 0.0s
+
+#11 [internal] load build context
+#11 transferring context: 75.74kB 0.0s done
+#11 DONE 0.0s
+
+#12 [build 2/7] WORKDIR /src
+#12 CACHED
+
+#13 [build 3/7] COPY Web_GestCom.csproj .
+#13 CACHED
+
+#14 [build 4/7] COPY --from=core . ../Web_GestCom.Core/
+#14 DONE 0.1s
+
+#15 [build 5/7] RUN dotnet restore
+#15 1.443   Determining projects to restore...
+#15 22.98   Restored /Web_GestCom.Core/Web_GestCom.Core.csproj (in 21.02 sec).
+#15 22.98   Restored /src/Web_GestCom.csproj (in 21.02 sec).
+#15 DONE 23.2s
+
+#16 [build 6/7] COPY . .
+#16 DONE 0.1s
+
+#17 [build 7/7] RUN dotnet publish Web_GestCom.csproj -c Release -o /app/publish     --no-restore
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(89,9): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(91,53): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(103,56): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(113,17): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(122,9): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(124,53): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(133,50): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(157,56): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(354,26): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(355,26): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(366,25): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(366,35): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.286 /Web_GestCom.Core/Services/UtilisateurService.cs(372,39): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/Web_GestCom.Core/Web_GestCom.Core.csproj]
+#17 5.405   Web_GestCom.Core -> /Web_GestCom.Core/bin/Release/net8.0/Web_GestCom.Core.dll
+#17 13.61 /src/Pages/Compte/Inscription.cshtml.cs(56,13): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Program.cs(850,13): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Program.cs(884,5): warning CS0618: 'IUtilisateurService.SynchronizeLegacyRolesAsync()' is obsolete: 'UserRole/AppRole is now the authoritative source. This method will be removed once all deployments have been migrated.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Components/Pages/Admin/UtilisateursList.razor(42,54): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Components/Pages/Admin/UtilisateursList.razor(42,156): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Components/Pages/Admin/UtilisateursGlobalList.razor(73,54): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Components/Pages/Admin/UtilisateursGlobalList.razor(73,156): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Components/Pages/Admin/CompaniesList.razor(245,25): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Components/Pages/Admin/UtilisateurForm.razor(54,71): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/obj/Release/net8.0/Microsoft.CodeAnalysis.Razor.Compiler/Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator/Components_Pages_Admin_UtilisateurForm_razor.g.cs(394,244): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/obj/Release/net8.0/Microsoft.CodeAnalysis.Razor.Compiler/Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator/Components_Pages_Admin_UtilisateurForm_razor.g.cs(394,215): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/obj/Release/net8.0/Microsoft.CodeAnalysis.Razor.Compiler/Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator/Components_Pages_Admin_UtilisateurForm_razor.g.cs(394,275): warning CS0618: 'Utilisateur.Role' is obsolete: 'Use UserRoles/AppRole for role resolution. This column will be removed in a future migration.' [/src/Web_GestCom.csproj]
+#17 13.61 /src/Program.cs(748,21): warning EF1002: Method 'ExecuteSqlRaw' inserts interpolated strings directly into the SQL, without any protection against SQL injection. Consider using 'ExecuteSql' instead, which protects against SQL injection, or make sure that the value is sanitized and suppress the warning. [/src/Web_GestCom.csproj]
+#17 13.61 /src/Program.cs(756,25): warning EF1002: Method 'ExecuteSqlRaw' inserts interpolated strings directly into the SQL, without any protection against SQL injection. Consider using 'ExecuteSql' instead, which protects against SQL injection, or make sure that the value is sanitized and suppress the warning. [/src/Web_GestCom.csproj]
+#17 13.61 /src/Program.cs(765,25): warning EF1002: Method 'ExecuteSqlRaw' inserts interpolated strings directly into the SQL, without any protection against SQL injection. Consider using 'ExecuteSql' instead, which protects against SQL injection, or make sure that the value is sanitized and suppress the warning. [/src/Web_GestCom.csproj]
+#17 13.91   Web_GestCom -> /src/bin/Release/net8.0/Web_GestCom.dll
+#17 14.12   Web_GestCom -> /app/publish/
+#17 DONE 14.2s
+
+#18 [runtime 2/3] WORKDIR /app
+#18 CACHED
+
+#19 [runtime 3/3] COPY --from=build /app/publish .
+#19 DONE 0.1s
+
+#20 exporting to image
+#20 exporting layers 0.1s done
+#20 writing image sha256:f4735e18102bbc942aee9965f62335efc84535d2673d831527d7bea89c1d6c27 done
+#20 naming to docker.io/gestcom/app:prod done
+#20 DONE 0.1s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ykinkxk0j8iomgdfvowdtcxb8
+[15:23:22] Image built successfully
+[15:23:22] 
+[15:23:22] === STEP 1: PUSH DOCKER IMAGES ===
+[15:23:22] Processing: gestcom/app:prod
+[15:23:22] Saving image to tar (may take a moment)...
+[15:23:28] Saved 229.23MB - transferring to VPS...
+[15:24:01] Transferred - loading on VPS...
+Loaded image: gestcom/app:prod
+[15:24:08] Image loaded on VPS OK
+[15:24:09] Image push complete
+
+[15:24:09] === STEP 3: DEPLOY SQL SERVER ===
+time="2026-09-11T13:24:09Z" level=warning msg="Found orphan containers ([gestcom-app]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container gestcom-sqlserver  Running
+[15:24:10] Waiting for SQL Server healthcheck (up to 120s)...
+[15:24:26]   SQL Server health: unhealthy (15 s)
+[15:24:26] SQL Server is healthy
+[15:24:26] Database deployment complete
+
+[15:24:26] === STEP 4: DEPLOY BLAZOR APP ===
+[15:24:26] Verifying images on VPS...
+[15:24:26]   gestcom/app:prod OK
+ Container gestcom-app  Stopping
+ Container gestcom-app  Stopped
+ Container gestcom-app  Removing
+ Container gestcom-app  Removed
+time="2026-09-11T13:24:28Z" level=warning msg="Found orphan containers ([gestcom-sqlserver]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container gestcom-app  Creating
+ Container gestcom-app  Created
+ Container gestcom-app  Starting
+ Container gestcom-app  Started
+[15:24:29] Application started
+[15:24:29] Waiting for app to initialize (15s)...
+[15:24:44] Application status:
+NAME                IMAGE                                        COMMAND                  SERVICE       CREATED          STATUS                    PORTS
+gestcom-app         gestcom/app:prod                             "dotnet Web_GestCom.…"   gestcom-app   17 seconds ago   Up 17 seconds             8080/tcp
+gestcom-sqlserver   mcr.microsoft.com/mssql/server:2022-latest   "/opt/mssql/bin/laun…"   sqlserver     3 months ago     Up 2 months (unhealthy)   1433/tcp
+[15:24:46] Application deployment complete
+
+[15:24:46] === VERIFICATION ===
+[15:24:46] Containers:
+NAMES                     STATUS                    PORTS
+gestcom-app               Up 17 seconds             8080/tcp
+commercialpro-app         Up 5 days                 8080/tcp
+tijaraflow-website        Up 5 days                 8080/tcp
+commerce-app              Up 5 days                 8080/tcp
+commerce-db               Up 5 days (healthy)       5432/tcp
+rhpaie-app                Up 6 days                 8080/tcp
+facturapro-app            Up 2 months               5114/tcp
+comptapro-app             Up 2 months               8080/tcp
+comptapro-redis           Up 2 months               6379/tcp
+commercialpro-redis       Up 2 months (healthy)     6379/tcp
+facturapro-redis          Up 2 months (healthy)     6379/tcp
+comptapro-db              Up 2 months (healthy)     5432/tcp
+rhpaie-db                 Up 2 months (healthy)     5432/tcp
+commercialpro-db          Up 2 months (healthy)     5432/tcp
+facturapro-db             Up 2 months (healthy)     5432/tcp
+nextalk-api               Up 2 months (healthy)     8080/tcp
+nextalk-redis             Up 2 months (healthy)     6379/tcp
+nextalk-postgres          Up 2 months (healthy)     5432/tcp
+paiepro-app               Up 2 months               8080/tcp
+paiepro-db                Up 2 months (healthy)     5432/tcp
+paiepro-redis             Up 2 months (healthy)     6379/tcp
+rhpro-app                 Up 2 months               8080/tcp
+rhpro-db                  Up 2 months (healthy)     5432/tcp
+rhpro-redis               Up 2 months (healthy)     6379/tcp
+gestcom-sqlserver         Up 2 months (unhealthy)   1433/tcp
+frontend-web              Up 2 months               80/tcp
+backend-api               Up 2 months (unhealthy)   5400/tcp
+nginx-letsencrypt         Up 2 months               
+nginx-proxy               Up 2 minutes              0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp
+salecars-prod-sqlserver   Up 2 months (healthy)     127.0.0.1:1433->1433/tcp
+[15:24:46] Network members:
+nginx-proxy gestcom-sqlserver gestcom-app nginx-letsencrypt 
+[15:24:47] App logs (last 15):
+      WHERE [u].[user_id] = @__userId_0
+warn: Microsoft.AspNetCore.DataProtection.Repositories.FileSystemXmlRepository[60]
+      Storing keys in a directory '/root/.aspnet/DataProtection-Keys' that may not be persisted outside of the container. Protected data will be unavailable when container is destroyed. For more information go to https://aka.ms/aspnet/dataprotectionwarning
+warn: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[35]
+      No XML encryptor configured. Key {384c4d98-acde-4bb4-9b10-d42ecdcbc0b0} may be persisted to storage in unencrypted form.
+warn: Microsoft.AspNetCore.Hosting.Diagnostics[15]
+      Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://+:8080'.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://[::]:8080
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /app
+[15:24:48] SSL certificate:
+[15:24:49]   gestioncom.tijaraflow.fr - MISSING (will be auto-generated by acme-companion)
+[15:24:49] Verification complete
+
+[15:24:49] 
+[15:24:49] === DONE ===

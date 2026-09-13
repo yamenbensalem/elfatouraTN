@@ -49,7 +49,7 @@ Data/Models/ (26 EF Core entities)
 
 **`Services/`** — One service interface + implementation per entity/domain area. All services receive `IHttpContextAccessor` to resolve the current tenant from claims. Stock mutations (increments/decrements) happen inside `BonLivraisonService`, `BonReceptionService`, `FactureClientService`, and `FactureFournisseurService` — not in the DbContext.
 
-**`Auth/`** — Custom RBAC: `PermissionClaimsTransformation` loads permissions into claims on each request. `DynamicAuthorizationPolicyProvider` resolves `[Authorize(Policy = "Permission.X")]` at runtime. Permission checks live in both services (service-level guard) and Blazor components (UI-level guard).
+**`Auth/`** — Custom RBAC: `PermissionClaimsTransformation` loads permissions into claims on each request. `PermissionPolicyProvider` resolves `[Authorize(Policy = "perm:feature.action")]` at runtime via `PermissionAuthorizationHandler`. Permission checks live in both routes/pages (`PermissionAuthorizationHandler`) and services (`ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "feature.action")` as the first line of every mutating method). **Security-critical rule, do not regress**: `Admin` bypasses these checks entirely within its own company; `SuperAdmin` never does — it falls through to `HasPermissionAsync` and only holds platform-scoped permissions (`tenants`, `users-global`, `roles-global`, `journal-global`). SuperAdmin is a platform-management role with zero business-data access by design, enforced at three independent layers: the permission guard above, `AppDbContext`'s two distinct tenant query filters (`ShouldApplyTenantFilter` — active even for SuperAdmin, which naturally excludes all its rows since it has no `CompanyId`; vs. `ShouldApplyTenantFilterToAuthenticatedUsers` — SuperAdmin *does* bypass this one, but it only governs the `Utilisateur` entity, for the global cross-company users dashboard), and `ApplyTenantOwnershipRules` on the write side.
 
 **`Components/Pages/`** — Feature-based organization. Each major entity has its own subdirectory with list, add/edit, and detail pages. Shared UI components (notification toasts, confirm dialogs, print layout) are in `Components/Shared/`.
 
@@ -57,7 +57,7 @@ Data/Models/ (26 EF Core entities)
 
 ## Document Numbering Convention
 
-All commercial documents use sequential codes: `{Prefix}{YYYYMM}{###}` (e.g., `FC20240100001`). The generation logic is centralized — always use the existing `GetNextCode*` helper in the relevant service rather than computing codes inline.
+All commercial documents use sequential codes: `{Prefix}{YYYYMM}{###}` (e.g., `FC20240100001`). The generation logic is centralized in `DocumentNumberService.Next*Async` — always use it rather than computing codes inline. Simple reference entities (`Client`/`Produit`/`Fournisseur`, codes like `CL00001`) use a separate, simpler generator, `AppDbContextSaveExtensions.GenerateNextCodeAsync(existingCodes, prefix, numberLength)` — both this and `DocumentNumberService` compute the next number from the **MAX existing number**, never `COUNT(*)` (see Known Pitfalls below).
 
 | Prefix | Document |
 |--------|----------|
@@ -104,6 +104,33 @@ All commercial documents use sequential codes: `{Prefix}{YYYYMM}{###}` (e.g., `F
 ```
 
 Secrets and environment-specific overrides go in `appsettings.Development.json` (gitignored for passwords).
+
+## Known Pitfalls (real production bugs — don't reintroduce these)
+
+- **Blazor Server's `AppDbContext` lives for the whole circuit, not one request.** A service that
+  reads with `AsNoTracking()` (`ClientService`, `ProduitService`, `FournisseurService`,
+  `UtilisateurService`) must call `db.DetachStaleTrackedEntry(entity)` immediately before
+  `Update()`/`Remove()`. Without it: add an entity, then edit that *same* entity later in the same
+  browser session (a completely normal flow) → `InvalidOperationException: The instance of entity
+  type 'X' cannot be tracked because another instance with the same key value ... is already being
+  tracked`. Nulling navigation properties before `Update()` does **not** fix this — that's a
+  different, narrower conflict (the loaded graph vs. a dropdown's tracked reference data), not the
+  entity's own primary key colliding with a stale `Added`/`Unchanged` entry from earlier in the
+  circuit. A regression test for this must **not** call `db.ChangeTracker.Clear()` after the initial
+  `Add` — that artificially hides the bug a real circuit can't avoid.
+- **Sequential code generation (`CodeClient`/`CodeProduit`/`CodeFournisseur`) must use MAX(existing
+  number), never `COUNT(*)`.** `COUNT(*) + 1` recomputes an already-taken number as soon as any row
+  is deleted (e.g. 3 rows, delete the 2nd → count=2 → next code collides with the still-present 3rd
+  row) → `PRIMARY KEY` violation on insert. Use `AppDbContextSaveExtensions.GenerateNextCodeAsync`.
+- **`SaveChangesGuardedAsync`'s generic `DbUpdateException` catch appends `InnerException.Message`**
+  — don't remove this. EF Core's default message ("An error occurred while saving the entity
+  changes...") never shows the real SQL error, which made a production bug much slower to diagnose
+  than necessary before this was added.
+- **A `<script>` tag written inside a `.razor` component's markup never executes** — Blazor Server
+  inserts DOM via its own diffing, not `innerHTML`/`appendChild`, and browsers don't run scripts
+  inserted that way. Put JS in a real `wwwroot/js/*.js` file referenced by `<script src="...">` in
+  `App.razor`, and trigger it via `@inject IJSRuntime JS` + `JS.InvokeVoidAsync(...)` from
+  `OnAfterRenderAsync(firstRender)`.
 
 ## Domain Language (French)
 
