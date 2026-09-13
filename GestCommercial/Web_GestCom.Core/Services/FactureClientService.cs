@@ -169,8 +169,14 @@ public class FactureClientService(
         await using var tx = await db.Database.BeginTransactionAsync();
         try
         {
-            foreach (var ligne in facture.Lignes)
-                await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, ligne.Quantite);
+            // Une facture générée depuis un BL (NumeroBonLivraisonOrigine renseigné) n'a jamais
+            // décrémenté le stock elle-même — c'est le BL qui l'a fait à sa propre création (voir
+            // CreateFromBonLivraisonAsync). La restituer ici créerait un stock fantôme.
+            if (facture.NumeroBonLivraisonOrigine is null)
+            {
+                foreach (var ligne in facture.Lignes)
+                    await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, ligne.Quantite);
+            }
             db.ReglementsFactureClient.RemoveRange(facture.Reglements);
             db.LignesFactureClient.RemoveRange(facture.Lignes);
             db.FacturesClient.Remove(facture);
@@ -303,7 +309,8 @@ public class FactureClientService(
             Note = source.Note,
             EtatFacture = "Facture Ouverte",
             EtatReglement = "Non Réglé",
-            Timbre = config.TimbreFiscal
+            Timbre = config.TimbreFiscal,
+            NumeroBonLivraisonOrigine = source.NumeroBonLivraison
         };
 
         var lignes = source.Lignes.Select(l => new LigneFactureClient
@@ -322,11 +329,8 @@ public class FactureClientService(
         // Pas de décrément de stock ici : le bon de livraison source a déjà déplacé le stock à sa
         // propre création. Générer une facture à partir de ce bon n'est qu'un enregistrement
         // financier du même mouvement de marchandise, pas un second mouvement.
-        // LIMITE CONNUE : DeleteAsync restitue toujours le stock de ses lignes, sans savoir qu'une
-        // facture "générée depuis un BL" n'a jamais décrémenté ce stock elle-même — la supprimer
-        // restituerait donc du stock à tort (le BL, lui, reste responsable du mouvement réel). Le
-        // modèle actuel n'a pas de champ traçant la provenance d'une facture pour distinguer ce cas ;
-        // corriger ça proprement demanderait un champ de provenance + une migration de schéma.
+        // NumeroBonLivraisonOrigine (posé ci-dessus) trace cette provenance : DeleteAsync s'en sert
+        // pour ne jamais restituer un stock que cette facture n'a pas elle-même décrémenté.
         db.FacturesClient.Add(facture);
         foreach (var ligne in lignes)
         {

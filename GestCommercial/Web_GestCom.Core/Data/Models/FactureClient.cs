@@ -11,6 +11,11 @@ public class FactureClient : ITenantOwned
     [MaxLength(20)]
     public string NumeroFactureClient { get; set; } = string.Empty;
 
+    /// <summary>Jeton de concurrence optimiste — voir DevisClient.RowVersion.</summary>
+    [Timestamp]
+    [Column("rowversion_factureclient")]
+    public byte[] RowVersion { get; set; } = null!;
+
     [Required]
     [Column("date_factureclient")]
     [Display(Name = "Date")]
@@ -71,12 +76,28 @@ public class FactureClient : ITenantOwned
     [Display(Name = "Note")]
     public string? Note { get; set; }
 
+    /// <summary>
+    /// Bon de livraison dont cette facture a été générée (CreateFromBonLivraisonAsync), null pour
+    /// une facture normale. Le BL a déjà décrémenté le stock à sa propre création — cette facture
+    /// n'est qu'un enregistrement financier du même mouvement, pas un second mouvement de stock.
+    /// DeleteAsync s'appuie sur ce champ pour NE PAS restituer le stock d'une facture générée
+    /// ainsi (le BL reste seul responsable de ce mouvement). Mis à NULL si le BL source est
+    /// supprimé (SetNull, voir AppDbContext.OnModelCreating) — traçabilité, pas une contrainte
+    /// financière comme les lignes de facture.
+    /// </summary>
+    [MaxLength(20)]
+    [Column("numero_bl_origine_factureclient")]
+    public string? NumeroBonLivraisonOrigine { get; set; }
+
     // Navigation
     [ForeignKey(nameof(CodeClient))]
     public Client? Client { get; set; }
 
     [ForeignKey(nameof(CompanyId))]
     public Company? Company { get; set; }
+
+    [ForeignKey(nameof(NumeroBonLivraisonOrigine))]
+    public BonLivraison? BonLivraisonOrigine { get; set; }
 
     public ICollection<LigneFactureClient> Lignes { get; set; } = [];
     public ICollection<ReglementFactureClient> Reglements { get; set; } = [];

@@ -558,6 +558,67 @@ using (var scope = app.Services.CreateScope())
         END
         """);
 
+    // Traçabilité "facture générée depuis un BL" (audit 2026-09-12, "Facture générée depuis un
+    // Bon de Livraison... la suppression restitue du stock à tort" — voir TODO.md) : nouvelle
+    // colonne nullable, jamais renseignée pour une facture normale, mise par
+    // CreateFromBonLivraisonAsync — DeleteAsync s'en sert pour ne pas restituer un stock que
+    // cette facture n'a jamais décrémenté elle-même. FK en SET NULL (même convention que
+    // bonlivraison.numero_commandevente ci-dessus) : supprimer le BL source ne doit pas être
+    // bloqué par une facture déjà émise à partir de lui.
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = 'factureclient' AND COLUMN_NAME = 'numero_bl_origine_factureclient'
+        )
+        BEGIN
+            ALTER TABLE factureclient ADD numero_bl_origine_factureclient NVARCHAR(20) NULL
+        END
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (
+            SELECT * FROM sys.foreign_keys
+            WHERE parent_object_id = OBJECT_ID('factureclient')
+              AND referenced_object_id = OBJECT_ID('bonlivraison')
+        )
+        BEGIN
+            ALTER TABLE factureclient
+                ADD CONSTRAINT FK_factureclient_bonlivraison_origine
+                FOREIGN KEY (numero_bl_origine_factureclient)
+                REFERENCES bonlivraison(numero_bonlivraison)
+                ON DELETE SET NULL
+        END
+        """);
+
+    // Jeton de concurrence optimiste (audit 2026-09-12, "Absence de jeton de concurrence" — voir
+    // TODO.md) sur les 7 entités documents. ROWVERSION est géré entièrement par SQL Server : auto-
+    // rempli à l'ajout de la colonne pour les lignes existantes, ré-incrémenté automatiquement à
+    // chaque UPDATE — aucun backfill manuel nécessaire, contrairement aux autres colonnes ajoutées
+    // dans ce fichier. EF Core (via [Timestamp] sur RowVersion, voir les modèles) détecte seul
+    // toute modification concurrente et SaveChangesGuardedAsync traduit déjà
+    // DbUpdateConcurrencyException en message clair.
+    foreach (var (table, column) in new[]
+    {
+        ("devisClient", "rowversion_devis"),
+        ("commandevente", "rowversion_commandevente"),
+        ("bonlivraison", "rowversion_bonlivraison"),
+        ("factureclient", "rowversion_factureclient"),
+        ("commandeachat", "rowversion_commandeachat"),
+        ("bonreception", "rowversion_bonreception"),
+        ("facturefournisseur", "rowversion_facturefournisseur"),
+    })
+    {
+        db.Database.ExecuteSqlRaw($"""
+            IF NOT EXISTS (
+                SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = '{table}' AND COLUMN_NAME = '{column}'
+            )
+            BEGIN
+                ALTER TABLE {table} ADD {column} ROWVERSION
+            END
+            """);
+    }
+
     // ── RBAC seed ──────────────────────────────────────────────────────────
     // Default company (let IDENTITY assign the PK — don't specify id_company)
     db.Database.ExecuteSqlRaw("""
@@ -867,6 +928,23 @@ using (var scope = app.Services.CreateScope())
             IsSuperAdmin = true,
             Actif       = true
         }, "SuperAdmin123!").GetAwaiter().GetResult();
+    }
+
+    // Sécurité (audit 2026-09-12, "Comptes par défaut à mot de passe connu" — voir TODO.md) :
+    // avertir à chaque démarrage si admin/superadmin ont encore leur mot de passe d'origine.
+    // Ne bloque jamais le démarrage — juste une trace explicite dans les logs, impossible à
+    // manquer, tant que ce n'est pas changé en production.
+    {
+        var startupLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Program");
+        var utilisateurService = scope.ServiceProvider.GetRequiredService<IUtilisateurService>();
+        if (utilisateurService.AuthentifierAsync("admin", "admin123").GetAwaiter().GetResult() is not null)
+            startupLogger.LogWarning(
+                "SÉCURITÉ : le compte 'admin' utilise encore le mot de passe par défaut ('admin123'). " +
+                "Changez-le avant toute mise en production.");
+        if (utilisateurService.AuthentifierAsync("superadmin", "SuperAdmin123!").GetAwaiter().GetResult() is not null)
+            startupLogger.LogWarning(
+                "SÉCURITÉ : le compte 'superadmin' utilise encore le mot de passe par défaut ('SuperAdmin123!'). " +
+                "Changez-le avant toute mise en production.");
     }
 
     var seedMockData = app.Configuration.GetValue<bool>("MockData:Enabled") ||

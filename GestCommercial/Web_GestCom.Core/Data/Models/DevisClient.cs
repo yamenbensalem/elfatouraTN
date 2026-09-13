@@ -11,6 +11,17 @@ public class DevisClient : ITenantOwned
     [MaxLength(20)]
     public string NumeroDevis { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Jeton de concurrence optimiste (audit 2026-09-12, "Absence de jeton de concurrence" — voir
+    /// TODO.md). Géré entièrement par SQL Server (ROWVERSION, auto-incrémenté à chaque UPDATE) —
+    /// EF Core le traite automatiquement comme concurrency token via [Timestamp], aucune logique
+    /// applicative à écrire : une modification concurrente entre le chargement et la sauvegarde
+    /// lève DbUpdateConcurrencyException (traduite par SaveChangesGuardedAsync).
+    /// </summary>
+    [Timestamp]
+    [Column("rowversion_devis")]
+    public byte[] RowVersion { get; set; } = null!;
+
     [Required]
     [Column("date_devis")]
     [Display(Name = "Date")]

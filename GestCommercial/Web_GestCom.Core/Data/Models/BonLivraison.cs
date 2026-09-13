@@ -11,6 +11,11 @@ public class BonLivraison : ITenantOwned
     [MaxLength(20)]
     public string NumeroBonLivraison { get; set; } = string.Empty;
 
+    /// <summary>Jeton de concurrence optimiste — voir DevisClient.RowVersion.</summary>
+    [Timestamp]
+    [Column("rowversion_bonlivraison")]
+    public byte[] RowVersion { get; set; } = null!;
+
     [Required]
     [Column("date_bonlivraison")]
     [Display(Name = "Date")]

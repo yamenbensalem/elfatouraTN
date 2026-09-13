@@ -816,3 +816,59 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       pattern (`IF NOT EXISTS` / vérifier l'état actuel avant d'altérer) pour tout futur changement
       de schéma, comme démontré par le point DeleteBehavior ci-dessus. Rien à ajouter tant qu'aucun
       changement de schéma n'est en attente — ce n'était pas une tâche actionnable isolément.
+
+### Remédiation audit externe (`audit_gestcommercial.md`, 2026-09-12) ✅
+
+- [x] Audit externe déposé dans `audit_gestcommercial.md` — traitement des points de la section
+      « Constats priorisés » (§5) apte à être corrigé sans nouvelle décision produit :
+      - **Code mort** : `Components/Pages/Counter.razor`/`Weather.razor` (templates par défaut
+        jamais liés depuis la nav, confirmé par `grep`) supprimés, ainsi que leur test bUnit associé
+        (`CounterTests.cs`, cassait le build après coup avec `CS0246`).
+      - **README désynchronisé** : les 4 sections Achats (Commandes Achat, Bons de Réception,
+        Factures Fournisseur, Entreprise) étaient encore marquées « planifié »/« modèles créés, UI à
+        implémenter » alors qu'implémentées et livrées depuis plusieurs itérations (voir sections
+        TODO ci-dessus) — remplacées par une documentation complète alignée sur le style déjà utilisé
+        pour le cycle Ventes (tableau des routes, lignes **En-tête :**/**Impact stock :**) ; 3
+        services manquants ajoutés au tableau des Services.
+      - **Avertissement identifiants par défaut** : `Program.cs` logge désormais un `LogWarning`
+        explicite au démarrage si `admin`/`admin123` ou `superadmin`/`SuperAdmin123!` s'authentifient
+        encore avec succès — signal visible en observabilité de prod sans forcer un changement de mot
+        de passe (décision : avertir, pas bloquer, l'audit ne demandait pas de flux de rotation
+        obligatoire).
+      - **Trou de traçabilité stock relevé par l'audit** : générer une Facture directement depuis un
+        BL (`FactureClientService.CreateFromBonLivraisonAsync`, voir section BL plus haut) ne
+        décrémente pas le stock (déjà fait par le BL), mais `DeleteAsync` d'une telle facture
+        restituait quand même le stock à tort — double-restitution silencieuse jamais corrigée malgré
+        la limite déjà documentée dans le code à l'époque (« hors scope »). Corrigé avec un vrai champ
+        de provenance : `FactureClient.NumeroBonLivraisonOrigine` (FK nullable vers `BonLivraison`,
+        `DeleteBehavior.SetNull`, même convention que les 2 FK de traçabilité existantes) — posé par
+        `CreateFromBonLivraisonAsync`, et `DeleteAsync` ne restitue le stock que si ce champ est
+        `null`. Migration SQL idempotente pour la colonne + la FK. 3 nouveaux tests
+        (`FactureClientServiceTests` : provenance posée à la création, pas de restitution quand issue
+        d'un BL, restitution normale sinon).
+      - **Absence de détection de conflit sur modification concurrente relevée par l'audit** :
+        `SaveChangesGuardedAsync` ne détectait déjà qu'une ligne supprimée entre-temps (`RowVersion`
+        jamais ajouté — voir point ci-dessus « pas de token de concurrence... hors scope »), pas une
+        ligne encore existante mais modifiée par un autre utilisateur (dernier-écrit-gagne silencieux).
+        Ajouté `[Timestamp] RowVersion` (`byte[]`, mappé en `ROWVERSION` SQL Server) sur les 7 entités
+        document (`DevisClient`, `CommandeVente`, `BonLivraison`, `FactureClient`, `CommandeAchat`,
+        `BonReception`, `FactureFournisseur`) — colonnes ajoutées via le bloc SQL idempotent habituel.
+        Le provider EF Core InMemory ne génère pas nativement de valeur `[Timestamp]` : ajouté un
+        `InMemoryRowVersionGenerator` (`ValueGenerator<byte[]>`) enregistré conditionnellement dans
+        `AppDbContext.OnModelCreating` via `Database.ProviderName ==
+        "Microsoft.EntityFrameworkCore.InMemory"` (pas `Database.IsInMemory()`, qui exigerait une
+        référence au package InMemory depuis `Web_GestCom.Core`, une lib de prod qui ne doit pas en
+        dépendre). 1 nouveau test de régression qui simule deux `DbContext` sur la même base InMemory
+        modifiant la même ligne — la seconde sauvegarde lève bien `ConcurrencyConflictException` sans
+        écraser le changement du premier.
+      - Points de l'audit **explicitement non traités** dans cette itération (hors scope ou
+        nécessitant une décision produit séparée) : pipeline CI/CD, couverture de test sur les pages
+        Blazor (`Components/Pages`), vérification que les clés de config `AlertOnLoginFailures`/
+        `AlertOnIpFailures` déclenchent une vraie notification, course concurrente sur la génération
+        de code séquentiel (déjà signalée comme acceptée par l'audit lui-même).
+      Vérifié de bout en bout dans le navigateur : avertissement « SÉCURITÉ » confirmé dans les logs
+      de démarrage pour les 2 comptes par défaut ; création d'un Devis puis modification immédiate
+      (round-trip du `RowVersion` à travers le vrai formulaire Blazor, sans erreur de concurrence
+      parasite sur une simple édition mono-utilisateur) ; flux complet BL → Générer Facture →
+      Suppression de la facture confirmant que le stock (décrémenté une seule fois par le BL) n'est
+      plus restitué en double à la suppression. Suite complète : 322/322 tests verts, build 0 erreur.

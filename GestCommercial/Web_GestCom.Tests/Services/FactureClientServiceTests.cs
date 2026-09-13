@@ -473,6 +473,70 @@ public class FactureClientServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateFromBonLivraisonAsync("UNKNOWN", config));
     }
 
+    [Fact]
+    public async Task CreateFromBonLivraisonAsync_SetsProvenance()
+    {
+        var (svc, db, config) = CreateService();
+        var (client, _) = await SeedBasicData(db);
+        var bon = new BonLivraison { NumeroBonLivraison = "BL202609004", CodeClient = client.CodeClient, DateBonLivraison = DateTime.Today, EtatFacture = "Non Facturé" };
+        db.BonsLivraison.Add(bon);
+        await db.SaveChangesAsync();
+
+        var facture = await svc.CreateFromBonLivraisonAsync(bon.NumeroBonLivraison, config);
+
+        Assert.Equal(bon.NumeroBonLivraison, facture.NumeroBonLivraisonOrigine);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_FactureGeneratedFromBonLivraison_DoesNotRestituteStock()
+    {
+        // Real bug flagged by audit (2026-09-12) : a facture created via CreateFromBonLivraisonAsync
+        // never decrements stock itself (the BL already did, at its own creation) — but the old
+        // DeleteAsync always restituted stock for every deleted facture's lines regardless of
+        // provenance, creating a phantom stock increase. NumeroBonLivraisonOrigine now lets
+        // DeleteAsync skip restitution for this specific case.
+        var (svc, db, config) = CreateService();
+        var (client, produit) = await SeedBasicData(db);
+        var bon = new BonLivraison { NumeroBonLivraison = "BL202609005", CodeClient = client.CodeClient, DateBonLivraison = DateTime.Today, EtatFacture = "Non Facturé" };
+        db.BonsLivraison.Add(bon);
+        db.LignesBonLivraison.Add(new LigneBonLivraison
+        {
+            NumeroBonLivraison = bon.NumeroBonLivraison,
+            CodeProduit = produit.CodeProduit,
+            Quantite = 3,
+            PrixUnitaire = 100,
+            Tva = 19,
+            MontantHT = 300
+        });
+        produit.Quantite = 97; // simulate the BL having already decremented stock by 3 (100 -> 97)
+        await db.SaveChangesAsync();
+
+        var facture = await svc.CreateFromBonLivraisonAsync(bon.NumeroBonLivraison, config);
+        await svc.DeleteAsync(facture.NumeroFactureClient);
+
+        Assert.Equal(97, (await db.Produits.FindAsync(produit.CodeProduit))!.Quantite); // still unchanged
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NormalFacture_StillRestitutesStock()
+    {
+        // Regression guard for the fix above: a normal facture (no BL provenance) must keep
+        // restituting stock on delete exactly as before.
+        var (svc, db, config) = CreateService();
+        var (client, produit) = await SeedBasicData(db);
+        var facture = new FactureClient { NumeroFactureClient = $"FC{YM}009", DateFactureClient = DateTime.Today, CodeClient = client.CodeClient };
+        var lignes = new List<LigneFactureClient>
+        {
+            new() { CodeProduit = produit.CodeProduit, Quantite = 5, PrixUnitaire = 100, Tva = 19, MontantHT = 500 }
+        };
+        await svc.CreateAsync(facture, lignes, config);
+        var stockAfterCreate = (await db.Produits.FindAsync(produit.CodeProduit))!.Quantite;
+
+        await svc.DeleteAsync(facture.NumeroFactureClient);
+
+        Assert.Equal(stockAfterCreate + 5, (await db.Produits.FindAsync(produit.CodeProduit))!.Quantite);
+    }
+
     // ── Update ───────────────────────────────────────────────────────────────
 
     [Fact]

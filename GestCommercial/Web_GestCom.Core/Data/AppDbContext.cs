@@ -186,6 +186,15 @@ public class AppDbContext : DbContext
             .HasForeignKey(b => b.NumeroCommandeAchat)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // Same reasoning: FactureClient.NumeroBonLivraisonOrigine is a traceability link (which BL
+        // this facture was generated from via CreateFromBonLivraisonAsync), not a financial
+        // constraint — deleting the source BL should not be blocked by it.
+        modelBuilder.Entity<FactureClient>()
+            .HasOne(f => f.BonLivraisonOrigine)
+            .WithMany()
+            .HasForeignKey(f => f.NumeroBonLivraisonOrigine)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // ── Composite PKs ──────────────────────────────────────────────────
         modelBuilder.Entity<UserRole>()
             .HasKey(ur => new { ur.UserId, ur.RoleId });
@@ -361,5 +370,35 @@ public class AppDbContext : DbContext
             rp.Add(new RolePermission { RoleId = 4, PermissionId = p.Id });
 
         modelBuilder.Entity<RolePermission>().HasData(rp);
+
+        // [Timestamp] RowVersion columns (7 document entities) are populated natively by SQL
+        // Server (ROWVERSION auto-increments on every UPDATE) — real production databases need no
+        // extra configuration. The InMemory provider used by unit tests has no equivalent, and
+        // without a value generator it throws "Required properties '{RowVersion}' are missing" on
+        // the very first insert. This block only runs against InMemory (never SQL Server) and
+        // gives it a generator that produces a fresh value each time, so concurrency-token
+        // behavior can be unit-tested without a real database.
+        // String check instead of the Database.IsInMemory() extension: that extension lives in the
+        // Microsoft.EntityFrameworkCore.InMemory package, which this shared Core project correctly
+        // does not reference (it's a test-only provider, not something production code should
+        // depend on).
+        if (Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            foreach (var entityType in new[]
+            {
+                typeof(DevisClient), typeof(CommandeVente), typeof(BonLivraison), typeof(FactureClient),
+                typeof(CommandeAchat), typeof(BonReception), typeof(FactureFournisseur)
+            })
+            {
+                modelBuilder.Entity(entityType).Property("RowVersion").HasValueGenerator<InMemoryRowVersionGenerator>();
+            }
+        }
+    }
+
+    /// <summary>Only used against the InMemory test provider — see OnModelCreating above.</summary>
+    private sealed class InMemoryRowVersionGenerator : Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator<byte[]>
+    {
+        public override bool GeneratesTemporaryValues => false;
+        public override byte[] Next(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry) => Guid.NewGuid().ToByteArray();
     }
 }

@@ -11,6 +11,11 @@ public class CommandeAchat : ITenantOwned
     [MaxLength(20)]
     public string NumeroCommandeAchat { get; set; } = string.Empty;
 
+    /// <summary>Jeton de concurrence optimiste — voir DevisClient.RowVersion.</summary>
+    [Timestamp]
+    [Column("rowversion_commandeachat")]
+    public byte[] RowVersion { get; set; } = null!;
+
     [Required]
     [Column("date_commandeachat")]
     [Display(Name = "Date")]

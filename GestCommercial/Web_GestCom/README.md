@@ -232,7 +232,54 @@ Gestion complète des fournisseurs.
 | Modifier | — | Formulaire de modification |
 | Supprimer | — | Avec confirmation |
 
-> **Note :** Les modules Commandes Achat, Bons de Réception et Factures Fournisseur sont planifiés (modèles DB créés, routes dans la navigation). Voir `TODO.md`.
+#### Commandes Achat `/commandes-achat`
+
+Gestion des commandes fournisseurs.
+
+| Opération | Route | Description |
+|---|---|---|
+| Liste | `GET /commandes-achat` | Tableau avec état commande et état réception |
+| Créer | `GET /commandes-achat/nouveau` | Formulaire avec lignes |
+| Modifier | `GET /commandes-achat/{numero}` | Modification |
+| Supprimer | — | Avec confirmation |
+| Cloner | — | Nouveau numéro, statut réinitialisé |
+
+**En-tête :** N° auto (CA + AAAAMM + ###), Date, Fournisseur, Remise %, État, État Réception, Note.
+**Impact stock :** Aucun.
+
+---
+
+#### Bons de Réception `/bons-reception`
+
+Gestion des bons de réception fournisseurs. **Impacte le stock.**
+
+| Opération | Route | Description |
+|---|---|---|
+| Liste | `GET /bons-reception` | Tableau avec commande liée, état et état facturation |
+| Créer | `GET /bons-reception/nouveau` | Formulaire avec sélection commande achat optionnelle |
+| Modifier | `GET /bons-reception/{numero}` | Modification (stock recalculé) |
+| Supprimer | — | Restitution automatique du stock |
+| Cloner | — | Nouveau bon + incrément stock |
+
+**En-tête :** N° auto (BR + AAAAMM + ###), Date, Fournisseur, Commande Achat associée (optionnel), Remise %, État, État Facturation, Note.
+**Impact stock :** Incrément à la création, restitution à la suppression/modification.
+
+---
+
+#### Factures Fournisseur `/factures-fournisseur`
+
+Gestion des factures fournisseurs avec règlements. **Impacte le stock.**
+
+| Opération | Route | Description |
+|---|---|---|
+| Liste | `GET /factures-fournisseur` | Tableau avec état facture et état règlement |
+| Créer | `GET /factures-fournisseur/nouveau` | Formulaire complet |
+| Modifier | `GET /factures-fournisseur/{numero}` | Modification + saisie des règlements |
+| Supprimer | — | Restitution stock + suppression règlements |
+| Cloner | — | Nouveau numéro, règlements non copiés |
+
+**En-tête :** N° auto (FF + AAAAMM + ###), Date, Fournisseur, Remise %, État Facture, Note.
+**Impact stock :** Incrément à la création, restitution à la suppression/modification.
 
 ---
 
@@ -272,7 +319,9 @@ Filtres disponibles : recherche texte, catégorie, afficher uniquement les alert
 
 ### PARAMÈTRES
 
-> **Note :** Le module Entreprise (`/entreprise`) est planifié. Voir `TODO.md`.
+#### Entreprise `/entreprise`
+
+Fiche entreprise unique (formulaire direct via `AppDbContext`, sans page de liste) : nom, coordonnées, TVA/matricule fiscal, logo, paramètres d'affichage.
 
 ---
 
@@ -287,8 +336,13 @@ Filtres disponibles : recherche texte, catégorie, afficher uniquement les alert
 | `CommandeVenteService` | `ICommandeVenteService` | CRUD + Clone commandes vente |
 | `BonLivraisonService` | `IBonLivraisonService` | CRUD + Clone BL (avec stock) |
 | `FactureClientService` | `IFactureClientService` | CRUD + Clone + Règlements (avec stock) |
-| `DocumentNumberService` | *(sans interface)* | Génération numéros séquentiels |
+| `CommandeAchatService` | `ICommandeAchatService` | CRUD + Clone commandes achat |
+| `BonReceptionService` | `IBonReceptionService` | CRUD + Clone BR (avec stock) |
+| `FactureFournisseurService` | `IFactureFournisseurService` | CRUD + Clone + Règlements (avec stock) |
+| `DocumentNumberService` | *(sans interface)* | Génération numéros séquentiels (documents) |
 | `AppConfigService` | *(singleton)* | Lecture configuration applicative |
+
+Voir `Web_GestCom/CLAUDE.md` pour la liste complète des services (plateforme/RBAC/multi-tenant inclus).
 
 ---
 
@@ -334,7 +388,7 @@ FactureClient (FC…)    [IsAvoir=false] ou Avoir [IsAvoir=true]
   └── ReglementFactureClient
 ```
 
-### Documents d'achat (modèles créés, UI à implémenter)
+### Documents d'achat
 
 ```
 CommandeAchat (CA…)

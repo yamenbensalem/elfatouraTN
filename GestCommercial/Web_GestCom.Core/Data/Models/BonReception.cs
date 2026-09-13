@@ -11,6 +11,11 @@ public class BonReception : ITenantOwned
     [MaxLength(20)]
     public string NumeroBonReception { get; set; } = string.Empty;
 
+    /// <summary>Jeton de concurrence optimiste — voir DevisClient.RowVersion.</summary>
+    [Timestamp]
+    [Column("rowversion_bonreception")]
+    public byte[] RowVersion { get; set; } = null!;
+
     [Required]
     [Column("date_bonreception")]
     [Display(Name = "Date")]

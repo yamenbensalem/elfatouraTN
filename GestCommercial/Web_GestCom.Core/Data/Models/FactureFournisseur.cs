@@ -11,6 +11,11 @@ public class FactureFournisseur : ITenantOwned
     [MaxLength(20)]
     public string NumeroFactureFournisseur { get; set; } = string.Empty;
 
+    /// <summary>Jeton de concurrence optimiste — voir DevisClient.RowVersion.</summary>
+    [Timestamp]
+    [Column("rowversion_facturefournisseur")]
+    public byte[] RowVersion { get; set; } = null!;
+
     [Required]
     [Column("date_facturefournisseur")]
     [Display(Name = "Date")]
