@@ -3,14 +3,21 @@
 @attribute [Authorize(Policy = "perm:commandes-vente.view")]
 @inject ICommandeVenteService CommandeService
 @inject NavigationManager Nav
+@inject IExcelExportService ExcelExport
+@inject IJSRuntime JS
 
 <PageTitle>Commandes Vente – GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Commandes Vente</h3>
-    <a href="commandes-vente/nouveau" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nouvelle Commande
-    </a>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" @onclick="() => ExportExcel()">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </button>
+        <a href="commandes-vente/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouvelle Commande
+        </a>
+    </div>
 </div>
 
 <Notification @ref="_notif" />
@@ -194,4 +201,15 @@
         "Partiellement Livré" => "bg-warning text-dark",
         _ => "bg-danger"
     };
+
+    private async Task ExportExcel()
+    {
+        var headers = new[] { "N° Commande", "Date", "Client", "Montant HT", "TVA", "Total TTC", "État", "Livraison" };
+        var rows = FilteredCommandes.Select(c => (IReadOnlyList<object?>)new object?[]
+        {
+            c.NumeroCommandeVente, c.DateCommandeVente, c.Client?.NomClient, c.MontantHT, c.MontantTVA,
+            c.MontantTTC, c.EtatCommandeVente, c.EtatLivraison
+        });
+        await ExcelDownloadHelper.DownloadAsync(JS, ExcelExport, $"commandes_vente_{DateTime.Now:yyyyMMdd_HHmm}.xlsx", "Commandes Vente", headers, rows);
+    }
 }

@@ -3,14 +3,21 @@
 @attribute [Authorize(Policy = "perm:bons-reception.view")]
 @inject IBonReceptionService BonService
 @inject NavigationManager Nav
+@inject IExcelExportService ExcelExport
+@inject IJSRuntime JS
 
 <PageTitle>Bons de Réception – GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Bons de Réception</h3>
-    <a href="/bons-reception/nouveau" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nouveau Bon
-    </a>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" @onclick="() => ExportExcel()">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </button>
+        <a href="/bons-reception/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau Bon
+        </a>
+    </div>
 </div>
 
 <Notification @ref="_notif" />
@@ -194,5 +201,16 @@
             await LoadAsync();
         }
         catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+    }
+
+    private async Task ExportExcel()
+    {
+        var headers = new[] { "N° Bon", "Date", "Fournisseur", "Commande Achat", "Montant HT", "TVA", "Total TTC", "État", "Facturation" };
+        var rows = FilteredBons.Select(b => (IReadOnlyList<object?>)new object?[]
+        {
+            b.NumeroBonReception, b.DateBonReception, b.Fournisseur?.NomFournisseur, b.NumeroCommandeAchat,
+            b.MontantHT, b.MontantTVA, b.MontantTTC, b.EtatBonReception, b.EtatFacture
+        });
+        await ExcelDownloadHelper.DownloadAsync(JS, ExcelExport, $"bons_reception_{DateTime.Now:yyyyMMdd_HHmm}.xlsx", "Bons de Réception", headers, rows);
     }
 }

@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 
         services.AddSingleton<AppConfigService>();
+        services.AddSingleton<IExcelExportService, ExcelExportService>();
         services.AddScoped<DocumentNumberService>();
 
         services.AddScoped<IUtilisateurService, UtilisateurService>();

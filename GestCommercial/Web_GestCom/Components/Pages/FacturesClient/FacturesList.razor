@@ -4,15 +4,22 @@
 @attribute [Authorize(Policy = "perm:factures.view")]
 @inject IFactureClientService FactureService
 @inject NavigationManager Nav
+@inject IExcelExportService ExcelExport
+@inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>@(_isAvoir ? "Avoirs" : "Factures Client") – GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>@(_isAvoir ? "Avoirs" : "Factures Client")</h3>
-    <a href="@(_isAvoir ? "avoirs/nouveau" : "factures-client/nouveau")" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> @(_isAvoir ? "Nouvel Avoir" : "Nouvelle Facture")
-    </a>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" @onclick="() => ExportExcel()">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </button>
+        <a href="@(_isAvoir ? "avoirs/nouveau" : "factures-client/nouveau")" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> @(_isAvoir ? "Nouvel Avoir" : "Nouvelle Facture")
+        </a>
+    </div>
 </div>
 
 <Notification @ref="_notif" />
@@ -254,4 +261,17 @@
 
     public void Dispose()
         => Nav.LocationChanged -= OnLocationChanged;
+
+    private async Task ExportExcel()
+    {
+        var headers = new[] { "N° Facture", "Date", "Client", "Montant HT", "TVA", "Timbre", "Total TTC", "État", "Règlement" };
+        var rows = FilteredFactures.Select(f => (IReadOnlyList<object?>)new object?[]
+        {
+            f.NumeroFactureClient, f.DateFactureClient, f.Client?.NomClient, f.MontantHT, f.MontantTVA,
+            f.Timbre, f.MontantTTC + f.Timbre, f.EtatFacture, f.EtatReglement
+        });
+        var prefix = _isAvoir ? "avoirs" : "factures_client";
+        var sheet = _isAvoir ? "Avoirs" : "Factures Client";
+        await ExcelDownloadHelper.DownloadAsync(JS, ExcelExport, $"{prefix}_{DateTime.Now:yyyyMMdd_HHmm}.xlsx", sheet, headers, rows);
+    }
 }

@@ -3,14 +3,21 @@
 @attribute [Authorize(Policy = "perm:commandes-achat.view")]
 @inject ICommandeAchatService CommandeService
 @inject NavigationManager Nav
+@inject IExcelExportService ExcelExport
+@inject IJSRuntime JS
 
 <PageTitle>Commandes Achat – GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Commandes Achat</h3>
-    <a href="/commandes-achat/nouveau" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nouvelle Commande
-    </a>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" @onclick="() => ExportExcel()">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </button>
+        <a href="/commandes-achat/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouvelle Commande
+        </a>
+    </div>
 </div>
 
 <Notification @ref="_notif" />
@@ -193,4 +200,15 @@
         "Partiellement Reçu" => "bg-warning text-dark",
         _ => "bg-secondary"
     };
+
+    private async Task ExportExcel()
+    {
+        var headers = new[] { "N° Commande", "Date", "Fournisseur", "Montant HT", "TVA", "Total TTC", "État", "Réception" };
+        var rows = FilteredCommandes.Select(c => (IReadOnlyList<object?>)new object?[]
+        {
+            c.NumeroCommandeAchat, c.DateCommandeAchat, c.Fournisseur?.NomFournisseur, c.MontantHT, c.MontantTVA,
+            c.MontantTTC, c.EtatCommandeAchat, c.EtatReception
+        });
+        await ExcelDownloadHelper.DownloadAsync(JS, ExcelExport, $"commandes_achat_{DateTime.Now:yyyyMMdd_HHmm}.xlsx", "Commandes Achat", headers, rows);
+    }
 }

@@ -12,13 +12,15 @@ namespace Web_GestCom.Tests.Components.Pages;
 
 public sealed class ClientsListTests : TestContext
 {
-    private readonly Mock<IClientService>     _clientService = new();
-    private readonly Mock<IPermissionService> _permService   = new();
+    private readonly Mock<IClientService>       _clientService = new();
+    private readonly Mock<IPermissionService>   _permService    = new();
+    private readonly Mock<IExcelExportService>  _excelExport    = new();
 
     public ClientsListTests()
     {
         Services.AddScoped(_ => _clientService.Object);
         Services.AddSingleton(_permService.Object);
+        Services.AddSingleton(_excelExport.Object);
     }
 
     private void AuthorizeAdmin()

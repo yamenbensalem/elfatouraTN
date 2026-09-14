@@ -151,14 +151,55 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       y compris celles basées sur `Virtualize` (`BonLivraisonList`, `FacturesList`). Suite complète
       inchangée : 259/259 tests verts, build 0 erreur (Web + Desktop).
 
-### Impression / Export
+### Impression / Export ✅
 
-- [ ] Implémenter l'impression des documents (Devis, Facture, BL) au format PDF
-  - Utiliser une bibliothèque comme QuestPDF ou DinkToPdf
-  - En-tête avec logo + informations entreprise
-  - Corps avec tableau de lignes
-  - Pied de page avec totaux et signature
-- [ ] Export Excel des listes (Clients, Produits, Factures)
+- [x] Impression des documents (Devis, Facture, BL, etc.) au format PDF — **décision utilisateur** :
+      garder l'impression navigateur existante (les 7 pages `Print/*.razor` ont déjà un bouton
+      « Imprimer / PDF » qui appelle `window.print()`, avec un layout `PrintLayout` dédié — "Enregistrer
+      en PDF" depuis la boîte de dialogue d'impression du navigateur fonctionne déjà bien). Pas de
+      génération PDF côté serveur (QuestPDF/DinkToPdf écartés : licence Community à vérifier pour
+      QuestPDF sur un produit commercial, dépendance native supplémentaire pour DinkToPdf sur le VPS
+      Linux/Docker — aucun des deux ne justifiait le risque/effort face à une solution déjà en place
+      et fonctionnelle).
+- [x] Export Excel des listes — **étendu à toutes les listes de documents** (pas seulement Clients/
+      Produits/Factures) : Clients, Produits, Fournisseurs, Devis, Commandes Vente, Commandes Achat,
+      Bons de Livraison, Bons de Réception, Factures Client (+ Avoirs), Factures Fournisseur.
+      - `Web_GestCom.Core/Services/ExcelExportService.cs` (`IExcelExportService`, enregistré en
+        singleton dans `AddGestComServices`) — générateur générique de classeur `.xlsx` via
+        **ClosedXML** (MIT, cross-platform, aucune dépendance native — sûr pour le déploiement
+        Docker/Linux du VPS ; EPPlus écarté pour ses changements de licence sur usage commercial).
+        Une seule méthode `BuildWorkbook(sheetName, headers, rows)` réutilisée par les 10 pages —
+        en-tête en gras, `AutoFilter`, ligne figée, largeur de colonnes auto-ajustée.
+      - `Web_GestCom/Services/ExcelDownloadHelper.cs` (Web uniquement) — encode les octets en
+        base64 et déclenche le téléchargement via `IJSRuntime.InvokeVoidAsync("downloadFileFromBytes",
+        ...)`. `wwwroot/js/download.js` (Blob + `<a download>` + click) référencé depuis `App.razor`
+        — convention JS interop du projet (fichier statique réel, jamais un `<script>` inline dans
+        le markup d'un composant, voir Known Pitfalls).
+      - Chaque bouton « Export Excel » exporte la liste **telle qu'actuellement filtrée** à l'écran
+        (recherche pour Clients/Produits/Fournisseurs, filtres client/état/dates pour les 7 listes de
+        documents) plutôt que la liste brute non filtrée — cohérent avec l'attente "j'exporte ce que
+        je suis en train de regarder".
+      - Boutons `@onclick="() => ExportExcel()"` (lambda, cohérent avec le reste des boutons de ces
+        pages — `ResetFilters`, `AskDelete`, etc.). Une fausse piste en cours de route mérite d'être
+        notée pour ne pas la reproduire : le bouton semblait ne rien faire du tout lors du tout
+        premier test en direct (aucune erreur console, aucune requête serveur, aucun log) sur le
+        process `dotnet run` resté ouvert depuis le début de session — passer par une liaison lambda
+        n'a en réalité rien changé : après un redémarrage propre du serveur de dev, la liaison directe
+        par groupe de méthodes (`@onclick="ExportExcel"`) fonctionnait tout aussi bien. La cause réelle
+        était donc un état transitoire du process de dev resté ouvert trop longtemps pendant les
+        multiples rebuilds successifs de cette session (probablement lié aux verrous de fichier
+        `Web_GestCom.exe` rencontrés en re-buildant par-dessus le process encore actif), pas un
+        problème de syntaxe Blazor — confirmé en clonant un devis existant (`CloneAsync`, liaison
+        directe, code préexistant) qui fonctionnait sans souci dans la même session. Toujours arrêter
+        le serveur de dev (`preview_stop`) avant tout `dotnet build` qui touche le projet Web, sans
+        quoi le build échoue de toute façon sur un verrou de fichier (`MSB3027`).
+      6 nouveaux tests service (`ExcelExportServiceTests` : en-têtes + lignes, feuille vide, dates,
+      cellules nulles, troncature/sanitation du nom de feuille) qui rouvrent le classeur généré via
+      ClosedXML pour vérifier le contenu réel (pas seulement l'absence d'exception). Vérifié de bout
+      en bout dans le navigateur sur 3 pages représentatives (liste simple `@foreach`, liste avec
+      filtres, liste `Virtualize` + double route `/factures-client` et `/avoirs`) : téléchargement
+      déclenché avec le bon nom de fichier horodaté et un contenu `.xlsx` non vide à chaque fois.
+      Suite complète : 328/328 tests verts, build 0 erreur.
 
 ### Authentification ✅ TERMINÉ (v0.5.0)
 

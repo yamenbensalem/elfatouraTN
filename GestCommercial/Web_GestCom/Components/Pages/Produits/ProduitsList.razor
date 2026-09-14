@@ -3,16 +3,23 @@
 @attribute [Authorize(Policy = "perm:produits.view")]
 @inject IProduitService ProduitService
 @inject AppDbContext Db
+@inject IExcelExportService ExcelExport
+@inject IJSRuntime JS
 
 <PageTitle>Produits – GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Produits</h3>
-    <PermissionGuard Permission="produits.create">
-        <a href="produits/nouveau" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Nouveau Produit
-        </a>
-    </PermissionGuard>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" @onclick="() => ExportExcel()">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </button>
+        <PermissionGuard Permission="produits.create">
+            <a href="produits/nouveau" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Nouveau Produit
+            </a>
+        </PermissionGuard>
+    </div>
 </div>
 
 <Notification @ref="_notif" />
@@ -148,4 +155,15 @@
     }
 
     private void CloseErrorDialog() => _errorVisible = false;
+
+    private async Task ExportExcel()
+    {
+        var headers = new[] { "Code", "Désignation", "Catégorie", "Prix Vente HT", "Prix Vente TTC", "Stock", "Unité", "TVA (%)" };
+        var rows = _produits.Select(p => (IReadOnlyList<object?>)new object?[]
+        {
+            p.CodeProduit, p.DesignationProduit, p.CategorieProduit?.NomCategorieProduit,
+            p.PrixVenteHT, p.PrixVenteTTC, p.Quantite, p.UniteProduit?.NomUniteProduit, p.TvaProduit?.TauxTvaProduit
+        });
+        await ExcelDownloadHelper.DownloadAsync(JS, ExcelExport, $"produits_{DateTime.Now:yyyyMMdd_HHmm}.xlsx", "Produits", headers, rows);
+    }
 }

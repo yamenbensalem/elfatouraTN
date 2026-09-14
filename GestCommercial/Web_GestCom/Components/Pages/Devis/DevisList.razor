@@ -3,14 +3,21 @@
 @attribute [Authorize(Policy = "perm:devis.view")]
 @inject IDevisClientService DevisService
 @inject NavigationManager Nav
+@inject IExcelExportService ExcelExport
+@inject IJSRuntime JS
 
 <PageTitle>Devis – GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Devis</h3>
-    <a href="devis/nouveau" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Nouveau Devis
-    </a>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" @onclick="() => ExportExcel()">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </button>
+        <a href="devis/nouveau" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouveau Devis
+        </a>
+    </div>
 </div>
 
 <Notification @ref="_notif" />
@@ -184,5 +191,15 @@
         {
             _notif.ShowError($"Erreur : {ex.Message}");
         }
+    }
+
+    private async Task ExportExcel()
+    {
+        var headers = new[] { "N° Devis", "Date", "Client", "Montant HT", "TVA", "Total TTC", "État" };
+        var rows = FilteredDevis.Select(d => (IReadOnlyList<object?>)new object?[]
+        {
+            d.NumeroDevis, d.DateDevis, d.Client?.NomClient, d.MontantHT, d.MontantTVA, d.MontantTTC, d.EtatDevis
+        });
+        await ExcelDownloadHelper.DownloadAsync(JS, ExcelExport, $"devis_{DateTime.Now:yyyyMMdd_HHmm}.xlsx", "Devis", headers, rows);
     }
 }
