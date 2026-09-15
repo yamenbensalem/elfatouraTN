@@ -33,3 +33,6 @@ _ReSharper*/
 packages/
 ClaudePrjt/TunisianEInvoice/tests/TunisianEInvoice.IntegrationTests/obj
 ClaudePrjt/TunisianEInvoice/tests/TunisianEInvoice.UnitTests/obj
+
+# Secrets — never commit real .env files (deploy/prod/.env.example stays tracked as a template)
+.env
