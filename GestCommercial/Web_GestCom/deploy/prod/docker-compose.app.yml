@@ -17,6 +17,9 @@ services:
       # Connexion SQL Server (remplace appsettings.json)
       - ConnectionStrings__DefaultConnection=Server=gestcom-sqlserver;Database=${DB_NAME};User Id=sa;Password=${DB_SA_PASSWORD};TrustServerCertificate=True;Connect Timeout=30
 
+      # Email (Brevo) — clé API, jamais dans appsettings.json
+      - Email__BrevoApiKey=${BREVO_API_KEY}
+
       # nginx-proxy : domaine + port interne
       - VIRTUAL_HOST=${APP_DOMAIN}
       - VIRTUAL_PORT=8080

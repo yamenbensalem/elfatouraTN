@@ -1,4 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using Moq;
 using Web_GestCom.Data;
 using Web_GestCom.Data.Models;
 using Web_GestCom.Services;
@@ -9,10 +12,14 @@ namespace Web_GestCom.Tests.Services;
 
 public class AbonnementServiceTests
 {
-    private static AbonnementService CreateService(out AppDbContext db)
+    private static AbonnementService CreateService(out AppDbContext db, IEmailTransport? emailTransport = null)
     {
         db = DbContextFactory.Create();
-        return new AbonnementService(db);
+        return new AbonnementService(
+            db,
+            emailTransport ?? new NoOpEmailTransport(NullLogger<NoOpEmailTransport>.Instance),
+            Options.Create(new EmailOptions { AdminNotificationEmail = "admin@test.com" }),
+            NullLogger<AbonnementService>.Instance);
     }
 
     [Fact]
@@ -93,6 +100,49 @@ public class AbonnementServiceTests
         Assert.Equal("Active", stored.Statut);
         Assert.Equal(company.Id, stored.CompanyId);
         Assert.NotNull(stored.DateDebut);
+    }
+
+    [Fact]
+    public async Task CreateDemandeAsync_SendsConfirmationToRequesterAndNotificationToAdmin()
+    {
+        var emailTransport = new Mock<IEmailTransport>();
+        var svc = CreateService(out _, emailTransport.Object);
+
+        await svc.CreateDemandeAsync(new Abonnement
+        {
+            NomEntreprise = "Société Test",
+            NomContact = "Karim Ben Ali",
+            EmailContact = "karim@test.com",
+            Plan = "Pro"
+        });
+
+        emailTransport.Verify(e => e.SendAsync(
+            "karim@test.com", "Karim Ben Ali",
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        emailTransport.Verify(e => e.SendAsync(
+            "admin@test.com", It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateDemandeAsync_WhenEmailTransportThrows_StillStoresTheRequest()
+    {
+        var emailTransport = new Mock<IEmailTransport>();
+        emailTransport
+            .Setup(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Brevo indisponible"));
+        var svc = CreateService(out var db, emailTransport.Object);
+
+        var demande = await svc.CreateDemandeAsync(new Abonnement
+        {
+            NomEntreprise = "Société Test",
+            NomContact = "Karim",
+            EmailContact = "karim@test.com",
+            Plan = "Standard"
+        });
+
+        Assert.True(demande.Id > 0);
+        Assert.Equal("EnAttente", (await db.Abonnements.SingleAsync()).Statut);
     }
 
     [Fact]

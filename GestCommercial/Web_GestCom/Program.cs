@@ -107,6 +107,20 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IExecutionContext, HttpExecutionContext>();
 builder.Services.Configure<LoginProtectionOptions>(builder.Configuration.GetSection("Security:LoginProtection"));
 
+// Email — Brevo si une clé API est configurée (user-secrets en dev, variable d'environnement
+// Email__BrevoApiKey en prod, jamais dans un fichier suivi par git), sinon transport no-op qui logue.
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+var emailProvider = builder.Configuration["Email:Provider"];
+if (string.Equals(emailProvider, "Brevo", StringComparison.OrdinalIgnoreCase)
+    && !string.IsNullOrWhiteSpace(builder.Configuration["Email:BrevoApiKey"]))
+{
+    builder.Services.AddHttpClient<IEmailTransport, BrevoEmailTransport>();
+}
+else
+{
+    builder.Services.AddSingleton<IEmailTransport, NoOpEmailTransport>();
+}
+
 // RBAC — host-specific implementation; PermissionService/FeatureFlagService came from AddGestComServices above.
 builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
