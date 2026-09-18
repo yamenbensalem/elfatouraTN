@@ -93,11 +93,22 @@
             </div>
             <h1 class="page-title">Demande envoyée !</h1>
             <p class="page-subtitle">Merci, votre demande d'abonnement au plan <strong>@Model.Input.Plan</strong> a bien été enregistrée.</p>
-            <ol class="steps">
-                <li>Notre équipe vous recontacte sous 24 à 48h pour démarrer votre essai gratuit de 14 jours.</li>
-                <li>Votre compte administrateur est créé dès le démarrage de l'essai, avec accès immédiat à toutes les fonctionnalités.</li>
-                <li>À l'issue des 14 jours, l'abonnement se poursuit après règlement — par virement bancaire pour l'instant (les coordonnées vous seront communiquées lors du contact).</li>
-            </ol>
+            @if (Model.Input.Plan == "Standard")
+            {
+                <ol class="steps">
+                    <li>Notre équipe vous recontacte sous 24 à 48h pour activer votre compte.</li>
+                    <li>Vous disposez de 14 jours pour prendre en main l'outil, avec accès immédiat à toutes les fonctionnalités.</li>
+                    <li>Le plan Standard reste gratuit — aucun paiement ne vous sera jamais demandé pour ce plan.</li>
+                </ol>
+            }
+            else
+            {
+                <ol class="steps">
+                    <li>Notre équipe vous recontacte sous 24 à 48h pour finaliser votre abonnement @Model.Input.Plan.</li>
+                    <li>Votre compte administrateur est créé dès l'activation, avec accès immédiat à toutes les fonctionnalités.</li>
+                    <li>Ce plan est facturé dès l'activation — par virement bancaire pour l'instant (les coordonnées vous seront communiquées lors du contact).</li>
+                </ol>
+            }
         </div>
     }
     else
@@ -153,8 +164,9 @@
 
             <div class="info-box">
                 <strong>Comment ça se passe ensuite ?</strong> Aucun paiement n'est demandé ici. Notre équipe vous
-                recontacte pour démarrer votre essai gratuit de 14 jours, puis votre compte reste actif après
-                règlement (virement bancaire pour l'instant).
+                recontacte sous 24 à 48h pour activer votre compte. Le plan <strong>Standard reste gratuit</strong> ;
+                les plans <strong>Pro et Enterprise sont facturés dès l'activation</strong> (virement bancaire pour
+                l'instant).
             </div>
 
             <button type="submit" class="btn-submit">Envoyer la demande</button>
