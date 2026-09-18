@@ -913,17 +913,31 @@ using (var scope = app.Services.CreateScope())
           )
         """);
 
-    // Seed: créer admin par défaut si aucun utilisateur n'existe
+    // Seed: créer admin par défaut si aucun utilisateur n'existe. Nécessite une entreprise —
+    // EnsureTenantDefaults (UtilisateurService) exige désormais un CompanyId explicite ou un
+    // tenant HTTP actif (aucun des deux n'existe pendant ce seed de démarrage), donc on seed
+    // aussi une Company par défaut sur une base totalement vierge plutôt que de laisser
+    // EnsureTenantDefaults deviner — un vrai bug de régression trouvé le 2026-09-18 : sur une
+    // base neuve, ce bloc levait InvalidOperationException et faisait planter le démarrage.
     if (!db.Utilisateurs.Any())
     {
+        var defaultCompany = db.Companies.FirstOrDefault();
+        if (defaultCompany is null)
+        {
+            defaultCompany = new Company { Name = "Entreprise par défaut" };
+            db.Companies.Add(defaultCompany);
+            db.SaveChanges();
+        }
+
         var utilisateurService = scope.ServiceProvider.GetRequiredService<IUtilisateurService>();
         utilisateurService.AddAsync(new Utilisateur
         {
-            Login  = "admin",
-            Prenom = "Admin",
-            Nom    = "Système",
-            Role   = "Admin",
-            Actif  = true
+            Login     = "admin",
+            Prenom    = "Admin",
+            Nom       = "Système",
+            Role      = "Admin",
+            Actif     = true,
+            CompanyId = defaultCompany.Id
         }, "admin123").GetAwaiter().GetResult();
     }
 

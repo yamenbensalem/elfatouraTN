@@ -28,7 +28,10 @@ services:
 
 volumes:
   sqldata:
-    name: gestcom_sqldata
+    name: gestcom_sqldata_v2
+    # Renommé (v2) après un mot de passe SA désynchronisé sur gestcom_sqldata (2026-09-18) —
+    # l'ancien volume reste intact sur le disque VPS, pas supprimé, juste plus utilisé.
+    # Aucun client réel à ce stade, donc réinitialisation propre plutôt que réparation.
 
 networks:
   ntw_gestcom_prod:
