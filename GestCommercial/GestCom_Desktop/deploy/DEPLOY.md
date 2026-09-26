@@ -309,6 +309,45 @@ fichier par jour, conservé 14 jours. C'est le premier réflexe en cas de compor
 chez un client (écran qui ne s'affiche pas, erreur de connexion, etc.) — avant toute manipulation
 plus lourde (Journal d'événements Windows, débogage à distance).
 
+## 10. Mettre à jour un client déjà livré (schéma de base)
+
+Le Desktop n'exécute aucune migration : seul `Web_GestCom/Program.cs` amène une base au schéma
+courant. Un client livré avant un changement de schéma (ex. `RowVersion`, provenance
+BL→facture, tables `abonnement`/`api_key`/`webhook`) verrait des erreurs SQL dès que la nouvelle
+version de l'application lit la table concernée. **Ne jamais remplacer l'exécutable d'un client sans
+migrer sa base.** Le `.bak` du template (§8.1) ne sert que pour les *nouveaux* clients.
+
+Procédure (aller-retour, rien n'est écrit sur la machine du client depuis la tienne) :
+
+1. **Client** : arrête l'application, puis fait une sauvegarde de sa base et t'envoie le `.bak` :
+   ```powershell
+   sqlcmd -S ".\SQLEXPRESS" -E -C -Q "BACKUP DATABASE [GestCom] TO DISK = N'C:\Temp\GestCom-client.bak' WITH INIT"
+   ```
+2. **Toi** : copie le `.bak` sous un dossier lisible par le service SQL Server (ex. `C:\Temp`), puis :
+   ```powershell
+   ./deploy/sql/upgrade-client-database.ps1 -ClientBackupFile C:\Temp\GestCom-client.bak
+   ```
+   Le script restaure le `.bak` dans une base jetable, laisse `Program.cs` migrer, **refuse de
+   produire le résultat si une table a perdu des lignes** ou si les colonnes du schéma courant sont
+   absentes, puis écrit `GestCom-client.upgraded.bak`. Le `.bak` du client n'est jamais modifié.
+3. **Client** : restaure le `.bak` migré (`restore-database.ps1 -BackupFile ... -Force`, §8.1),
+   puis installe la nouvelle version de l'application (`build-client-package.ps1`).
+
+Points d'attention :
+
+- **Politique du rôle « Employé »** : `Program.cs` la réapplique à chaque démarrage (suppression de
+  ses permissions update/delete/gouvernance). Une personnalisation de ce rôle faite par le client via
+  Admin > Rôles & Permissions est donc remise à la valeur par défaut ; le script l'affiche
+  (« ATTENTION : role_permission ») quand cela se produit.
+- **Aucune saisie entre l'étape 1 et 3** : elle serait perdue. Le client doit cesser d'utiliser
+  l'application pendant l'opération.
+- **Version SQL Server** : un `.bak` ne se restaure que sur une instance de version supérieure ou
+  égale. Le script affiche la version de ton instance de travail : si le client a une Express plus
+  ancienne, utilise une instance de travail de version inférieure ou égale.
+- **Comptes par défaut** : le template et donc les bases des nouveaux clients contiennent
+  `admin/admin123` et `superadmin/SuperAdmin123!`. Fais changer ces deux mots de passe au client dès
+  le premier lancement.
+
 ## Ce que la licence protège réellement
 
 Verrouillage machine (MachineGuid + MAC + nom de PC + ID CPU) signé RSA-3072 — sans ta clé privée,

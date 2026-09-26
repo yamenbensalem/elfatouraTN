@@ -107,9 +107,11 @@ public class AppDbContextTenantIsolationTests
     }
 
     [Fact]
-    public async Task QueryFilter_WhenSuperAdmin_BypassesTenantFilter()
+    public async Task QueryFilter_WhenSuperAdmin_ShouldSeeNoBusinessData()
     {
-        // Arrange
+        // Arrange — SuperAdmin is a platform-management role with zero business-data access by
+        // design (mirrors Web_GestCom.Tests' equivalent): it has no CompanyId, so the business
+        // tenant filter excludes every row instead of bypassing.
         var dbName = Guid.NewGuid().ToString();
         using (var seed = DbContextFactory.Create(dbName: dbName))
         {
@@ -126,7 +128,7 @@ public class AppDbContextTenantIsolationTests
         var visible = await context.Clients.OrderBy(c => c.CodeClient).ToListAsync();
 
         // Assert
-        Assert.Equal(2, visible.Count);
+        Assert.Empty(visible);
     }
 
     private static UserSession TenantSession(int companyId)

@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Web_GestCom.Services;
@@ -63,6 +64,17 @@ public class LoginForm : Form
 
             DialogResult = DialogResult.OK;
             Close();
+        }
+        catch (SqlException ex) when (ex.Number is 208 or 4060)
+        {
+            // 208 = "Invalid object name" (table manquante, ex. Utilisateurs) : la base existe mais
+            // n'a jamais été provisionnée. 4060 = la base elle-même n'existe pas. Contrairement au
+            // Web (Program.cs auto-provisionne via EnsureCreated() + seed au démarrage), le Desktop
+            // ne provisionne jamais sa base lui-même — il attend qu'elle soit restaurée depuis le
+            // template .bak (voir deploy/DEPLOY.md). Sans ce catch dédié, l'utilisateur ne verrait
+            // que le message SQL brut ("Invalid object name 'Utilisateurs'"), incompréhensible.
+            Log.Error(ex, "Connexion impossible : base de données non provisionnée (SQL {Number}) pour {Login}", ex.Number, login);
+            _lblError.Text = "Base de données non installée sur ce poste. Contactez votre support technique.";
         }
         catch (Exception ex)
         {

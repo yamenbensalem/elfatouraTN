@@ -6,10 +6,12 @@ using GestCom_Desktop.Forms.Clients;
 using GestCom_Desktop.Forms.CommandesAchat;
 using GestCom_Desktop.Forms.CommandesVente;
 using GestCom_Desktop.Forms.Devis;
+using GestCom_Desktop.Forms.Entreprise;
 using GestCom_Desktop.Forms.FacturesClient;
 using GestCom_Desktop.Forms.FacturesFournisseur;
 using GestCom_Desktop.Forms.Fournisseurs;
 using GestCom_Desktop.Forms.Produits;
+using GestCom_Desktop.Forms.Stock;
 
 namespace GestCom_Desktop.Forms;
 
@@ -31,6 +33,8 @@ public class MainForm : Form
         var menu = new MenuStrip();
 
         var menuFichier = new ToolStripMenuItem("&Fichier");
+        menuFichier.DropDownItems.Add("Fiche Entreprise", null, (_, _) => ShowSingleton(() => new EntrepriseForm()));
+        menuFichier.DropDownItems.Add(new ToolStripSeparator());
         menuFichier.DropDownItems.Add("Quitter", null, (_, _) => Close());
 
         var menuVentes = new ToolStripMenuItem("&Ventes");
@@ -49,6 +53,7 @@ public class MainForm : Form
 
         var menuStock = new ToolStripMenuItem("&Stock");
         menuStock.DropDownItems.Add("Produits", null, (_, _) => ShowSingleton(() => new ProduitsListForm()));
+        menuStock.DropDownItems.Add("Rapport de Stock", null, (_, _) => ShowSingleton(() => new StockRapportForm()));
 
         menu.Items.Add(menuFichier);
         menu.Items.Add(menuVentes);
@@ -59,6 +64,8 @@ public class MainForm : Form
         {
             var menuAdmin = new ToolStripMenuItem("&Admin");
             menuAdmin.DropDownItems.Add("Utilisateurs", null, (_, _) => ShowSingleton(() => new UtilisateursListForm()));
+            menuAdmin.DropDownItems.Add("Rôles & Permissions", null, (_, _) => ShowSingleton(() => new RolesGestionForm()));
+            menuAdmin.DropDownItems.Add("Journal d'Activité", null, (_, _) => ShowSingleton(() => new JournalActiviteListForm()));
             menu.Items.Add(menuAdmin);
         }
 

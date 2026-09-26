@@ -16,6 +16,7 @@ public class ClientsListForm : Form
     private readonly Button _btnNew = new() { Left = 365, Top = 9, Width = 90, Text = "Nouveau" };
     private readonly Button _btnEdit = new() { Left = 465, Top = 9, Width = 90, Text = "Modifier" };
     private readonly Button _btnDelete = new() { Left = 565, Top = 9, Width = 90, Text = "Supprimer" };
+    private readonly Button _btnExport = new() { Left = 665, Top = 9, Width = 110, Text = "Export Excel" };
     private readonly DataGridView _grid = new()
     {
         Left = 10,
@@ -43,6 +44,7 @@ public class ClientsListForm : Form
         Controls.Add(_btnNew);
         Controls.Add(_btnEdit);
         Controls.Add(_btnDelete);
+        Controls.Add(_btnExport);
         Controls.Add(_grid);
 
         _grid.Columns.Add("CodeClient", "Code");
@@ -58,6 +60,7 @@ public class ClientsListForm : Form
         _btnNew.Click += (_, _) => OpenEditor(null);
         _btnEdit.Click += (_, _) => EditSelected();
         _btnDelete.Click += async (_, _) => await DeleteSelectedAsync();
+        _btnExport.Click += (_, _) => ExcelExportHelper.ExportGrid(this, _grid, "clients", "Clients");
         _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) EditSelected(); };
 
         Load += async (_, _) => await LoadAsync();

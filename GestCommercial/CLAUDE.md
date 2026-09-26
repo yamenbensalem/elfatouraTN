@@ -34,3 +34,6 @@ pre-existing global containers owning ports 80/443 (never recreate them), only
 `docker-compose.infra.yml` defines the app's network (as a plain bridge network, not external),
 every other compose file declares that network as `external: true`, and vhost WebSocket config
 must use `$http_upgrade` (never `$connection_upgrade`).
+
+
+## Scope of this directory

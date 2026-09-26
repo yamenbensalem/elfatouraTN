@@ -16,6 +16,7 @@ public class FacturesFournisseurListForm : Form
     private readonly Button _btnClone = new() { Left = 240, Top = 9, Width = 90, Text = "Cloner" };
     private readonly Button _btnDelete = new() { Left = 340, Top = 9, Width = 90, Text = "Supprimer" };
     private readonly Button _btnRefresh = new() { Left = 440, Top = 9, Width = 90, Text = "Actualiser" };
+    private readonly Button _btnExport = new() { Left = 540, Top = 9, Width = 110, Text = "Export Excel" };
     private readonly DataGridView _grid = new()
     {
         Left = 10,
@@ -43,6 +44,7 @@ public class FacturesFournisseurListForm : Form
         Controls.Add(_btnClone);
         Controls.Add(_btnDelete);
         Controls.Add(_btnRefresh);
+        Controls.Add(_btnExport);
         Controls.Add(_grid);
 
         _grid.Columns.Add("Numero", "N° Facture");
@@ -60,6 +62,7 @@ public class FacturesFournisseurListForm : Form
         _btnClone.Click += async (_, _) => await CloneSelectedAsync();
         _btnDelete.Click += async (_, _) => await DeleteSelectedAsync();
         _btnRefresh.Click += async (_, _) => await LoadAsync();
+        _btnExport.Click += (_, _) => ExcelExportHelper.ExportGrid(this, _grid, "factures_fournisseur", "Factures Fournisseur");
         _grid.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) EditSelected(); };
 
         Load += async (_, _) => await LoadAsync();
