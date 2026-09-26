@@ -36,3 +36,5 @@ ClaudePrjt/TunisianEInvoice/tests/TunisianEInvoice.UnitTests/obj
 
 # Secrets — never commit real .env files (deploy/prod/.env.example stays tracked as a template)
 .env
+# Notes personnelles pouvant contenir des secrets
+GestCommercial/nouveau 2.txt
