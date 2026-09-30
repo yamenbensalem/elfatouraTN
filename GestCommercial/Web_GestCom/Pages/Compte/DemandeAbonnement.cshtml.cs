@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Web_GestCom.Data.Models;
@@ -10,10 +11,17 @@ namespace Web_GestCom.Pages.Compte;
 /// Page publique de demande d'abonnement (liée depuis la section Tarifs de la page d'accueil).
 /// Pas de paiement en ligne à ce stade — la demande est stockée pour suivi manuel par le
 /// SuperAdmin (voir TODO.md, section Paiement).
+/// La validation antiforgery est faite à la main (voir <see cref="OnPostAsync"/>) : le jeton est lié
+/// à l'identité de l'utilisateur au moment du GET, donc un formulaire chargé déconnecté puis envoyé
+/// après une connexion dans un autre onglet échouait avec un 400 vide (bug réel en prod, 2026-09-27).
 /// </summary>
-public class DemandeAbonnementModel(IAbonnementService abonnementService) : PageModel
+[IgnoreAntiforgeryToken]
+public class DemandeAbonnementModel(IAbonnementService abonnementService, IAntiforgery antiforgery) : PageModel
 {
     private static readonly string[] PlansValides = ["Standard", "Pro", "Enterprise"];
+
+    public const string SessionChangeeMessage =
+        "Votre session a changé depuis l'ouverture de cette page. Vérifiez vos informations puis renvoyez le formulaire.";
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -28,6 +36,15 @@ public class DemandeAbonnementModel(IAbonnementService abonnementService) : Page
 
     public async Task<IActionResult> OnPostAsync()
     {
+        // Jeton invalide → on réaffiche le formulaire (saisie conservée, nouveau jeton émis pour
+        // l'utilisateur courant) au lieu du 400 vide par défaut. La protection CSRF est conservée :
+        // rien n'est enregistré tant que le jeton n'est pas valide.
+        if (!await antiforgery.IsRequestValidAsync(HttpContext))
+        {
+            ModelState.AddModelError(string.Empty, SessionChangeeMessage);
+            return Page();
+        }
+
         if (!ModelState.IsValid) return Page();
 
         await abonnementService.CreateDemandeAsync(new Abonnement
