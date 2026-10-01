@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICompanyService, CompanyService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IWebhookService, WebhookService>();
+        services.AddOptions<TarifsOptions>(); // valeurs par défaut ; l'hôte web les surcharge via la section "Tarifs"
         services.AddScoped<IAbonnementService, AbonnementService>();
 
         return services;

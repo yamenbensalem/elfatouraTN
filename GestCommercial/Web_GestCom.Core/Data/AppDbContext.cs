@@ -98,6 +98,7 @@ public class AppDbContext : DbContext
 
     // ── Subscription requests (manual follow-up — no payment gateway wired yet) ────────────
     public DbSet<Abonnement> Abonnements => Set<Abonnement>();
+    public DbSet<CodePromo> CodesPromo => Set<CodePromo>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {

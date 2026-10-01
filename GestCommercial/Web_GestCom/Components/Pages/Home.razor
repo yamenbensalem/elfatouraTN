@@ -8,6 +8,8 @@
 @inject ICompanyService CompanyService
 @inject ICurrentUserService CurrentUserService
 @inject IJSRuntime JS
+@inject IAbonnementService AbonnementService
+@inject Microsoft.Extensions.Options.IOptions<TarifsOptions> TarifsConfig
 
 @if (!CurrentUserService.IsAuthenticated)
 {
@@ -93,7 +95,7 @@
                             <a href="#fonctionnalites" class="btn-hover" style="display:inline-block; padding:0.95rem 2.1rem; border-radius:0.65rem; background:#fff; border:1.5px solid #e5e7eb; color:#111827; font-weight:700; font-size:1rem;">Voir les fonctionnalités</a>
                         </div>
                         <div style="margin-top:1.1rem; font-size:0.85rem; color:#6b7280;">
-                            <i class="bi bi-check-circle-fill" style="margin-right:0.4rem; color:#059669;"></i>Plan Standard gratuit
+                            <i class="bi bi-check-circle-fill" style="margin-right:0.4rem; color:#059669;"></i>@Tarifs.JoursEssai jours d'essai gratuit, sans carte bancaire
                         </div>
                     </div>
 
@@ -360,10 +362,22 @@
             <!-- ── Tarifs ── -->
             <section id="tarifs" class="lp-section reveal" style="padding:5rem 4rem; background:#fafafc; scroll-margin-top:5rem;">
                 <div style="max-width:1180px; margin:0 auto;">
+                    @if (_offreFondateur is not null)
+                    {
+                        <div style="background:#fff7e6; border:1px solid #f5c26b; color:#8a4b08; border-radius:0.85rem; padding:0.8rem 1.1rem; margin-bottom:2rem; display:flex; flex-wrap:wrap; gap:0.5rem 1rem; align-items:center; justify-content:space-between; font-size:0.88rem;">
+                            <span>🎁 <strong>Offre Clients Fondateurs</strong> : @_offreFondateur.PourcentageReduction.ToString("0.##") % de réduction permanente pour les @_offreFondateur.MaxUtilisations premières entreprises. Code <strong style="background:#fff; border:1px solid #f5c26b; border-radius:0.4rem; padding:0.05rem 0.5rem;">@_offreFondateur.Code</strong></span>
+                            <span style="font-weight:700; white-space:nowrap;">@_offreFondateur.PlacesRestantes / @_offreFondateur.MaxUtilisations places restantes</span>
+                        </div>
+                    }
                     <div style="text-align:center; margin-bottom:2.75rem;">
                         <div style="font-size:0.78rem; font-weight:700; color:#2563eb; letter-spacing:0.06em; margin-bottom:0.5rem;">NOS OFFRES</div>
                         <h2 style="font-size:2rem; font-weight:800; color:#111827; letter-spacing:-0.01em; margin:0 0 0.6rem;">Des plans adaptés à votre croissance</h2>
                         <p style="font-size:1rem; color:#6b7280; margin:0;">Un seul abonnement, toutes les fonctionnalités essentielles. La formule qui vous correspond.</p>
+                        <div role="group" aria-label="Cycle de facturation" style="display:inline-flex; background:#f3f4f8; border:1px solid #e5e7eb; border-radius:2rem; padding:0.25rem; gap:0.25rem; margin-top:1.25rem;">
+                            <button type="button" aria-pressed="@(!_mensuel ? "true" : "false")" @onclick="() => _mensuel = false" style="@StyleBascule(!_mensuel)">Annuel</button>
+                            <button type="button" aria-pressed="@(_mensuel ? "true" : "false")" @onclick="() => _mensuel = true" style="@StyleBascule(_mensuel)">Mensuel</button>
+                        </div>
+                        <div style="font-size:0.78rem; font-weight:700; color:#059669; margin-top:0.5rem;">@(_mensuel ? "Sans engagement" : "Le meilleur prix sur l'année")</div>
                     </div>
 
                     <div class="pricing-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1.25rem; align-items:stretch;">
@@ -372,8 +386,9 @@
                         <div class="card-hover" style="background:#fff; border:1px solid #f0f0f4; border-radius:1.25rem; padding:1.75rem; display:flex; flex-direction:column;">
                             <h3 style="font-size:1.1rem; font-weight:800; color:#111827; margin:0 0 0.25rem;">Standard</h3>
                             <p style="font-size:0.8rem; color:#6b7280; margin:0 0 1.1rem;">Pour les petites entreprises</p>
-                            <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">390 DT<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> / an</span></div>
-                            <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:1.25rem;">soit 32,5 DT / mois</div>
+                            <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">@Dt(Prix("Standard"))<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> / @(_mensuel ? "mois" : "an")</span></div>
+                            <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:0.75rem;">@Equivalent("Standard")</div>
+                            <div style="align-self:flex-start; font-size:0.78rem; font-weight:700; color:#059669; background:#ecfdf5; border-radius:0.5rem; padding:0.35rem 0.6rem; margin-bottom:1.25rem;">@Tarifs.JoursEssai jours gratuits, sans carte bancaire</div>
                             <ul style="list-style:none; padding:0; margin:0 0 1.25rem; font-size:0.82rem; color:#374151;">
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Ventes, achats, stock</li>
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Devis, commandes, factures, avoirs</li>
@@ -384,16 +399,16 @@
                                 <div><div style="font-weight:800; color:#111827;">1</div><div style="font-size:0.68rem; color:#9ca3af;">Manager</div></div>
                                 <div><div style="font-weight:800; color:#111827;">2</div><div style="font-size:0.68rem; color:#9ca3af;">Employés</div></div>
                             </div>
-                            <a href="/demande-abonnement?plan=Standard" class="btn-hover" style="margin-top:auto; text-align:center; padding:0.75rem; border-radius:0.6rem; border:1.5px solid #e5e7eb; color:#111827; font-weight:700; font-size:0.88rem;">Choisir ce plan</a>
+                            <a href="@LienDemande("Standard")" data-enhance-nav="false" class="btn-hover" style="margin-top:auto; text-align:center; padding:0.75rem; border-radius:0.6rem; border:1.5px solid #e5e7eb; color:#111827; font-weight:700; font-size:0.88rem;">Choisir ce plan</a>
                         </div>
 
                         <!-- Pro (mis en avant) -->
                         <div class="card-hover" style="background:#fff; border:2px solid #2563eb; border-radius:1.25rem; padding:1.75rem; display:flex; flex-direction:column; position:relative; box-shadow:0 10px 30px rgba(37,99,235,0.12);">
-                            <span style="position:absolute; top:-0.7rem; left:1.5rem; background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; font-size:0.68rem; font-weight:700; padding:0.3rem 0.75rem; border-radius:1rem;">Le plus populaire</span>
+                            <span style="position:absolute; top:-0.7rem; left:1.5rem; background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; font-size:0.68rem; font-weight:700; padding:0.3rem 0.75rem; border-radius:1rem;">@(_mensuel ? "Flexible" : "Le plus populaire")</span>
                             <h3 style="font-size:1.1rem; font-weight:800; color:#111827; margin:0.5rem 0 0.25rem;">Pro</h3>
                             <p style="font-size:0.8rem; color:#6b7280; margin:0 0 1.1rem;">Pour les PME en croissance</p>
-                            <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">690 DT<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> / an</span></div>
-                            <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:1.25rem;">soit 57,5 DT / mois</div>
+                            <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">@Dt(Prix("Pro"))<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> / @(_mensuel ? "mois" : "an")</span></div>
+                            <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:1.25rem;">@Equivalent("Pro")</div>
                             <ul style="list-style:none; padding:0; margin:0 0 1.25rem; font-size:0.82rem; color:#374151;">
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Toutes les fonctionnalités Standard</li>
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Plus de comptes utilisateurs</li>
@@ -404,7 +419,7 @@
                                 <div><div style="font-weight:800; color:#111827;">3</div><div style="font-size:0.68rem; color:#3b82f6;">Managers</div></div>
                                 <div><div style="font-weight:800; color:#111827;">10</div><div style="font-size:0.68rem; color:#3b82f6;">Employés</div></div>
                             </div>
-                            <a href="/demande-abonnement?plan=Pro" class="btn-hover" style="margin-top:auto; text-align:center; padding:0.75rem; border-radius:0.6rem; background:linear-gradient(135deg,#2563eb,#3b82f6,#6366f1); color:#fff; font-weight:700; font-size:0.88rem; box-shadow:0 4px 15px rgba(59,130,246,0.35);">Choisir ce plan</a>
+                            <a href="@LienDemande("Pro")" data-enhance-nav="false" class="btn-hover" style="margin-top:auto; text-align:center; padding:0.75rem; border-radius:0.6rem; background:linear-gradient(135deg,#2563eb,#3b82f6,#6366f1); color:#fff; font-weight:700; font-size:0.88rem; box-shadow:0 4px 15px rgba(59,130,246,0.35);">Choisir ce plan</a>
                         </div>
 
                         <!-- Enterprise -->
@@ -421,7 +436,7 @@
                             <div style="background:#f9fafb; border-radius:0.6rem; padding:0.85rem; margin-bottom:1.25rem; text-align:center; font-size:0.78rem; color:#6b7280;">
                                 Configuration sur mesure selon vos besoins — contactez-nous pour en savoir plus.
                             </div>
-                            <a href="/demande-abonnement?plan=Enterprise" class="btn-hover" style="margin-top:auto; text-align:center; padding:0.75rem; border-radius:0.6rem; border:1.5px solid #e5e7eb; color:#111827; font-weight:700; font-size:0.88rem;">Nous contacter</a>
+                            <a href="@LienDemande("Enterprise")" data-enhance-nav="false" class="btn-hover" style="margin-top:auto; text-align:center; padding:0.75rem; border-radius:0.6rem; border:1.5px solid #e5e7eb; color:#111827; font-weight:700; font-size:0.88rem;">Nous contacter</a>
                         </div>
 
                     </div>
@@ -430,15 +445,15 @@
                     <div style="margin-top:1.75rem; background:#111827; border-radius:1.25rem; padding:1.5rem 1.75rem; color:#fff; display:flex; align-items:center; flex-wrap:wrap; gap:1.5rem;">
                         <i class="bi bi-headset" style="font-size:1.4rem; color:#60a5fa; flex-shrink:0;"></i>
                         <div style="flex:1; min-width:220px; font-size:0.82rem; color:#d1d5db; line-height:1.5;">
-                            <strong style="color:#fff;">1.</strong> Vous choisissez un plan
-                            &nbsp;·&nbsp;
-                            <strong style="color:#fff;">2.</strong> Nous vous contactons sous 24-48h pour activer votre compte
-                            &nbsp;·&nbsp;
-                            <strong style="color:#fff;">3.</strong> Standard reste gratuit (14 jours pour prendre en main l'outil) ; Pro et Enterprise sont facturés dès l'activation (virement bancaire pour l'instant)
+                            <strong style="color:#fff; display:block; margin-bottom:0.35rem;">Comment ça marche</strong>
+                            <strong style="color:#fff;">①</strong> Vous choisissez un plan et remplissez le formulaire<br />
+                            <strong style="color:#fff;">②</strong> On vous contacte sous 24-48h pour activer votre compte<br />
+                            <strong style="color:#fff;">③</strong> Standard : @Tarifs.JoursEssai jours gratuits, sans carte bancaire. Pro / Enterprise : paiement par virement avant activation<br />
+                            <strong style="color:#fff;">④</strong> RIB et facture pro forma envoyés par email
                         </div>
                         <div style="font-size:0.78rem; color:#9ca3af; flex-shrink:0;">
                             Besoin d'une offre personnalisée ?
-                            <a href="/demande-abonnement?plan=Enterprise" style="color:#60a5fa; font-weight:700;">Contactez-nous →</a>
+                            <a href="@LienDemande("Enterprise")" data-enhance-nav="false" style="color:#60a5fa; font-weight:700;">Contactez-nous →</a>
                         </div>
                     </div>
 
@@ -881,12 +896,37 @@ else
     private int _nbEntreprises;
     private int _nbUtilisateurs;
 
+    // ── Section Tarifs de la page publique ──
+    private bool _mensuel;
+    private OffrePromo? _offreFondateur;
+    private TarifsOptions Tarifs => TarifsConfig.Value;
+    private string Cycle => _mensuel ? CycleFacturation.Mensuel : CycleFacturation.Annuel;
+    private static readonly System.Globalization.CultureInfo Fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
+
+    private double Prix(string plan) => Tarifs.GetPrix(plan, Cycle) ?? 0;
+    private static string Dt(double montant) => montant.ToString("0.##", Fr) + " DT";
+
+    private string Equivalent(string plan) => _mensuel
+        ? $"soit {Dt(Prix(plan) * 12)} / an"
+        : $"soit {Dt(Prix(plan) / 12)} / mois";
+
+    private string LienDemande(string plan) => plan == "Enterprise"
+        ? "/demande-abonnement?plan=Enterprise"
+        : $"/demande-abonnement?plan={plan}&cycle={Cycle}";
+
+    private static string StyleBascule(bool actif) =>
+        "border:0; font:inherit; font-weight:700; font-size:0.88rem; padding:0.45rem 1.25rem; border-radius:2rem; cursor:pointer; "
+        + (actif ? "background:#fff; color:#111827; box-shadow:0 1px 4px rgba(17,24,39,0.12);" : "background:transparent; color:#6b7280;");
+
     protected override async Task OnInitializedAsync()
     {
         // Anonymous visitors get the public landing page (see the markup above) — no business
         // or platform data is ever loaded for them.
         if (!CurrentUserService.IsAuthenticated)
+        {
+            _offreFondateur = await AbonnementService.GetOffrePromoAsync(Tarifs.CodePromoMisEnAvant);
             return;
+        }
 
         if (CurrentUserService.IsSuperAdmin)
         {

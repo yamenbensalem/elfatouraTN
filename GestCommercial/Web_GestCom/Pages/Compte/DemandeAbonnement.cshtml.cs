@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 using Web_GestCom.Data.Models;
 using Web_GestCom.Services;
 
@@ -16,7 +17,10 @@ namespace Web_GestCom.Pages.Compte;
 /// après une connexion dans un autre onglet échouait avec un 400 vide (bug réel en prod, 2026-09-27).
 /// </summary>
 [IgnoreAntiforgeryToken]
-public class DemandeAbonnementModel(IAbonnementService abonnementService, IAntiforgery antiforgery) : PageModel
+public class DemandeAbonnementModel(
+    IAbonnementService abonnementService,
+    IAntiforgery antiforgery,
+    IOptions<TarifsOptions> tarifsOptions) : PageModel
 {
     private static readonly string[] PlansValides = ["Standard", "Pro", "Enterprise"];
 
@@ -28,10 +32,28 @@ public class DemandeAbonnementModel(IAbonnementService abonnementService, IAntif
 
     public bool DemandeEnvoyee { get; private set; }
 
-    public void OnGet(string? plan)
+    /// <summary>Demande telle qu'enregistrée (prix et réduction calculés côté serveur) — pour la page de succès.</summary>
+    public Abonnement? Demande { get; private set; }
+
+    public TarifsOptions Tarifs => tarifsOptions.Value;
+
+    public void OnGet(string? plan, string? cycle)
     {
         if (!string.IsNullOrWhiteSpace(plan) && PlansValides.Contains(plan))
             Input.Plan = plan;
+        Input.CycleFacturation = CycleFacturation.Normaliser(cycle);
+    }
+
+    /// <summary>
+    /// Vérification du code promo pendant la saisie (appelée par le script de la page). Purement
+    /// indicative : le code est revalidé et le prix recalculé côté serveur à la soumission.
+    /// </summary>
+    public async Task<IActionResult> OnGetPromoAsync(string? code)
+    {
+        var offre = await abonnementService.GetOffrePromoAsync(code);
+        return new JsonResult(offre is null
+            ? new { valide = false, pourcentage = 0d, libelle = (string?)null }
+            : new { valide = true, pourcentage = offre.PourcentageReduction, libelle = (string?)offre.Libelle });
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -45,15 +67,24 @@ public class DemandeAbonnementModel(IAbonnementService abonnementService, IAntif
             return Page();
         }
 
+        if (!PlansValides.Contains(Input.Plan))
+            ModelState.AddModelError("Input.Plan", "Plan inconnu.");
+
+        if (!string.IsNullOrWhiteSpace(Input.CodePromo)
+            && await abonnementService.GetOffrePromoAsync(Input.CodePromo) is null)
+            ModelState.AddModelError("Input.CodePromo", AbonnementService.CodePromoInvalideMessage);
+
         if (!ModelState.IsValid) return Page();
 
-        await abonnementService.CreateDemandeAsync(new Abonnement
+        Demande = await abonnementService.CreateDemandeAsync(new Abonnement
         {
             NomEntreprise = Input.NomEntreprise.Trim(),
             NomContact = Input.NomContact.Trim(),
             EmailContact = Input.EmailContact.Trim().ToLower(),
             TelephoneContact = string.IsNullOrWhiteSpace(Input.TelephoneContact) ? null : Input.TelephoneContact.Trim(),
             Plan = Input.Plan,
+            CycleFacturation = CycleFacturation.Normaliser(Input.CycleFacturation),
+            CodePromo = string.IsNullOrWhiteSpace(Input.CodePromo) ? null : Input.CodePromo.Trim(),
             ModePaiementSouhaite = Input.ModePaiementSouhaite,
             Message = string.IsNullOrWhiteSpace(Input.Message) ? null : Input.Message.Trim()
         });
@@ -86,6 +117,12 @@ public class DemandeAbonnementModel(IAbonnementService abonnementService, IAntif
 
         [Required]
         public string Plan { get; set; } = "Standard";
+
+        public string CycleFacturation { get; set; } = "Annuel";
+
+        [MaxLength(50)]
+        [Display(Name = "Code promotionnel")]
+        public string? CodePromo { get; set; }
 
         [Display(Name = "Mode de paiement souhaité")]
         public string? ModePaiementSouhaite { get; set; }

@@ -40,6 +40,24 @@ public class Abonnement
     [Column("plan_abonnement")]
     public string Plan { get; set; } = "Standard";
 
+    /// <summary>Annuel ou Mensuel (voir CycleFacturation) — sans objet pour Enterprise (sur devis).</summary>
+    [Required, MaxLength(10)]
+    [Column("cycle_facturation_abonnement")]
+    public string CycleFacturation { get; set; } = "Annuel";
+
+    /// <summary>Code promo validé à la soumission (majuscules) ; null si aucun.</summary>
+    [MaxLength(50)]
+    [Column("code_promo_abonnement")]
+    public string? CodePromo { get; set; }
+
+    /// <summary>Prix catalogue en DT pour le cycle choisi, figé à la demande ; null pour un plan sur devis.</summary>
+    [Column("prix_catalogue_abonnement")]
+    public double? PrixCatalogue { get; set; }
+
+    /// <summary>Prix après réduction du code promo, figé à la demande ; null pour un plan sur devis.</summary>
+    [Column("prix_applique_abonnement")]
+    public double? PrixApplique { get; set; }
+
     /// <summary>Moyen de paiement souhaité par le demandeur — indicatif, aucun paiement réel n'est traité ici.</summary>
     [MaxLength(50)]
     [Column("mode_paiement_abonnement")]

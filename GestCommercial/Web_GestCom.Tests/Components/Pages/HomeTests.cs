@@ -18,6 +18,7 @@ public sealed class HomeTests : TestContext
     private readonly Mock<ICompanyService>       _companies    = new();
     private readonly Mock<ICurrentUserService>   _currentUser  = new();
     private readonly Mock<IPermissionService>    _permissions  = new();
+    private readonly Mock<IAbonnementService>    _abonnements  = new();
 
     public HomeTests()
     {
@@ -28,6 +29,8 @@ public sealed class HomeTests : TestContext
         Services.AddScoped(_ => _companies.Object);
         Services.AddScoped(_ => _currentUser.Object);
         Services.AddSingleton(_permissions.Object);
+        Services.AddScoped(_ => _abonnements.Object);
+        Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new TarifsOptions()));
 
         // Default: empty collections so each test only sets up what it needs
         _clients.Setup(s => s.GetAllAsync(null)).ReturnsAsync([]);
@@ -266,5 +269,68 @@ public sealed class HomeTests : TestContext
 
         Assert.Contains("Client Test", cut.Markup);
         Assert.Contains("FC202604001", cut.Markup);
+    }
+
+    // ── Page publique : section Tarifs ────────────────────────────────────
+
+    private IRenderedComponent<Home> RenderAnonymous()
+    {
+        _currentUser.Setup(s => s.IsAuthenticated).Returns(false);
+        JSInterop.Mode = JSRuntimeMode.Loose; // la page publique déclenche une animation JS
+        this.AddTestAuthorization();
+        return RenderComponent<Home>();
+    }
+
+    [Fact]
+    public void Tarifs_WhenAnonymous_ShouldShowAnnualPricesTrialAndFounderBanner()
+    {
+        // Arrange
+        _abonnements.Setup(s => s.GetOffrePromoAsync("FONDATEUR2026"))
+            .ReturnsAsync(new OffrePromo("FONDATEUR2026", "Client Fondateur", 35, 10, 7));
+
+        // Act
+        var cut = RenderAnonymous();
+
+        // Assert
+        var tarifs = cut.Find("#tarifs").TextContent;
+        Assert.Contains("390 DT", tarifs);
+        Assert.Contains("690 DT", tarifs);
+        Assert.Contains("Le plus populaire", tarifs);
+        Assert.Contains("30 jours gratuits", tarifs);
+        Assert.Contains("FONDATEUR2026", tarifs);
+        Assert.Contains("7 / 10 places restantes", tarifs);
+        Assert.DoesNotContain("14 jours", cut.Markup);
+    }
+
+    [Fact]
+    public void Tarifs_WhenSwitchingToMonthly_ShouldShowMonthlyPricesAndCarryCycleInLinks()
+    {
+        // Arrange
+        var cut = RenderAnonymous();
+
+        // Act
+        cut.FindAll("#tarifs button").Single(b => b.TextContent == "Mensuel").Click();
+
+        // Assert
+        var tarifs = cut.Find("#tarifs");
+        Assert.Contains("45 DT", tarifs.TextContent);
+        Assert.Contains("79 DT", tarifs.TextContent);
+        Assert.Contains("Flexible", tarifs.TextContent);
+        Assert.Contains("Sans engagement", tarifs.TextContent);
+        Assert.DoesNotContain("Le plus populaire", tarifs.TextContent);
+        Assert.Contains(tarifs.QuerySelectorAll("a"), a => a.GetAttribute("href") == "/demande-abonnement?plan=Pro&cycle=Mensuel");
+    }
+
+    [Fact]
+    public void Tarifs_WhenPromoExhausted_ShouldHideFounderBanner()
+    {
+        // Arrange
+        _abonnements.Setup(s => s.GetOffrePromoAsync(It.IsAny<string?>())).ReturnsAsync((OffrePromo?)null);
+
+        // Act
+        var cut = RenderAnonymous();
+
+        // Assert
+        Assert.DoesNotContain("Clients Fondateurs", cut.Markup);
     }
 }

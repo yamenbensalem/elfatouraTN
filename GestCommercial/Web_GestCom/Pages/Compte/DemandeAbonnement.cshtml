@@ -59,6 +59,19 @@
             margin: 0 auto 1.1rem;
         }
         .success-box { text-align: center; }
+        .cycles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.6rem; }
+        .cycle { border: 1.5px solid #e5e7eb; border-radius: 0.6rem; padding: 0.6rem 0.8rem; display: flex; gap: 0.6rem; align-items: flex-start; cursor: pointer; font-size: 0.85rem; color: #374151; }
+        .cycle:has(input:checked) { border-color: #2563eb; background: #eff6ff; }
+        .cycle small { display: block; color: #6b7280; }
+        .promo-row { display: flex; gap: 0.5rem; }
+        .promo-row input { text-transform: uppercase; min-width: 0; }
+        .btn-promo { border: 1.5px solid #e5e7eb; background: #fff; border-radius: 0.6rem; padding: 0 1rem; font-weight: 700; font-size: 0.85rem; color: #111827; cursor: pointer; }
+        .promo-msg { font-size: 0.78rem; margin-top: 0.25rem; min-height: 1.1em; }
+        .promo-msg.ok { color: #059669; } .promo-msg.ko { color: #ef4444; }
+        .recap { background: #f3f4f8; border-radius: 0.75rem; padding: 0.85rem 1rem; margin-bottom: 1rem; font-size: 0.88rem; color: #374151; }
+        .recap div { display: flex; justify-content: space-between; gap: 0.75rem; }
+        .recap .disc { color: #059669; }
+        .recap .total { border-top: 1px solid #e5e7eb; margin-top: 0.4rem; padding-top: 0.5rem; font-weight: 800; font-size: 1rem; color: #111827; }
         .steps { text-align: left; background: #f9fafb; border-radius: 0.75rem; padding: 1.1rem 1.3rem; margin-top: 1.25rem; }
         .steps li { font-size: 0.85rem; color: #374151; margin-bottom: 0.4rem; }
         .back-link { text-align: center; margin-top: 1.5rem; font-size: 0.85rem; }
@@ -93,12 +106,23 @@
             </div>
             <h1 class="page-title">Demande envoyée !</h1>
             <p class="page-subtitle">Merci, votre demande d'abonnement au plan <strong>@Model.Input.Plan</strong> a bien été enregistrée.</p>
+            @if (Model.Demande?.PrixApplique is double prixApplique)
+            {
+                var unite = Model.Demande.CycleFacturation == Web_GestCom.Services.CycleFacturation.Mensuel ? "mois" : "an";
+                <p class="page-subtitle">
+                    Tarif retenu : <strong>@prixApplique.ToString("0.##") DT / @unite</strong>
+                    @if (Model.Demande.CodePromo is not null)
+                    {
+                        <span>(code @Model.Demande.CodePromo appliqué, au lieu de @Model.Demande.PrixCatalogue?.ToString("0.##") DT)</span>
+                    }
+                </p>
+            }
             @if (Model.Input.Plan == "Standard")
             {
                 <ol class="steps">
                     <li>Notre équipe vous recontacte sous 24 à 48h pour activer votre compte.</li>
-                    <li>Vous disposez de 14 jours pour prendre en main l'outil, avec accès immédiat à toutes les fonctionnalités.</li>
-                    <li>Le plan Standard reste gratuit — aucun paiement ne vous sera jamais demandé pour ce plan.</li>
+                    <li>Vous disposez de @Model.Tarifs.JoursEssai jours gratuits pour prendre en main l'outil, sans carte bancaire, avec accès immédiat à toutes les fonctionnalités.</li>
+                    <li>À la fin de l'essai, l'abonnement se poursuit par virement bancaire : RIB et facture pro forma vous sont envoyés par email.</li>
                 </ol>
             }
             else
@@ -106,7 +130,7 @@
                 <ol class="steps">
                     <li>Notre équipe vous recontacte sous 24 à 48h pour finaliser votre abonnement @Model.Input.Plan.</li>
                     <li>Votre compte administrateur est créé dès l'activation, avec accès immédiat à toutes les fonctionnalités.</li>
-                    <li>Ce plan est facturé dès l'activation — par virement bancaire pour l'instant (les coordonnées vous seront communiquées lors du contact).</li>
+                    <li>Paiement par virement avant activation : RIB et facture pro forma vous sont envoyés par email.</li>
                 </ol>
             }
         </div>
@@ -158,16 +182,40 @@
                     </select>
                 </div>
             </div>
+            <div class="mt-3" id="cycle-field">
+                <label class="form-label">Facturation</label>
+                <div class="cycles">
+                    <label class="cycle">
+                        <input type="radio" asp-for="Input.CycleFacturation" value="Annuel" id="cycle-annuel" />
+                        <span>Annuelle<small id="prix-annuel"></small></span>
+                    </label>
+                    <label class="cycle">
+                        <input type="radio" asp-for="Input.CycleFacturation" value="Mensuel" id="cycle-mensuel" />
+                        <span>Mensuelle, sans engagement<small id="prix-mensuel"></small></span>
+                    </label>
+                </div>
+            </div>
+            <div class="mt-3" id="promo-field">
+                <label class="form-label" for="code-promo">Code promotionnel (optionnel)</label>
+                <div class="promo-row">
+                    <input asp-for="Input.CodePromo" id="code-promo" class="form-control" placeholder="Ex. FONDATEUR2026" autocomplete="off" />
+                    <button type="button" class="btn-promo" id="promo-apply">Appliquer</button>
+                </div>
+                <div class="promo-msg" id="promo-msg" aria-live="polite"></div>
+                <span asp-validation-for="Input.CodePromo" class="field-error"></span>
+            </div>
             <div class="mb-3 mt-3">
                 <label class="form-label">Message (optionnel)</label>
                 <textarea asp-for="Input.Message" class="form-control" rows="3" placeholder="Besoin particulier, nombre d'utilisateurs prévu, questions..."></textarea>
             </div>
 
+            <div class="recap" id="recap" aria-live="polite"></div>
+
             <div class="info-box">
                 <strong>Comment ça se passe ensuite ?</strong> Aucun paiement n'est demandé ici. Notre équipe vous
-                recontacte sous 24 à 48h pour activer votre compte. Le plan <strong>Standard reste gratuit</strong> ;
-                les plans <strong>Pro et Enterprise sont facturés dès l'activation</strong> (virement bancaire pour
-                l'instant).
+                recontacte sous 24 à 48h pour activer votre compte. <strong>Standard : @Model.Tarifs.JoursEssai jours gratuits</strong>,
+                sans carte bancaire. <strong>Pro et Enterprise : paiement par virement avant activation</strong>
+                (RIB et facture pro forma envoyés par email).
             </div>
 
             <button type="submit" class="btn-submit">Envoyer la demande</button>
@@ -181,5 +229,63 @@
 
 <footer class="page-footer">© 2026 GestCom – Tous droits réservés</footer>
 
+@if (!Model.DemandeEnvoyee)
+{
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    <script>
+        (function () {
+            // Affichage uniquement : le prix et la réduction sont recalculés côté serveur à l'envoi.
+            var PRIX = {
+                Standard: { Annuel: @Model.Tarifs.Standard.Annuel.ToString(inv), Mensuel: @Model.Tarifs.Standard.Mensuel.ToString(inv) },
+                Pro: { Annuel: @Model.Tarifs.Pro.Annuel.ToString(inv), Mensuel: @Model.Tarifs.Pro.Mensuel.ToString(inv) }
+            };
+            var $ = function (id) { return document.getElementById(id); };
+            var plan = document.querySelector('[name="Input.Plan"]');
+            var promo = { pourcentage: 0, libelle: '' };
+            var dt = function (n) { return n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' DT'; };
+            var cycle = function () { return $('cycle-mensuel').checked ? 'Mensuel' : 'Annuel'; };
+
+            function render() {
+                var tarif = PRIX[plan.value], recap = $('recap');
+                $('cycle-field').hidden = !tarif;
+                recap.textContent = '';
+                var ligne = function (gauche, droite, classe) {
+                    var d = document.createElement('div'), a = document.createElement('span'), b = document.createElement('span');
+                    a.textContent = gauche; b.textContent = droite; d.className = classe || ''; d.append(a, b); recap.append(d);
+                };
+                if (!tarif) { ligne('Tarif', 'Sur devis', 'total'); return; }
+                $('prix-annuel').textContent = dt(tarif.Annuel) + ' / an';
+                $('prix-mensuel').textContent = dt(tarif.Mensuel) + ' / mois';
+                var c = cycle(), base = tarif[c], unite = c === 'Mensuel' ? ' / mois' : ' / an';
+                var remise = base * promo.pourcentage / 100;
+                ligne('Plan ' + plan.value + ', facturation ' + (c === 'Mensuel' ? 'mensuelle' : 'annuelle'), dt(base) + unite);
+                if (promo.pourcentage > 0) ligne((promo.libelle || 'Code promo') + ' (−' + promo.pourcentage + ' %)', '−' + dt(remise), 'disc');
+                ligne('Vous payez', dt(base - remise) + unite, 'total');
+            }
+
+            function verifierPromo() {
+                var code = $('code-promo').value.trim(), msg = $('promo-msg');
+                if (!code) { promo = { pourcentage: 0, libelle: '' }; msg.textContent = ''; msg.className = 'promo-msg'; render(); return; }
+                fetch('?handler=Promo&code=' + encodeURIComponent(code), { headers: { 'Accept': 'application/json' } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (o) {
+                        promo = o.valide ? { pourcentage: o.pourcentage, libelle: o.libelle } : { pourcentage: 0, libelle: '' };
+                        msg.className = 'promo-msg ' + (o.valide ? 'ok' : 'ko');
+                        msg.textContent = o.valide ? 'Code appliqué : −' + o.pourcentage + ' %.' : 'Code promotionnel invalide, expiré ou épuisé.';
+                        render();
+                    })
+                    .catch(function () { msg.className = 'promo-msg ko'; msg.textContent = "Vérification impossible pour le moment. Le code sera vérifié à l'envoi."; });
+            }
+
+            plan.addEventListener('change', render);
+            $('cycle-annuel').addEventListener('change', render);
+            $('cycle-mensuel').addEventListener('change', render);
+            $('promo-apply').addEventListener('click', verifierPromo);
+            $('code-promo').addEventListener('change', verifierPromo);
+            render();
+            if ($('code-promo').value.trim()) verifierPromo();
+        })();
+    </script>
+}
 </body>
 </html>

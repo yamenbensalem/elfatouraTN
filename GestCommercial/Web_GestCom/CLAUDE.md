@@ -114,6 +114,17 @@ All commercial documents use sequential codes: `{Prefix}{YYYYMM}{###}` (e.g., `F
 
 Secrets and environment-specific overrides go in `appsettings.Development.json` (gitignored for passwords).
 
+**Tarifs** (`Tarifs` section, `TarifsOptions` in `Web_GestCom.Core/Services/TarifsOptions.cs`): single
+source for subscription prices (Standard/Pro, `Annuel`/`Mensuel`), the trial length (`JoursEssai`) and
+the promo code shown in the pricing banner (`CodePromoMisEnAvant`). Never hardcode a price or "30
+jours" in a page — `Home.razor`, `DemandeAbonnement` and `Admin/AbonnementsList.razor` all read these
+options. Promo codes live in the `code_promo` table (`CodePromo` entity, seeded with `FONDATEUR2026` by
+`Program.cs`); `AbonnementService.CreateDemandeAsync` always recomputes `PrixCatalogue`/`PrixApplique`
+server-side (never trusts the form) and a promo "place" is only consumed by a subscription in status
+`Essai`/`Active`, not by a mere request. The price shown live on `/demande-abonnement` comes from an
+inline script, so links to that page carry `data-enhance-nav="false"` (a script reached through Blazor
+enhanced navigation never runs).
+
 **Email** (`Email` section, `EmailOptions` in `Web_GestCom.Core/Services/IEmailTransport.cs`):
 `Program.cs` registers `BrevoEmailTransport` only when `Email:Provider` is `Brevo` **and**
 `Email:BrevoApiKey` is set (user-secrets in dev, `Email__BrevoApiKey` env var in prod via

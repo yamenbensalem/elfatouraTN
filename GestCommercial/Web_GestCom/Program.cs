@@ -110,6 +110,7 @@ builder.Services.Configure<LoginProtectionOptions>(builder.Configuration.GetSect
 // Email — Brevo si une clé API est configurée (user-secrets en dev, variable d'environnement
 // Email__BrevoApiKey en prod, jamais dans un fichier suivi par git), sinon transport no-op qui logue.
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.Configure<TarifsOptions>(builder.Configuration.GetSection("Tarifs"));
 var emailProvider = builder.Configuration["Email:Provider"];
 if (string.Equals(emailProvider, "Brevo", StringComparison.OrdinalIgnoreCase)
     && !string.IsNullOrWhiteSpace(builder.Configuration["Email:BrevoApiKey"]))
@@ -346,6 +347,44 @@ using (var scope = app.Services.CreateScope())
                 company_id_abonnement        INT NULL REFERENCES company(id_company)
             )
         END
+        """);
+
+    // Tarifs (GESTCOM_Amelioration_Tarifs.md) : cycle de facturation + code promo + prix figés sur
+    // chaque demande. Colonnes ajoutées une à une pour rester rejouable sur une base existante.
+    db.Database.ExecuteSqlRaw("""
+        IF COL_LENGTH('abonnement', 'cycle_facturation_abonnement') IS NULL
+            ALTER TABLE abonnement ADD cycle_facturation_abonnement NVARCHAR(10) NOT NULL
+                CONSTRAINT DF_abonnement_cycle_facturation DEFAULT 'Annuel';
+        IF COL_LENGTH('abonnement', 'code_promo_abonnement') IS NULL
+            ALTER TABLE abonnement ADD code_promo_abonnement NVARCHAR(50) NULL;
+        IF COL_LENGTH('abonnement', 'prix_catalogue_abonnement') IS NULL
+            ALTER TABLE abonnement ADD prix_catalogue_abonnement FLOAT NULL;
+        IF COL_LENGTH('abonnement', 'prix_applique_abonnement') IS NULL
+            ALTER TABLE abonnement ADD prix_applique_abonnement FLOAT NULL;
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'code_promo')
+        BEGIN
+            CREATE TABLE code_promo (
+                id_codepromo               INT IDENTITY(1,1) PRIMARY KEY,
+                code_codepromo             NVARCHAR(50) NOT NULL UNIQUE,
+                libelle_codepromo          NVARCHAR(200) NOT NULL,
+                pourcentage_codepromo      FLOAT NOT NULL,
+                max_utilisations_codepromo INT NOT NULL,
+                date_expiration_codepromo  DATETIME2 NULL,
+                permanent_codepromo        BIT NOT NULL DEFAULT 0
+            )
+        END
+        """);
+
+    // Offre de lancement "Clients Fondateurs" : -35 % permanent pour les 10 premières entreprises.
+    // Insérée une seule fois — modifier ensuite la ligne en base pour changer quota ou expiration.
+    db.Database.ExecuteSqlRaw("""
+        IF NOT EXISTS (SELECT 1 FROM code_promo WHERE code_codepromo = 'FONDATEUR2026')
+            INSERT INTO code_promo (code_codepromo, libelle_codepromo, pourcentage_codepromo,
+                                    max_utilisations_codepromo, date_expiration_codepromo, permanent_codepromo)
+            VALUES ('FONDATEUR2026', N'Client Fondateur — tarif préférentiel permanent', 35, 10, '2026-12-31T23:59:59', 1);
         """);
 
     // Add company_id column to utilisateurs if missing
