@@ -71,7 +71,7 @@
                     {
                         <tr>
                             <td>@r.Date.ToString("dd/MM/yyyy")</td>
-                            <td>@r.Type</td>
+                            <td>@(r.IsAvoir ? $"Avoir {r.Type.ToLowerInvariant()}" : r.Type)</td>
                             <td>@r.Numero</td>
                             <td>@r.Tiers</td>
                             <td class="text-end">@r.MontantHT.ToString("0.###")</td>
@@ -94,7 +94,7 @@
                             var lignesType = _lignes.Where(l => l.Type == type).ToList();
                             if (lignesType.Count == 0) continue;
                             <tr class="fw-bold" @key="type">
-                                <td colspan="4">@libelle</td>
+                                <td colspan="4">@libelle@(lignesType.Any(l => l.IsAvoir) ? " — avoirs déduits" : "")</td>
                                 <td class="text-end">@lignesType.Sum(l => l.MontantHT).ToString("0.###")</td>
                                 <td class="text-end">@lignesType.Sum(l => l.MontantRetenue).ToString("0.###")</td>
                             </tr>
@@ -114,7 +114,9 @@
 </div>
 
 @code {
-    private record RetenueLigne(DateTime Date, string Type, string Numero, string Tiers, double MontantHT, double MontantRetenue);
+    // IsAvoir : MontantHT/MontantRetenue sont alors négatifs (voir LoadAsync) — l'avoir vient en
+    // déduction du sous-total de son type au lieu de s'y ajouter.
+    private record RetenueLigne(DateTime Date, string Type, string Numero, string Tiers, double MontantHT, double MontantRetenue, bool IsAvoir);
 
     private static readonly (string Type, string Libelle)[] TotauxParType =
     [
@@ -140,8 +142,14 @@
                 .Where(f => f.MontantRetenue > 0)
                 .Where(f => !_filterDebut.HasValue || f.DateFactureClient.Date >= _filterDebut.Value.Date)
                 .Where(f => !_filterFin.HasValue || f.DateFactureClient.Date <= _filterFin.Value.Date)
+                // Un avoir client est stocké avec des montants positifs (copiés de la facture
+                // d'origine) : on inverse le signe ici pour qu'il réduise le total des ventes.
+                // Il n'existe pas d'avoir fournisseur dans l'application.
                 .Select(f => new RetenueLigne(f.DateFactureClient, "Vente", f.NumeroFactureClient,
-                    f.Client!.NomClient, f.MontantHT, f.MontantRetenue))
+                    f.Client!.NomClient,
+                    f.IsAvoir ? -f.MontantHT : f.MontantHT,
+                    f.IsAvoir ? -f.MontantRetenue : f.MontantRetenue,
+                    f.IsAvoir))
                 .ToListAsync()
             : [];
 
@@ -152,7 +160,7 @@
                 .Where(f => !_filterDebut.HasValue || f.DateFactureFournisseur.Date >= _filterDebut.Value.Date)
                 .Where(f => !_filterFin.HasValue || f.DateFactureFournisseur.Date <= _filterFin.Value.Date)
                 .Select(f => new RetenueLigne(f.DateFactureFournisseur, "Achat", f.NumeroFactureFournisseur,
-                    f.Fournisseur!.NomFournisseur, f.MontantHT, f.MontantRetenue))
+                    f.Fournisseur!.NomFournisseur, f.MontantHT, f.MontantRetenue, false))
                 .ToListAsync()
             : [];
 

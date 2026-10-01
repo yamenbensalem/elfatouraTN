@@ -45,4 +45,34 @@ public sealed class RetenueRecapTests : TestContext
         Assert.DoesNotContain("17900", cut.Markup);
         Assert.DoesNotContain("268,5", cut.Markup);
     }
+
+    [Fact]
+    public void Render_WhenAvoirClient_ShouldDeductItFromVentesTotal()
+    {
+        // Arrange — avoir stocké en positif, comme le génère FactureClientService.
+        var db = SeedVentesEtAchat();
+        db.FacturesClient.Add(new FactureClient
+        {
+            NumeroFactureClient = "AV202609001", CodeClient = "CL00001", DateFactureClient = DateTime.Today,
+            MontantHT = 4950, MontantRetenue = 74.25, IsAvoir = true
+        });
+        db.SaveChanges();
+        Services.AddSingleton(db);
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        // Act
+        var cut = RenderComponent<RetenueRecap>();
+        cut.WaitForState(() => cut.Markup.Contains("AV202609001"), TimeSpan.FromSeconds(5));
+
+        // Assert
+        var ligneAvoir = cut.FindAll("tbody tr").Single(tr => tr.TextContent.Contains("AV202609001")).TextContent;
+        Assert.Contains("Avoir vente", ligneAvoir);
+        Assert.Contains("-4950", ligneAvoir);
+        Assert.Contains("-74,25", ligneAvoir);
+        var totalVentes = cut.FindAll("tfoot tr").Single(tr => tr.TextContent.Contains("retenues subies")).TextContent;
+        Assert.Contains("avoirs déduits", totalVentes);
+        Assert.Contains("4950", totalVentes);
+        Assert.Contains("74,25", totalVentes);
+        Assert.DoesNotContain("14850", cut.Markup);
+    }
 }

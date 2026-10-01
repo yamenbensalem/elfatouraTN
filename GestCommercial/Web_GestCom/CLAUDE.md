@@ -84,7 +84,7 @@ All commercial documents use sequential codes: `{Prefix}{YYYYMM}{###}` (e.g., `F
 
 - **Stock is modified** only when a `BonLivraison` or `FactureClient` (sales) or `BonReception` / `FactureFournisseur` (purchases) is created or deleted — not on order/quote creation.
 - **Payment state** (`NonPayee`, `PartielPayee`, `Payee`) is computed from `ReglementFactureClient` / `ReglementFactureFournisseur` records, not stored directly.
-- **`IsAvoir`** flag on `FactureClient` / `FactureFournisseur` marks credit notes — these reverse stock movements.
+- **`IsAvoir`** flag on `FactureClient` marks credit notes (there is no supplier credit note — `FactureFournisseur` has no such flag) — these reverse stock movements. An avoir is stored with **positive** amounts copied from its source invoice (`MontantHT`, `MontantRetenue`...): any report that totals invoices must negate avoirs itself (see `Rapports/RetenueRecap.razor`), and must never add sales and purchase withholdings together (retenue subie vs. opérée).
 - Cloning a document generates a new code and resets payment/status fields.
 
 ## Testing
