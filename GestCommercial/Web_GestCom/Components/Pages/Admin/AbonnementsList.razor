@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Roles = "SuperAdmin")]
 @inject IAbonnementService AbonnementService
+@inject IAbonnementActivationService ActivationService
 @inject ICompanyService CompanyService
 @inject Microsoft.Extensions.Options.IOptions<TarifsOptions> TarifsConfig
 
@@ -14,8 +15,8 @@
 <div class="alert alert-info small">
     <i class="bi bi-info-circle me-1"></i>
     Aucun paiement en ligne n'est traité automatiquement (pas de passerelle de paiement branchée —
-    voir TODO.md). Chaque demande est à traiter manuellement : contacter le prospect, créer/lier son
-    entreprise, marquer « Essai » pour démarrer les @JoursEssai jours d'accès gratuit annoncés sur la page
+    voir TODO.md). Chaque demande est à traiter manuellement : contacter le prospect, puis marquer « Essai »
+    (l'entreprise et le compte du client sont alors créés automatiquement, et un email de confirmation lui est envoyé) pour démarrer les @JoursEssai jours d'accès gratuit annoncés sur la page
     d'accueil, puis « Active » une fois le règlement reçu. Rien ne désactive automatiquement un essai
     à son échéance pour l'instant — à surveiller manuellement.
 </div>
@@ -98,6 +99,7 @@
                         <button type="button" class="btn-close" @onclick="() => _editVisible = false"></button>
                     </div>
                     <div class="modal-body">
+                        <Notification @ref="_modalNotif" />
                         <div class="row g-3 mb-3 small text-muted">
                             <div class="col-md-6">
                                 <strong>Contact :</strong> @_editing.NomContact — @_editing.EmailContact
@@ -113,7 +115,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Statut</label>
-                                <InputSelect class="form-select" @bind-Value="_editing.Statut">
+                                <InputSelect class="form-select" @bind-Value="_editing.Statut" @bind-Value:after="RefreshCompteAsync">
                                     <option value="EnAttente">En attente</option>
                                     <option value="Contactee">Contactée</option>
                                     <option value="Essai">Essai (@JoursEssai jours)</option>
@@ -134,14 +136,14 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Entreprise liée</label>
-                                <InputSelect class="form-select" @bind-Value="_editing.CompanyId">
+                                <InputSelect class="form-select" @bind-Value="_editing.CompanyId" @bind-Value:after="RefreshCompteAsync">
                                     <option value="">— Aucune —</option>
                                     @foreach (var c in _companies)
                                     {
                                         <option value="@c.Id">@c.Name</option>
                                     }
                                 </InputSelect>
-                                <div class="form-text">Créez l'entreprise depuis « Entreprises » si besoin, puis liez-la ici.</div>
+                                <div class="form-text">Laissez « Aucune » pour qu'elle soit créée automatiquement à l'activation (Essai ou Active).</div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Date de début</label>
@@ -155,6 +157,53 @@
                                 <label class="form-label">Notes internes</label>
                                 <InputTextArea class="form-control" rows="3" @bind-Value="_editing.NotesAdmin" />
                             </div>
+                            @if (EstActif)
+                            {
+                                <div class="col-12">
+                                    <div class="border rounded p-3 bg-light">
+                                        <div class="fw-semibold mb-2"><i class="bi bi-person-check me-1"></i>Accès du client</div>
+                                        @if (!_editing.CompanyId.HasValue)
+                                        {
+                                            <div class="small mb-2">
+                                                <i class="bi bi-building-add me-1"></i>L'entreprise « @_editing.NomEntreprise » (plan @_editing.Plan) sera créée à l'enregistrement.
+                                            </div>
+                                        }
+                                        @if (_compteRequis)
+                                        {
+                                            <div class="small text-muted mb-2">
+                                                Aucun compte n'existe encore pour cette entreprise : un compte Admin sera créé avec ces identifiants.
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small mb-1" for="acces-login">Login</label>
+                                                    <input id="acces-login" class="form-control" @bind="_accesLogin" autocomplete="off" />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small mb-1" for="acces-mdp">Mot de passe</label>
+                                                    <div class="input-group">
+                                                        <input id="acces-mdp" class="form-control font-monospace" @bind="_accesMotDePasse" autocomplete="off" />
+                                                        <button type="button" class="btn btn-outline-secondary" title="Générer un autre mot de passe"
+                                                                @onclick="() => _accesMotDePasse = ActivationService.GenererMotDePasse()">
+                                                            <i class="bi bi-arrow-repeat"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-text">Le mot de passe n'est affiché qu'ici et dans l'email au client — il n'est pas conservé en clair.</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="small text-muted">Cette entreprise a déjà un compte : aucun identifiant ne sera créé ni modifié.</div>
+                                        }
+                                        <div class="form-check mt-2">
+                                            <input type="checkbox" class="form-check-input" id="envoyer-email" @bind="_envoyerEmail" />
+                                            <label class="form-check-label small" for="envoyer-email">
+                                                Envoyer un email de confirmation à @_editing.EmailContact@(_compteRequis ? " (avec les identifiants)" : "")
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -174,6 +223,14 @@
     private bool _editVisible;
     private Abonnement? _editing;
     private Notification _notif = default!;
+    private Notification? _modalNotif;
+
+    // Bloc « Accès du client » de la fenêtre de traitement
+    private bool _compteRequis;
+    private string _accesLogin = "";
+    private string _accesMotDePasse = "";
+    private bool _envoyerEmail = true;
+    private bool EstActif => _editing is not null && AbonnementActivationService.EstActif(_editing.Statut);
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -185,7 +242,7 @@
         _loading = false;
     }
 
-    private void AskProcess(Abonnement a)
+    private async Task AskProcess(Abonnement a)
     {
         _editing = new Abonnement
         {
@@ -208,20 +265,32 @@
             NotesAdmin = a.NotesAdmin,
             CompanyId = a.CompanyId
         };
+        _accesLogin = await ActivationService.SuggererLoginAsync(a.NomContact);
+        _accesMotDePasse = ActivationService.GenererMotDePasse();
+        _envoyerEmail = true;
+        await RefreshCompteAsync();
         _editVisible = true;
     }
+
+    private async Task RefreshCompteAsync()
+        => _compteRequis = _editing is not null && await ActivationService.CompteRequisAsync(_editing);
 
     private async Task SaveAsync()
     {
         try
         {
-            _editing!.DateTraitement = DateTime.UtcNow;
-            await AbonnementService.UpdateAsync(_editing);
-            _notif.ShowSuccess("Demande mise à jour.");
+            var acces = _compteRequis ? new AccesCompte(_accesLogin, _accesMotDePasse) : null;
+            var resultat = await ActivationService.EnregistrerAsync(_editing!, acces, _envoyerEmail);
+
+            var message = "Demande mise à jour.";
+            if (resultat.EntrepriseCreee) message += " Entreprise créée.";
+            if (resultat.LoginCree is not null) message += $" Compte client créé (login : {resultat.LoginCree}).";
+            if (resultat.EmailDemande) message += $" Email de confirmation envoyé à {_editing!.EmailContact}.";
             _editVisible = false;
             await LoadAsync();
+            _notif.ShowSuccess(message);
         }
-        catch (Exception ex) { _notif.ShowError(ex); }
+        catch (Exception ex) { (_modalNotif ?? _notif).ShowError(ex); }
     }
 
     private void ApplyTrialDates()

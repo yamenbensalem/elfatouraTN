@@ -125,6 +125,14 @@ server-side (never trusts the form) and a promo "place" is only consumed by a su
 inline script, so links to that page carry `data-enhance-nav="false"` (a script reached through Blazor
 enhanced navigation never runs).
 
+**Subscription activation** (`AbonnementActivationService`, used by `Admin/AbonnementsList.razor`): saving
+a request in status `Essai`/`Active` is what gives the customer real access — in one transaction it
+creates the `Company` if none is linked, creates an `Admin` user if that company has no user yet (login
+suggested from the contact name, password generated, both editable in the dialog), then emails the
+customer (credentials on first activation, a plain "mis à jour" email afterwards; the SuperAdmin can
+untick it). Never call `AbonnementService.UpdateAsync` directly from that screen again — it would skip
+all of this. Links in customer emails use `Email:AppUrl`.
+
 **Email** (`Email` section, `EmailOptions` in `Web_GestCom.Core/Services/IEmailTransport.cs`):
 `Program.cs` registers `BrevoEmailTransport` only when `Email:Provider` is `Brevo` **and**
 `Email:BrevoApiKey` is set (user-secrets in dev, `Email__BrevoApiKey` env var in prod via

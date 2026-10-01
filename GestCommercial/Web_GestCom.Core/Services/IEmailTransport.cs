@@ -23,4 +23,7 @@ public sealed class EmailOptions
 
     /// <summary>Adresse notifiée à chaque nouvelle demande d'abonnement.</summary>
     public string AdminNotificationEmail { get; set; } = "admin@tijaraflow.fr";
+
+    /// <summary>Adresse publique de l'application, utilisée dans les liens des emails envoyés aux clients.</summary>
+    public string AppUrl { get; set; } = "https://gestioncom.tijaraflow.fr";
 }
