@@ -42,6 +42,7 @@ public class FactureFournisseurService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.create");
         LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
+        LineCalculator.EnsureAllLinesHaveProduct(lignes, l => l.CodeProduit);
 
         facture.NumeroFactureFournisseur = await numService.NextFactureFournisseurAsync();
         RecalculateTotals(facture, lignes);
@@ -71,6 +72,7 @@ public class FactureFournisseurService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "factures-fournisseur.update");
         LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
+        LineCalculator.EnsureAllLinesHaveProduct(lignes, l => l.CodeProduit);
 
         var existing = await db.FacturesFournisseur
             .Include(f => f.Lignes)

@@ -28,6 +28,31 @@ public class DevisClientServiceTests
             () => service.CreateAsync(devis, lignes, new AppConfigService(new ConfigurationBuilder().Build())));
     }
 
+    // Régression 2026-09-30 : ligne laissée sur "-- Produit --" → violation FK_ligneDevisClient_produit en base.
+    [Fact]
+    public async Task CreateAsync_WhenLineHasNoProduct_ShouldThrowBeforeSaving()
+    {
+        // Arrange
+        var db = DbContextFactory.Create();
+        db.Clients.Add(new Client { CodeClient = "CL00001", NomClient = "Client Test", CodeDevise = 1 });
+        await db.SaveChangesAsync();
+        var service = new DevisClientService(db, new DocumentNumberService(db), new NoOpJournalActiviteService());
+        var devis = new DevisClient { CodeClient = "CL00001", DateDevis = DateTime.Today };
+        var lignes = new List<LigneDevisClient>
+        {
+            new() { CodeProduit = "PR00001", Quantite = 1, PrixUnitaire = 10, MontantHT = 10 },
+            new() { CodeProduit = "", Quantite = 1, PrixUnitaire = 5, MontantHT = 5 }
+        };
+
+        // Act
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.CreateAsync(devis, lignes, new AppConfigService(new ConfigurationBuilder().Build())));
+
+        // Assert
+        Assert.Contains("ligne 2", ex.Message);
+        Assert.Empty(db.DevisClient);
+    }
+
     [Fact]
     public async Task UpdateAsync_ReplacesPreviousLines_InsteadOfKeepingOldOnes()
     {

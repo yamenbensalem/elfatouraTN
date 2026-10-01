@@ -8,7 +8,8 @@ namespace Web_GestCom.Services;
 /// </summary>
 public static class DeleteErrorMessageHelper
 {
-    public static string Build(Exception ex, string friendlyMessage)
+    /// <param name="reference">Référence affichée à l'utilisateur pour retrouver l'erreur complète dans les logs.</param>
+    public static string Build(Exception ex, string friendlyMessage, string? reference = null)
     {
         var message = FlattenExceptionMessages(ex);
 
@@ -23,7 +24,8 @@ public static class DeleteErrorMessageHelper
             return friendlyMessage;
         }
 
-        return $"Erreur : {message}";
+        // Toute autre erreur : jamais le message brut (SQL, EF...) à l'écran — il est dans les logs.
+        return UserErrorMessage.Build(ex, reference);
     }
 
     private static string FlattenExceptionMessages(Exception ex)

@@ -135,7 +135,7 @@
         catch (Exception ex)
         {
             _errorTitle = "Suppression impossible";
-            _errorMessage = DeleteErrorMessageHelper.Build(ex,
+            _errorMessage = _notif.DescribeDeleteError(ex,
                 "Ce client ne peut pas etre supprime car il est lie a des factures ou d'autres documents. Supprimez d'abord les documents lies, puis reessayez.");
             _errorVisible = true;
         }

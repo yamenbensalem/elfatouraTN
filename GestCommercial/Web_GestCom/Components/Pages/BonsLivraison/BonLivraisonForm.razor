@@ -340,7 +340,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError($"Erreur : {ex.Message}");
+            _notif.ShowError(ex);
         }
     }
 
@@ -353,7 +353,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError($"Erreur lors du clonage : {ex.Message}");
+            _notif.ShowError(ex, "Erreur lors du clonage");
         }
     }
 
@@ -366,7 +366,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError($"Erreur lors de la génération de la facture : {ex.Message}");
+            _notif.ShowError(ex, "Erreur lors de la génération de la facture");
         }
     }
 }

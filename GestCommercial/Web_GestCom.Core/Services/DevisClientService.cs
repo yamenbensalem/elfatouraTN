@@ -43,6 +43,7 @@ public class DevisClientService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "devis.create");
         LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
+        LineCalculator.EnsureAllLinesHaveProduct(lignes, l => l.CodeProduit);
 
         devis.NumeroDevis = await numService.NextDevisAsync();
         devis.Timbre = config.TimbreFiscal;
@@ -64,6 +65,7 @@ public class DevisClientService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "devis.update");
         LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
+        LineCalculator.EnsureAllLinesHaveProduct(lignes, l => l.CodeProduit);
 
         var existing = await db.DevisClient
             .FirstOrDefaultAsync(d => d.NumeroDevis == devis.NumeroDevis)

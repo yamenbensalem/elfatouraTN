@@ -183,7 +183,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError($"Erreur : {ex.Message}");
+            _notif.ShowError(ex);
         }
     }
 
@@ -202,7 +202,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError($"Erreur : {ex.Message}");
+            _notif.ShowError(ex);
         }
     }
 }

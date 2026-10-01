@@ -43,6 +43,7 @@ public class CommandeVenteService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.create");
         LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
+        LineCalculator.EnsureAllLinesHaveProduct(lignes, l => l.CodeProduit);
 
         commande.NumeroCommandeVente = await numService.NextCommandeVenteAsync();
         RecalculateTotals(commande, lignes);
@@ -63,6 +64,7 @@ public class CommandeVenteService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "commandes-vente.update");
         LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
+        LineCalculator.EnsureAllLinesHaveProduct(lignes, l => l.CodeProduit);
 
         var existing = await db.CommandesVente
             .FirstOrDefaultAsync(c => c.NumeroCommandeVente == commande.NumeroCommandeVente)

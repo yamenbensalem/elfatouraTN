@@ -177,7 +177,7 @@
             _notif.ShowSuccess($"Facture clonée : {clone.NumeroFactureFournisseur}");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void AskDelete(FactureFournisseur f) { _toDelete = f; _confirmVisible = true; }
@@ -193,7 +193,7 @@
             _toDelete = null;
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private static string GetReglementBadge(string etat) => etat switch

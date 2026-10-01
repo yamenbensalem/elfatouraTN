@@ -148,7 +148,7 @@
         catch (Exception ex)
         {
             _errorTitle = "Suppression impossible";
-            _errorMessage = DeleteErrorMessageHelper.Build(ex,
+            _errorMessage = _notif.DescribeDeleteError(ex,
                 "Ce produit ne peut pas etre supprime car il est utilise dans des lignes de devis, commandes, bons ou factures. Supprimez d'abord les documents lies, puis reessayez.");
             _errorVisible = true;
         }

@@ -175,7 +175,7 @@
             _notif.ShowSuccess($"Commande clonée : {clone.NumeroCommandeAchat}");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void AskDelete(CommandeAchat c) { _toDelete = c; _confirmVisible = true; }
@@ -191,7 +191,7 @@
             _toDelete = null;
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private static string GetReceptionBadge(string etat) => etat switch

@@ -40,6 +40,7 @@ public class BonReceptionService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-reception.create");
         LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
+        LineCalculator.EnsureAllLinesHaveProduct(lignes, l => l.CodeProduit);
 
         bon.NumeroBonReception = await numService.NextBonReceptionAsync();
         RecalculateTotals(bon, lignes);
@@ -68,6 +69,7 @@ public class BonReceptionService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "bons-reception.update");
         LineCalculator.EnsureNoNegativeAmounts(lignes, l => l.Quantite, l => l.PrixUnitaire);
+        LineCalculator.EnsureAllLinesHaveProduct(lignes, l => l.CodeProduit);
 
         var existing = await db.BonsReception
             .Include(b => b.Lignes)

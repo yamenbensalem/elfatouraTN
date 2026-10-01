@@ -85,12 +85,20 @@
                 </tbody>
                 @if (_lignes.Any())
                 {
+                    @* Jamais de total général : une retenue sur vente est subie (crédit d'impôt, le client
+                       l'a prélevée), une retenue sur achat est opérée (à reverser à l'administration) —
+                       les additionner ne correspond à aucun montant réel. *@
                     <tfoot>
-                        <tr class="fw-bold">
-                            <td colspan="4">Total</td>
-                            <td class="text-end">@_lignes.Sum(l => l.MontantHT).ToString("0.###")</td>
-                            <td class="text-end">@_lignes.Sum(l => l.MontantRetenue).ToString("0.###")</td>
-                        </tr>
+                        @foreach (var (type, libelle) in TotauxParType)
+                        {
+                            var lignesType = _lignes.Where(l => l.Type == type).ToList();
+                            if (lignesType.Count == 0) continue;
+                            <tr class="fw-bold" @key="type">
+                                <td colspan="4">@libelle</td>
+                                <td class="text-end">@lignesType.Sum(l => l.MontantHT).ToString("0.###")</td>
+                                <td class="text-end">@lignesType.Sum(l => l.MontantRetenue).ToString("0.###")</td>
+                            </tr>
+                        }
                     </tfoot>
                 }
             </table>
@@ -107,6 +115,12 @@
 
 @code {
     private record RetenueLigne(DateTime Date, string Type, string Numero, string Tiers, double MontantHT, double MontantRetenue);
+
+    private static readonly (string Type, string Libelle)[] TotauxParType =
+    [
+        ("Vente", "Total ventes — retenues subies (à déduire)"),
+        ("Achat", "Total achats — retenues opérées (à reverser)")
+    ];
 
     private List<RetenueLigne> _lignes = [];
     private bool _loading = true;

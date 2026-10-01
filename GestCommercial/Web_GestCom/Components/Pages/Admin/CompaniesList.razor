@@ -250,7 +250,7 @@
                 }
                 catch (Exception adminEx)
                 {
-                    _notif.ShowError($"Entreprise créée, mais la création du compte admin a échoué : {adminEx.Message} — ajoutez-en un manuellement depuis « Tous les Utilisateurs ».");
+                    _notif.ShowError(adminEx, "Entreprise créée, mais la création du compte admin a échoué (ajoutez-en un manuellement depuis « Tous les Utilisateurs »)");
                     _editVisible = false;
                     await LoadAsync();
                     return;
@@ -267,7 +267,7 @@
             _editVisible = false;
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void AskDelete(Company c) { _toDelete = c; _confirmVisible = true; }
@@ -284,7 +284,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer : cette entreprise a encore des utilisateurs ou des données rattachées."));
+            _notif.ShowDeleteError(ex, "Impossible de supprimer : cette entreprise a encore des utilisateurs ou des données rattachées.");
         }
     }
 }

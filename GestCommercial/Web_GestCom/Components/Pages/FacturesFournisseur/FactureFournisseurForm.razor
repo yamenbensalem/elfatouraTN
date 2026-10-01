@@ -358,7 +358,7 @@
                 await FactureService.UpdateAsync(_facture, _lignes);
             Nav.NavigateTo("/factures-fournisseur");
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private async Task AddReglement()
@@ -378,7 +378,7 @@
             _newReglement = new() { DateReglement = DateTime.Today, CodeModePayement = 1, NumeroFactureFournisseur = Numero! };
             _notif.ShowSuccess("Règlement ajouté.");
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private async Task Clone()
@@ -388,7 +388,7 @@
             var clone = await FactureService.CloneAsync(Numero!);
             Nav.NavigateTo($"/factures-fournisseur/{clone.NumeroFactureFournisseur}");
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur lors du clonage : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex, "Erreur lors du clonage"); }
     }
 
     private static string GetReglementBadge(string etat) => etat switch

@@ -175,7 +175,7 @@
             _notif.ShowSuccess("Enregistré.");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void AskDelete(Webhook w) { _toDelete = w; _confirmVisible = true; }
@@ -190,6 +190,6 @@
             _notif.ShowSuccess("Supprimé.");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer ce webhook.")); }
+        catch (Exception ex) { _notif.ShowDeleteError(ex, "Impossible de supprimer ce webhook."); }
     }
 }

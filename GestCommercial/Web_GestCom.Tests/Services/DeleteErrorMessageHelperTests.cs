@@ -30,12 +30,14 @@ public class DeleteErrorMessageHelperTests
     }
 
     [Fact]
-    public void Build_UnrelatedException_ReturnsRawMessagePrefixedWithErreur()
+    public void Build_UnrelatedTechnicalException_ReturnsGenericMessageWithReference()
     {
-        var ex = new InvalidOperationException("Something else went wrong.");
+        var ex = new NullReferenceException("Object reference not set to an instance of an object.");
 
-        var result = DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer : utilisé ailleurs.");
+        var result = DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer : utilisé ailleurs.", "ABC12345");
 
-        Assert.Equal("Erreur : Something else went wrong.", result);
+        Assert.DoesNotContain("Object reference", result);
+        Assert.StartsWith(UserErrorMessage.ErreurTechnique, result);
+        Assert.Contains("réf. ABC12345", result);
     }
 }

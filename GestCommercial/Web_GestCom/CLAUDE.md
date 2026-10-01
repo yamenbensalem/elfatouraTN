@@ -140,7 +140,17 @@ the prospect and `AdminNotificationEmail` on each new request.
 - **`SaveChangesGuardedAsync`'s generic `DbUpdateException` catch appends `InnerException.Message`**
   — don't remove this. EF Core's default message ("An error occurred while saving the entity
   changes...") never shows the real SQL error, which made a production bug much slower to diagnose
-  than necessary before this was added.
+  than necessary before this was added. That full message is for the **logs only**, never the screen.
+- **Never show `ex.Message` to the user in a `catch`.** Use `_notif.ShowError(ex)` /
+  `_notif.ShowError(ex, "Erreur lors du clonage")`, `_notif.ShowDeleteError(ex, "<FK message>")`, or
+  `_notif.DescribeDeleteError(...)` for pages showing the error in a dialog (`Components/Shared/Notification.razor`).
+  It logs the full exception (SQL inner exception + stack) with a short reference, and displays
+  `UserErrorMessage.Build(...)` (`Web_GestCom.Core/Services/UserErrorMessage.cs`): business messages
+  (`InvalidOperationException`/`UnauthorizedAccessException` thrown from `Web_GestCom*` code,
+  `ConcurrencyConflictException`) are shown as-is; anything technical becomes "Problème de
+  sauvegarde…" / "Une erreur technique est survenue…" + "(réf. XXXXXXXX)". To diagnose a user report,
+  grep the logs for that reference. Consequence for services: a message meant for the user must be
+  thrown as `InvalidOperationException` from our own code — anything else will be masked.
 - **Email failures are invisible to the user by design.** `AbonnementService` catches and logs
   notification errors, and `BrevoEmailTransport` only logs non-2xx responses — the page still says
   "Demande envoyée !". Always check the logs for `Échec d'envoi email via Brevo`. The Brevo account

@@ -184,7 +184,7 @@
             _notif.ShowSuccess($"Bon cloné : {clone.NumeroBonReception}");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void AskDelete(BonReception b) { _toDelete = b; _confirmVisible = true; }
@@ -200,7 +200,7 @@
             _toDelete = null;
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private async Task ExportExcel()

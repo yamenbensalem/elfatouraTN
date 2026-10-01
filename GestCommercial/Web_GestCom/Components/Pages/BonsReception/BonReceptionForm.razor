@@ -281,7 +281,7 @@
                 await BonService.UpdateAsync(_bon, _lignes);
             Nav.NavigateTo("/bons-reception");
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private async Task Clone()
@@ -291,6 +291,6 @@
             var clone = await BonService.CloneAsync(Numero!);
             Nav.NavigateTo($"/bons-reception/{clone.NumeroBonReception}");
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur lors du clonage : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex, "Erreur lors du clonage"); }
     }
 }

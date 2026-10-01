@@ -175,7 +175,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError($"Erreur lors du clonage : {ex.Message}");
+            _notif.ShowError(ex, "Erreur lors du clonage");
         }
     }
 

@@ -23,6 +23,29 @@ public static class LineCalculator
             throw new InvalidOperationException("La quantité et le prix unitaire d'une ligne ne peuvent pas être négatifs.");
     }
 
+    /// <summary>
+    /// Guard shared by every document service: a line left on "-- Produit --" in the UI has an empty
+    /// CodeProduit, which reached SQL Server and failed on the FK to produit (real bug, 2026-09-30,
+    /// "The MERGE statement conflicted with the FOREIGN KEY constraint FK_ligneDevisClient_produit...").
+    /// Reject it up front with a message naming the offending line(s) (numbered from 1, as displayed).
+    /// </summary>
+    public static void EnsureAllLinesHaveProduct<T>(IEnumerable<T> lignes, Func<T, string?> codeProduit)
+    {
+        var numerosSansProduit = lignes
+            .Select((ligne, index) => (ligne, numero: index + 1))
+            .Where(x => string.IsNullOrWhiteSpace(codeProduit(x.ligne)))
+            .Select(x => x.numero)
+            .ToList();
+
+        if (numerosSansProduit.Count == 0) return;
+
+        var lignesTexte = numerosSansProduit.Count == 1
+            ? $"La ligne {numerosSansProduit[0]} n'a"
+            : $"Les lignes {string.Join(", ", numerosSansProduit)} n'ont";
+        throw new InvalidOperationException(
+            $"{lignesTexte} pas de produit sélectionné. Choisissez un produit ou supprimez la ligne.");
+    }
+
     public readonly record struct LineAmounts(double MontantHT, double Tva, double Fodec);
 
     public readonly record struct DocumentTotals(double TotalHT, double TotalFodec, double TotalTva, double TotalTTC);

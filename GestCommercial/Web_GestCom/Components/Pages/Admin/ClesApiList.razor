@@ -173,7 +173,7 @@
             _notif.ShowSuccess("Enregistré.");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void AskDelete(ApiKey k) { _toDelete = k; _confirmVisible = true; }
@@ -188,6 +188,6 @@
             _notif.ShowSuccess("Supprimé.");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer cette clé.")); }
+        catch (Exception ex) { _notif.ShowDeleteError(ex, "Impossible de supprimer cette clé."); }
     }
 }

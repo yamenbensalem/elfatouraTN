@@ -1,4 +1,7 @@
 using Bunit;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Web_GestCom.Components.Shared;
 using Xunit;
 
@@ -92,5 +95,53 @@ public sealed class NotificationTests : TestContext
         await cut.InvokeAsync(() => cut.Instance.ShowError("Deuxième"));
         Assert.DoesNotContain("alert-success", cut.Markup);
         Assert.Contains("alert-danger", cut.Markup);
+    }
+
+    // ── ShowError(Exception) ──────────────────────────────────────────────
+
+    private sealed class CapturingLogger<T> : ILogger<T>
+    {
+        public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => Entries.Add((logLevel, formatter(state, exception), exception));
+    }
+
+    [Fact]
+    public async Task ShowError_WhenSqlErrorOnSave_ShouldShowFriendlyMessageAndLogFullException()
+    {
+        // Arrange
+        var logger = new CapturingLogger<Notification>();
+        Services.AddSingleton<ILogger<Notification>>(logger);
+        var cut = RenderComponent<Notification>();
+        var ex = new DbUpdateException("An error occurred while saving the entity changes.",
+            new Exception("The MERGE statement conflicted with the FOREIGN KEY constraint \"FK_ligneDevisClient_produit_code_produit\"."));
+
+        // Act
+        await cut.InvokeAsync(() => cut.Instance.ShowError(ex));
+
+        // Assert
+        Assert.Contains("Problème de sauvegarde", cut.Markup);
+        Assert.DoesNotContain("FK_ligneDevisClient", cut.Markup);
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Same(ex, entry.Exception);
+        var reference = entry.Message.Split("réf. ")[1][..8];
+        Assert.Contains($"réf. {reference}", cut.Markup);
+    }
+
+    [Fact]
+    public async Task ShowError_WithContext_ShouldPrefixMessage()
+    {
+        // Arrange
+        var cut = RenderComponent<Notification>();
+
+        // Act
+        await cut.InvokeAsync(() => cut.Instance.ShowError(new NullReferenceException("boom"), "Erreur lors du clonage"));
+
+        // Assert
+        Assert.Contains("Erreur lors du clonage : Une erreur technique est survenue.", cut.Markup);
+        Assert.DoesNotContain("boom", cut.Markup);
     }
 }

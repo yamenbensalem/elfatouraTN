@@ -1,3 +1,7 @@
+@using Microsoft.Extensions.Logging
+@inject ILogger<Notification> Logger
+@inject NavigationManager Navigation
+
 @if (Message is not null)
 {
     <div class="alert alert-@_cssType alert-dismissible fade show" role="alert">
@@ -14,6 +18,50 @@
     public void ShowError(string message) => Show(message, "danger");
     public void ShowWarning(string message) => Show(message, "warning");
     public void ShowInfo(string message) => Show(message, "info");
+
+    /// <summary>
+    /// Affiche une erreur sans jamais exposer le détail technique (SQL, EF Core...) : l'exception
+    /// complète est loggée avec une référence courte, reprise dans le message affiché pour pouvoir
+    /// retrouver le log. Les messages métier (UserErrorMessage.IsUserFacing) restent affichés tels quels.
+    /// </summary>
+    /// <param name="context">Préfixe optionnel, ex. "Erreur lors du clonage".</param>
+    public void ShowError(Exception exception, string? context = null)
+    {
+        var message = UserErrorMessage.Build(exception, LogException(exception, context));
+        Show(context is null ? message : $"{context} : {message}", "danger");
+    }
+
+    /// <summary>
+    /// Même principe que <see cref="ShowError(Exception, string?)"/> pour un échec de suppression,
+    /// mais retourne le message au lieu de l'afficher (pour les pages qui l'affichent dans une boîte
+    /// de dialogue) — <paramref name="referenceConstraintMessage"/> est utilisé si l'enregistrement
+    /// est encore référencé ailleurs.
+    /// </summary>
+    public string DescribeDeleteError(Exception exception, string referenceConstraintMessage)
+        => DeleteErrorMessageHelper.Build(exception, referenceConstraintMessage, LogException(exception, "Suppression"));
+
+    public void ShowDeleteError(Exception exception, string referenceConstraintMessage)
+        => Show(DescribeDeleteError(exception, referenceConstraintMessage), "danger");
+
+    private string LogException(Exception exception, string? context)
+    {
+        var reference = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+
+        if (UserErrorMessage.IsUserFacing(exception))
+            Logger.LogWarning("Erreur métier affichée (réf. {Reference}) sur {Page} [{Context}] : {Message}",
+                reference, CurrentPage(), context, exception.Message);
+        else
+            Logger.LogError(exception, "Erreur technique affichée à l'utilisateur (réf. {Reference}) sur {Page} [{Context}]",
+                reference, CurrentPage(), context);
+
+        return reference;
+    }
+
+    private string CurrentPage()
+    {
+        try { return Navigation.ToBaseRelativePath(Navigation.Uri); }
+        catch (InvalidOperationException) { return "?"; }
+    }
 
     private void Show(string message, string type)
     {

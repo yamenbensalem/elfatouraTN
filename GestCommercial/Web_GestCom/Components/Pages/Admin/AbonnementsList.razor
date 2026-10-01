@@ -209,7 +209,7 @@
             _editVisible = false;
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void ApplyTrialDates()

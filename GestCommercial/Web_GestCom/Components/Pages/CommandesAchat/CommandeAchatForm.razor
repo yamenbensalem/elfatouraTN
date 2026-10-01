@@ -249,7 +249,7 @@
                 await CommandeService.UpdateAsync(_commande, _lignes);
             Nav.NavigateTo("/commandes-achat");
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private async Task Clone()
@@ -259,6 +259,6 @@
             var clone = await CommandeService.CloneAsync(Numero!);
             Nav.NavigateTo($"/commandes-achat/{clone.NumeroCommandeAchat}");
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur lors du clonage : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex, "Erreur lors du clonage"); }
     }
 }

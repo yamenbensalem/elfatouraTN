@@ -136,7 +136,7 @@
             _notif.ShowSuccess("Enregistré.");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void AskDelete(Devise d) { _toDelete = d; _confirmVisible = true; }
@@ -153,7 +153,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer : cette devise est utilisée ailleurs."));
+            _notif.ShowDeleteError(ex, "Impossible de supprimer : cette devise est utilisée ailleurs.");
         }
     }
 }

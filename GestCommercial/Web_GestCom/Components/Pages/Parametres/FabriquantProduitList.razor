@@ -131,7 +131,7 @@
             _notif.ShowSuccess("Enregistré.");
             await LoadAsync();
         }
-        catch (Exception ex) { _notif.ShowError($"Erreur : {ex.Message}"); }
+        catch (Exception ex) { _notif.ShowError(ex); }
     }
 
     private void AskDelete(FabriquantProduit f) { _toDelete = f; _confirmVisible = true; }
@@ -148,7 +148,7 @@
         }
         catch (Exception ex)
         {
-            _notif.ShowError(DeleteErrorMessageHelper.Build(ex, "Impossible de supprimer : ce fabricant est utilisé par au moins un produit."));
+            _notif.ShowDeleteError(ex, "Impossible de supprimer : ce fabricant est utilisé par au moins un produit.");
         }
     }
 }
