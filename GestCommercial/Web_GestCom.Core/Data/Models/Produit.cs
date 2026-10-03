@@ -6,7 +6,7 @@ namespace Web_GestCom.Data.Models;
 [Table("produit")]
 public class Produit : ITenantOwned
 {
-    [Key]
+    // Clé primaire = (CompanyId, code) — voir AppDbContext.ConfigureTenantKeys.
     [Column("code_produit")]
     [MaxLength(30)]
     public string CodeProduit { get; set; } = string.Empty;
@@ -110,7 +110,6 @@ public class Produit : ITenantOwned
     [ForeignKey(nameof(CodeFabriquantProduit))]
     public FabriquantProduit? FabriquantProduit { get; set; }
 
-    [ForeignKey(nameof(CodeFournisseur))]
     public Fournisseur? Fournisseur { get; set; }
 
     [ForeignKey(nameof(CompanyId))]

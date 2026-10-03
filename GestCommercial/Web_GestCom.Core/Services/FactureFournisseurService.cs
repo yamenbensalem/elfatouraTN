@@ -218,7 +218,7 @@ public class FactureFournisseurService(
 
     private async Task ApplyStockDeltaAsync(string codeProduit, double delta)
     {
-        var produit = await db.Produits.FindAsync(codeProduit)
+        var produit = await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == codeProduit)
             ?? throw new InvalidOperationException($"Produit {codeProduit} introuvable.");
         produit.Quantite += delta;
     }

@@ -3,8 +3,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Web_GestCom.Data.Models;
 
+/// <summary>
+/// Fiche de l'entreprise (en-tête des documents imprimés : nom, matricule fiscal, adresse, logo, RIB).
+/// Une fiche par Company : avant 2026-10, cette table n'était pas cloisonnée et toutes les pages
+/// faisaient <c>Db.Entreprises.FirstOrDefaultAsync()</c> — chaque client aurait imprimé l'en-tête
+/// du premier, et modifié la fiche de tout le monde. Le filtre tenant d'AppDbContext rend ces
+/// mêmes requêtes correctes sans les changer.
+/// </summary>
 [Table("entreprise")]
-public class Entreprise
+public class Entreprise : ITenantOwned
 {
     [Key]
     [Column("code_entreprise")]
@@ -65,4 +72,14 @@ public class Entreprise
     [MaxLength(200)]
     [Column("note_entreprise")]
     public string? Note { get; set; }
+
+    [Column("company_id_entreprise")]
+    public int? CompanyId { get; set; }
+
+    /// <summary>
+    /// La clé primaire (code_entreprise) est globale à la table, pas par tenant : le code d'une
+    /// nouvelle fiche doit donc être unique toutes entreprises confondues. "ENT001" reste celui de
+    /// la fiche historique (Company 1).
+    /// </summary>
+    public static string CodePourCompany(int companyId) => $"ENT{companyId:D3}";
 }

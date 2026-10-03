@@ -76,7 +76,7 @@ public class FournisseurService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "fournisseurs.delete");
 
-        var f = await db.Fournisseurs.FindAsync(code);
+        var f = await db.Fournisseurs.FirstOrDefaultAsync(e => e.CodeFournisseur == code);
         if (f is not null)
         {
             db.Fournisseurs.Remove(f);

@@ -8,24 +8,31 @@ namespace Web_GestCom.Services;
 /// </summary>
 public static class DeleteErrorMessageHelper
 {
-    /// <param name="reference">Référence affichée à l'utilisateur pour retrouver l'erreur complète dans les logs.</param>
-    public static string Build(Exception ex, string friendlyMessage, string? reference = null)
+    /// <summary>
+    /// Version Desktop : pas de journal consultable ni de référence côté poste client, donc une
+    /// erreur qui n'est pas "encore utilisé ailleurs" est affichée en entier.
+    /// </summary>
+    public static string Build(Exception ex, string friendlyMessage)
+        => IsReferenceConstraint(ex) ? friendlyMessage : $"Erreur : {FlattenExceptionMessages(ex)}";
+
+    /// <summary>
+    /// Version Web (Notification.razor) : jamais le message brut (SQL, EF...) à l'écran — il est
+    /// dans les logs, retrouvable par <paramref name="reference"/>.
+    /// </summary>
+    public static string Build(Exception ex, string friendlyMessage, string reference)
+        => IsReferenceConstraint(ex) ? friendlyMessage : UserErrorMessage.Build(ex, reference);
+
+    private static bool IsReferenceConstraint(Exception ex)
     {
         var message = FlattenExceptionMessages(ex);
 
-        if (message.Contains("REFERENCE constraint", StringComparison.OrdinalIgnoreCase)
+        return message.Contains("REFERENCE constraint", StringComparison.OrdinalIgnoreCase)
             || message.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase)
             || message.Contains("DELETE statement conflicted", StringComparison.OrdinalIgnoreCase)
             // SQL Server running with a French locale/collation phrases the same errors differently
             // (e.g. "L'instruction DELETE est en conflit avec la contrainte REFERENCE ...").
             || message.Contains("contrainte REFERENCE", StringComparison.OrdinalIgnoreCase)
-            || message.Contains("instruction DELETE est en conflit", StringComparison.OrdinalIgnoreCase))
-        {
-            return friendlyMessage;
-        }
-
-        // Toute autre erreur : jamais le message brut (SQL, EF...) à l'écran — il est dans les logs.
-        return UserErrorMessage.Build(ex, reference);
+            || message.Contains("instruction DELETE est en conflit", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FlattenExceptionMessages(Exception ex)

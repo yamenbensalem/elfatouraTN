@@ -7,6 +7,9 @@ namespace Web_GestCom.Data.Models;
 [Table("company")]
 public class Company
 {
+    /// <summary>Entreprise par défaut (seed HasData d'AppDbContext) — celle des données historiques.</summary>
+    public const int DefaultId = 1;
+
     [Key]
     [Column("id_company")]
     public int Id { get; set; }

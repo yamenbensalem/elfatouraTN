@@ -571,45 +571,10 @@ using (var scope = app.Services.CreateScope())
         WHERE permissionsversion_utilisateur IS NULL OR permissionsversion_utilisateur < 1
         """);
 
-    // Allow deleting a CommandeVente/CommandeAchat that already has a BonLivraison/BonReception
-    // linked to it, without having to delete the bon first: the optional traceability FK is set
-    // to NULL instead of blocking the delete (DeleteBehavior.Restrict everywhere else is kept —
-    // see AppDbContext.OnModelCreating). Idempotent: only alters the constraint if it isn't
-    // already ON DELETE SET NULL (delete_referential_action = 2), so this is safe to run on every
-    // startup, both for existing client databases and fresh installs seeded before this change.
-    db.Database.ExecuteSqlRaw("""
-        DECLARE @fkName NVARCHAR(128);
-        SELECT @fkName = fk.name
-        FROM sys.foreign_keys fk
-        JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
-        JOIN sys.columns c ON c.object_id = fkc.parent_object_id AND c.column_id = fkc.parent_column_id
-        WHERE fk.parent_object_id = OBJECT_ID('bonlivraison')
-          AND c.name = 'numero_commandevente'
-          AND fk.delete_referential_action <> 2;
-
-        IF @fkName IS NOT NULL
-        BEGIN
-            EXEC('ALTER TABLE bonlivraison DROP CONSTRAINT [' + @fkName + ']');
-            EXEC('ALTER TABLE bonlivraison ADD CONSTRAINT [' + @fkName + '] FOREIGN KEY (numero_commandevente) REFERENCES commandevente(numero_commandevente) ON DELETE SET NULL');
-        END
-        """);
-
-    db.Database.ExecuteSqlRaw("""
-        DECLARE @fkName NVARCHAR(128);
-        SELECT @fkName = fk.name
-        FROM sys.foreign_keys fk
-        JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
-        JOIN sys.columns c ON c.object_id = fkc.parent_object_id AND c.column_id = fkc.parent_column_id
-        WHERE fk.parent_object_id = OBJECT_ID('bonreception')
-          AND c.name = 'numero_commandeachat'
-          AND fk.delete_referential_action <> 2;
-
-        IF @fkName IS NOT NULL
-        BEGIN
-            EXEC('ALTER TABLE bonreception DROP CONSTRAINT [' + @fkName + ']');
-            EXEC('ALTER TABLE bonreception ADD CONSTRAINT [' + @fkName + '] FOREIGN KEY (numero_commandeachat) REFERENCES commandeachat(numero_commandeachat) ON DELETE SET NULL');
-        END
-        """);
+    // (Les liens de traçabilité bonlivraison→commandevente, bonreception→commandeachat et
+    // factureclient→bonlivraison étaient recréés ici en ON DELETE SET NULL. Depuis les clés par
+    // entreprise, ils sont (company_id, numéro) et créés par TenantKeyMigration plus bas, d'après
+    // le modèle ; c'est le code des services qui vide le lien avant une suppression.)
 
     // Traçabilité "facture générée depuis un BL" (audit 2026-09-12, "Facture générée depuis un
     // Bon de Livraison... la suppression restitue du stock à tort" — voir TODO.md) : nouvelle
@@ -625,21 +590,6 @@ using (var scope = app.Services.CreateScope())
         )
         BEGIN
             ALTER TABLE factureclient ADD numero_bl_origine_factureclient NVARCHAR(20) NULL
-        END
-        """);
-
-    db.Database.ExecuteSqlRaw("""
-        IF NOT EXISTS (
-            SELECT * FROM sys.foreign_keys
-            WHERE parent_object_id = OBJECT_ID('factureclient')
-              AND referenced_object_id = OBJECT_ID('bonlivraison')
-        )
-        BEGIN
-            ALTER TABLE factureclient
-                ADD CONSTRAINT FK_factureclient_bonlivraison_origine
-                FOREIGN KEY (numero_bl_origine_factureclient)
-                REFERENCES bonlivraison(numero_bonlivraison)
-                ON DELETE SET NULL
         END
         """);
 
@@ -691,6 +641,22 @@ using (var scope = app.Services.CreateScope())
         ) c
         WHERE u.is_superadmin_utilisateur = 0
           AND u.company_id_utilisateur IS NULL
+        """);
+
+    // Fiche entreprise cloisonnée par Company : la ou les fiches existantes (avant cloisonnement,
+    // une seule fiche partagée par tous) sont rattachées à la première entreprise, comme les
+    // autres tables métier ci-dessous.
+    db.Database.ExecuteSqlRaw("""
+        IF COL_LENGTH('entreprise', 'company_id_entreprise') IS NULL
+            ALTER TABLE entreprise ADD company_id_entreprise INT NULL REFERENCES company(id_company);
+        """);
+
+    db.Database.ExecuteSqlRaw("""
+        UPDATE t
+        SET company_id_entreprise = c.id_company
+        FROM entreprise t
+        CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
+        WHERE t.company_id_entreprise IS NULL
         """);
 
     db.Database.ExecuteSqlRaw("""
@@ -772,6 +738,13 @@ using (var scope = app.Services.CreateScope())
         CROSS APPLY (SELECT TOP 1 id_company FROM company ORDER BY id_company) c
         WHERE t.company_id_facturefournisseur IS NULL
         """);
+
+    // Clés par entreprise : (company_id, code) au lieu du code seul, global à la base — sans quoi
+    // une deuxième entreprise ne peut créer ni client, ni produit, ni document (CL00001 déjà pris).
+    // Doit venir après les rattachements ci-dessus (company_id devient obligatoire) et avant toute
+    // requête EF sur ces tables. Ne fait rien sur une base déjà à ce schéma.
+    Web_GestCom.Data.TenantKeyMigration.Apply(
+        db, scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("TenantKeyMigration"));
 
     db.Database.ExecuteSqlRaw("""
         UPDATE utilisateurs

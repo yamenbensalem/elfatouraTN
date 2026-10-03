@@ -170,11 +170,11 @@ public class FournisseurServiceTests
         var svc = CreateService(out var db);
         await svc.AddAsync(MakeFournisseur("FO00001", "Old Name"));
 
-        var f = await db.Fournisseurs.FindAsync("FO00001");
+        var f = await db.Fournisseurs.FirstOrDefaultAsync(e => e.CodeFournisseur == "FO00001");
         f!.NomFournisseur = "New Name";
         await svc.UpdateAsync(f);
 
-        Assert.Equal("New Name", (await db.Fournisseurs.FindAsync("FO00001"))!.NomFournisseur);
+        Assert.Equal("New Name", (await db.Fournisseurs.FirstOrDefaultAsync(e => e.CodeFournisseur == "FO00001"))!.NomFournisseur);
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public class FournisseurServiceTests
         var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(fournisseur));
 
         Assert.Null(ex);
-        Assert.Equal("New Name", (await db.Fournisseurs.FindAsync("FO00001"))!.NomFournisseur);
+        Assert.Equal("New Name", (await db.Fournisseurs.FirstOrDefaultAsync(e => e.CodeFournisseur == "FO00001"))!.NomFournisseur);
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public class FournisseurServiceTests
         var ex2 = await Record.ExceptionAsync(() => svc.UpdateAsync(fournisseur));
 
         Assert.Null(ex2);
-        Assert.Equal("New Name", (await db.Fournisseurs.FindAsync("FO00001"))!.NomFournisseur);
+        Assert.Equal("New Name", (await db.Fournisseurs.FirstOrDefaultAsync(e => e.CodeFournisseur == "FO00001"))!.NomFournisseur);
     }
 
     // ── Delete ───────────────────────────────────────────────────────────────

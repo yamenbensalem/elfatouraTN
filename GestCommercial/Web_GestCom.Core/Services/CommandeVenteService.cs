@@ -116,6 +116,12 @@ public class CommandeVenteService(
 
         if (commande is null) return;
 
+        // Lien de traçabilité : la base ne le vide plus elle-même (ON DELETE SET NULL est impossible
+        // sur un lien (CompanyId, numéro) dont CompanyId est obligatoire — voir AppDbContext), on le
+        // fait donc ici avant de supprimer, pour le même résultat qu'avant.
+        foreach (var bon in await db.BonsLivraison.Where(b => b.NumeroCommandeVente == numero).ToListAsync())
+            bon.NumeroCommandeVente = null;
+
         db.LignesCommandeVente.RemoveRange(commande.Lignes);
         db.CommandesVente.Remove(commande);
         await db.SaveChangesGuardedAsync();

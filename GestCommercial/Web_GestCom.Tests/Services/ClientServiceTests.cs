@@ -170,11 +170,11 @@ public class ClientServiceTests
         var svc = CreateService(out var db);
         await svc.AddAsync(MakeClient("CL00001", "Old Name"));
 
-        var client = await db.Clients.FindAsync("CL00001");
+        var client = await db.Clients.FirstOrDefaultAsync(e => e.CodeClient == "CL00001");
         client!.NomClient = "New Name";
         await svc.UpdateAsync(client);
 
-        Assert.Equal("New Name", (await db.Clients.FindAsync("CL00001"))!.NomClient);
+        Assert.Equal("New Name", (await db.Clients.FirstOrDefaultAsync(e => e.CodeClient == "CL00001"))!.NomClient);
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public class ClientServiceTests
         var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(client));
 
         Assert.Null(ex);
-        Assert.Equal("New Name", (await db.Clients.FindAsync("CL00001"))!.NomClient);
+        Assert.Equal("New Name", (await db.Clients.FirstOrDefaultAsync(e => e.CodeClient == "CL00001"))!.NomClient);
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public class ClientServiceTests
         var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(client));
 
         Assert.Null(ex);
-        Assert.Equal("New Name", (await db.Clients.FindAsync("CL00001"))!.NomClient);
+        Assert.Equal("New Name", (await db.Clients.FirstOrDefaultAsync(e => e.CodeClient == "CL00001"))!.NomClient);
     }
 
     // ── Delete ───────────────────────────────────────────────────────────────

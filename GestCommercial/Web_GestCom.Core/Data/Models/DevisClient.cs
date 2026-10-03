@@ -6,7 +6,7 @@ namespace Web_GestCom.Data.Models;
 [Table("devisClient")]
 public class DevisClient : ITenantOwned
 {
-    [Key]
+    // Clé primaire = (CompanyId, code) — voir AppDbContext.ConfigureTenantKeys.
     [Column("numero_devis")]
     [MaxLength(20)]
     public string NumeroDevis { get; set; } = string.Empty;
@@ -66,7 +66,6 @@ public class DevisClient : ITenantOwned
     public string? Note { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(CodeClient))]
     public Client? Client { get; set; }
 
     [ForeignKey(nameof(CompanyId))]
@@ -76,8 +75,12 @@ public class DevisClient : ITenantOwned
 }
 
 [Table("ligneDevisClient")]
-public class LigneDevisClient
+public class LigneDevisClient : ITenantOwned
 {
+    /// <summary>Même entreprise que le document parent — fait partie des liens (CompanyId, code).</summary>
+    [Column("company_id_lignedevisclient")]
+    public int? CompanyId { get; set; }
+
     [Key]
     [Column("id_lignedevis")]
     public int Id { get; set; }
@@ -111,9 +114,7 @@ public class LigneDevisClient
     public double MontantHT { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(NumeroDevis))]
     public DevisClient? DevisClient { get; set; }
 
-    [ForeignKey(nameof(CodeProduit))]
     public Produit? Produit { get; set; }
 }

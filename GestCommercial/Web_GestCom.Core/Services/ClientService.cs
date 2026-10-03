@@ -79,7 +79,7 @@ public class ClientService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "clients.delete");
 
-        var client = await db.Clients.FindAsync(code);
+        var client = await db.Clients.FirstOrDefaultAsync(e => e.CodeClient == code);
         if (client is not null)
         {
             db.Clients.Remove(client);

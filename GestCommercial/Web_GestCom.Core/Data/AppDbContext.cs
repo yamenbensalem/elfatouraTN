@@ -17,11 +17,43 @@ public class AppDbContext : DbContext
         : base(options)
     {
         _executionContext = executionContext;
+        ChangeTracker.Tracking += StampCompanyIdOnNewRows;
+    }
+
+    /// <summary>
+    /// Renseigne CompanyId au moment où une nouvelle ligne métier entre dans le contexte (Add,
+    /// AddRange ou découverte via une navigation), avant que EF n'en calcule la clé. Indispensable
+    /// depuis que CompanyId fait partie de la clé primaire (CompanyId, code) : EF ne peut pas suivre
+    /// une entité dont une partie de clé est inconnue, et ApplyTenantOwnershipRules (au
+    /// SaveChanges) arrive trop tard. Une valeur déjà fournie par l'appelant n'est jamais écrasée
+    /// ici — c'est ApplyTenantOwnershipRules qui rejette un CompanyId d'un autre tenant.
+    /// (Un ValueGenerator EF ne convient pas : EF l'ignore sur une propriété qui est aussi une clé
+    /// étrangère, ce qu'est CompanyId — vers company et, par les clés composites, vers le parent.)
+    /// </summary>
+    private void StampCompanyIdOnNewRows(object? sender, Microsoft.EntityFrameworkCore.ChangeTracking.EntityTrackingEventArgs e)
+    {
+        if (e.FromQuery || e.State != EntityState.Added) return;
+        if (e.Entry.Entity is not ITenantOwned { CompanyId: null }) return;
+        if (!TenantKeyedTypes.Contains(e.Entry.Metadata.ClrType)) return;
+
+        var companyId = CompanyIdForNewRows;
+        if (companyId.HasValue)
+            e.Entry.Property(nameof(ITenantOwned.CompanyId)).CurrentValue = companyId;
     }
 
     private int?  CurrentCompanyId      => _executionContext?.CurrentCompanyId;
     private bool  CurrentIsSuperAdmin   => _executionContext?.IsSuperAdmin == true;
     private bool  CurrentIsAuthenticated => _executionContext?.IsAuthenticated == true;
+
+    /// <summary>
+    /// Entreprise attribuée à une nouvelle ligne métier (voir StampCompanyIdOnNewRows). Avec un
+    /// contexte actif : le tenant courant (null pour SuperAdmin/anonyme — ils n'écrivent jamais de
+    /// donnée métier, et EF refusera alors de suivre l'entité). Sans contexte (seed au démarrage,
+    /// tests unitaires) : l'entreprise par défaut, celle à laquelle Program.cs rattache déjà toute
+    /// ligne historique sans entreprise.
+    /// </summary>
+    internal int? CompanyIdForNewRows
+        => _executionContext?.HasActiveContext == true ? CurrentCompanyId : Company.DefaultId;
 
     /// <summary>
     /// Tenant filters for business data engage whenever there is an active execution context —
@@ -147,7 +179,14 @@ public class AppDbContext : DbContext
 
             if (entry.State == EntityState.Added)
             {
-                // Hard-stamp tenant ownership at creation time.
+                // Tenant ownership at creation time. CompanyId is normally already stamped by
+                // StampCompanyIdOnNewRows; a different, caller-supplied value is a cross-tenant
+                // write. It can't simply be overwritten any more: on business entities CompanyId
+                // is part of the primary key, which EF forbids changing on a tracked entity.
+                if (entity.CompanyId == tenantId)
+                    continue;
+                if (entry.Property(nameof(ITenantOwned.CompanyId)).Metadata.IsKey())
+                    throw new UnauthorizedAccessException("Tentative d'accès cross-tenant détectée.");
                 entity.CompanyId = tenantId;
                 continue;
             }
@@ -155,46 +194,155 @@ public class AppDbContext : DbContext
             if (entity.CompanyId != tenantId)
                 throw new UnauthorizedAccessException("Tentative d'accès cross-tenant détectée.");
 
-            if (entry.State == EntityState.Modified)
-                entity.CompanyId = tenantId;
+            // (CompanyId == tenantId is guaranteed here — nothing to re-stamp.)
         }
     }
+
+    /// <summary>
+    /// Clés "par entreprise" des 10 tables métier : la clé primaire est (CompanyId, code), plus le
+    /// code seul. Avant 2026-10 le code seul était la clé, globale à la base, alors que la
+    /// numérotation repart de CL00001/FC2026... dans chaque entreprise : la deuxième entreprise ne
+    /// pouvait créer ni client, ni produit, ni document (violation de PK_client, reproduit).
+    /// Tous les liens vers ces tables portent donc deux colonnes (CompanyId, code) — CompanyId du
+    /// dépendant étant partagé entre ses différents liens, un document ne peut référencer que des
+    /// lignes de sa propre entreprise. La migration des bases existantes est dans TenantKeyMigration.
+    /// </summary>
+    private static void ConfigureTenantKeys(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Client>().HasKey(e => new { e.CompanyId, e.CodeClient });
+        modelBuilder.Entity<Fournisseur>().HasKey(e => new { e.CompanyId, e.CodeFournisseur });
+        modelBuilder.Entity<Produit>().HasKey(e => new { e.CompanyId, e.CodeProduit });
+        modelBuilder.Entity<DevisClient>().HasKey(e => new { e.CompanyId, e.NumeroDevis });
+        modelBuilder.Entity<CommandeVente>().HasKey(e => new { e.CompanyId, e.NumeroCommandeVente });
+        modelBuilder.Entity<BonLivraison>().HasKey(e => new { e.CompanyId, e.NumeroBonLivraison });
+        modelBuilder.Entity<FactureClient>().HasKey(e => new { e.CompanyId, e.NumeroFactureClient });
+        modelBuilder.Entity<CommandeAchat>().HasKey(e => new { e.CompanyId, e.NumeroCommandeAchat });
+        modelBuilder.Entity<BonReception>().HasKey(e => new { e.CompanyId, e.NumeroBonReception });
+        modelBuilder.Entity<FactureFournisseur>().HasKey(e => new { e.CompanyId, e.NumeroFactureFournisseur });
+
+        // ── Tiers ──
+        modelBuilder.Entity<Produit>().HasOne(e => e.Fournisseur).WithMany()
+            .HasForeignKey(e => new { e.CompanyId, e.CodeFournisseur });
+        modelBuilder.Entity<DevisClient>().HasOne(e => e.Client).WithMany(c => c.DevisClient)
+            .HasForeignKey(e => new { e.CompanyId, e.CodeClient });
+        modelBuilder.Entity<CommandeVente>().HasOne(e => e.Client).WithMany(c => c.CommandesVente)
+            .HasForeignKey(e => new { e.CompanyId, e.CodeClient });
+        modelBuilder.Entity<BonLivraison>().HasOne(e => e.Client).WithMany(c => c.BonsLivraison)
+            .HasForeignKey(e => new { e.CompanyId, e.CodeClient });
+        modelBuilder.Entity<FactureClient>().HasOne(e => e.Client).WithMany(c => c.FacturesClient)
+            .HasForeignKey(e => new { e.CompanyId, e.CodeClient });
+        modelBuilder.Entity<CommandeAchat>().HasOne(e => e.Fournisseur).WithMany(f => f.CommandesAchat)
+            .HasForeignKey(e => new { e.CompanyId, e.CodeFournisseur });
+        modelBuilder.Entity<BonReception>().HasOne(e => e.Fournisseur).WithMany(f => f.BonsReception)
+            .HasForeignKey(e => new { e.CompanyId, e.CodeFournisseur });
+        modelBuilder.Entity<FactureFournisseur>().HasOne(e => e.Fournisseur).WithMany(f => f.FacturesFournisseur)
+            .HasForeignKey(e => new { e.CompanyId, e.CodeFournisseur });
+
+        // ── Liens de traçabilité entre documents (optionnels) ──
+        modelBuilder.Entity<BonLivraison>().HasOne(e => e.CommandeVente).WithMany(c => c.BonsLivraison)
+            .HasForeignKey(e => new { e.CompanyId, e.NumeroCommandeVente });
+        modelBuilder.Entity<BonReception>().HasOne(e => e.CommandeAchat).WithMany(c => c.BonsReception)
+            .HasForeignKey(e => new { e.CompanyId, e.NumeroCommandeAchat });
+        modelBuilder.Entity<FactureClient>().HasOne(e => e.BonLivraisonOrigine).WithMany()
+            .HasForeignKey(e => new { e.CompanyId, e.NumeroBonLivraisonOrigine });
+
+        // ── Lignes et règlements ──
+        modelBuilder.Entity<LigneDevisClient>(b =>
+        {
+            b.HasOne(e => e.DevisClient).WithMany(d => d.Lignes).HasForeignKey(e => new { e.CompanyId, e.NumeroDevis });
+            b.HasOne(e => e.Produit).WithMany().HasForeignKey(e => new { e.CompanyId, e.CodeProduit });
+        });
+        modelBuilder.Entity<LigneCommandeVente>(b =>
+        {
+            b.HasOne(e => e.CommandeVente).WithMany(d => d.Lignes).HasForeignKey(e => new { e.CompanyId, e.NumeroCommandeVente });
+            b.HasOne(e => e.Produit).WithMany().HasForeignKey(e => new { e.CompanyId, e.CodeProduit });
+        });
+        modelBuilder.Entity<LigneBonLivraison>(b =>
+        {
+            b.HasOne(e => e.BonLivraison).WithMany(d => d.Lignes).HasForeignKey(e => new { e.CompanyId, e.NumeroBonLivraison });
+            b.HasOne(e => e.Produit).WithMany().HasForeignKey(e => new { e.CompanyId, e.CodeProduit });
+        });
+        modelBuilder.Entity<LigneFactureClient>(b =>
+        {
+            b.HasOne(e => e.FactureClient).WithMany(d => d.Lignes).HasForeignKey(e => new { e.CompanyId, e.NumeroFactureClient });
+            b.HasOne(e => e.Produit).WithMany().HasForeignKey(e => new { e.CompanyId, e.CodeProduit });
+        });
+        modelBuilder.Entity<ReglementFactureClient>()
+            .HasOne(e => e.FactureClient).WithMany(d => d.Reglements).HasForeignKey(e => new { e.CompanyId, e.NumeroFactureClient });
+        modelBuilder.Entity<LigneCommandeAchat>(b =>
+        {
+            b.HasOne(e => e.CommandeAchat).WithMany(d => d.Lignes).HasForeignKey(e => new { e.CompanyId, e.NumeroCommandeAchat });
+            b.HasOne(e => e.Produit).WithMany().HasForeignKey(e => new { e.CompanyId, e.CodeProduit });
+        });
+        modelBuilder.Entity<LigneBonReception>(b =>
+        {
+            b.HasOne(e => e.BonReception).WithMany(d => d.Lignes).HasForeignKey(e => new { e.CompanyId, e.NumeroBonReception });
+            b.HasOne(e => e.Produit).WithMany().HasForeignKey(e => new { e.CompanyId, e.CodeProduit });
+        });
+        modelBuilder.Entity<LigneFactureFournisseur>(b =>
+        {
+            b.HasOne(e => e.FactureFournisseur).WithMany(d => d.Lignes).HasForeignKey(e => new { e.CompanyId, e.NumeroFactureFournisseur });
+            b.HasOne(e => e.Produit).WithMany().HasForeignKey(e => new { e.CompanyId, e.CodeProduit });
+        });
+        modelBuilder.Entity<ReglementFactureFournisseur>()
+            .HasOne(e => e.FactureFournisseur).WithMany(d => d.Reglements).HasForeignKey(e => new { e.CompanyId, e.NumeroFactureFournisseur });
+
+        // CompanyId : renseigné par StampCompanyIdOnNewRows, jamais généré par la base (pas
+        // d'IDENTITY), et obligatoire sur toutes ces tables, filles comprises.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes()
+                     .Where(t => TenantKeyedTypes.Contains(t.ClrType)))
+        {
+            modelBuilder.Entity(entityType.ClrType)
+                .Property<int?>(nameof(ITenantOwned.CompanyId))
+                .IsRequired()
+                .ValueGeneratedNever();
+        }
+    }
+
+    /// <summary>Les 10 tables métier à clé (CompanyId, code) et leurs 9 tables filles.</summary>
+    public static readonly IReadOnlySet<Type> TenantKeyedTypes = new HashSet<Type>
+    {
+        typeof(Client), typeof(Fournisseur), typeof(Produit),
+        typeof(DevisClient), typeof(CommandeVente), typeof(BonLivraison), typeof(FactureClient),
+        typeof(CommandeAchat), typeof(BonReception), typeof(FactureFournisseur),
+        typeof(LigneDevisClient), typeof(LigneCommandeVente), typeof(LigneBonLivraison),
+        typeof(LigneFactureClient), typeof(ReglementFactureClient),
+        typeof(LigneCommandeAchat), typeof(LigneBonReception),
+        typeof(LigneFactureFournisseur), typeof(ReglementFactureFournisseur)
+    };
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        // Must run before the global Restrict loop below, which only sees relationships that
+        // already exist in the model.
+        ConfigureTenantKeys(modelBuilder);
+
         // Disable cascade delete globally (SQL Server multi-path restriction).
         foreach (var fk in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
             fk.DeleteBehavior = DeleteBehavior.Restrict;
 
-        // Exceptions to the global Restrict above: these two FKs are purely informational
-        // traceability links (which order a delivery/receipt note was generated from), not a
-        // financial record like a line item. Deleting a fulfilled CommandeVente/CommandeAchat
-        // should not be blocked just because a BonLivraison/BonReception still references it —
-        // the link is cleared (SET NULL) instead. Must come after the loop above, which would
-        // otherwise overwrite this back to Restrict. Matching raw-SQL migration in Program.cs
-        // updates the constraint on already-deployed (EnsureCreated) databases.
+        // Exceptions to the global Restrict above: these three FKs are purely informational
+        // traceability links (which order a delivery/receipt note was generated from, which BL a
+        // facture was generated from), not a financial record like a line item. Deleting the
+        // source document must not be blocked by them — the link is cleared instead.
+        // ClientSetNull, not SetNull: since the keys became (CompanyId, code), these FKs share the
+        // dependent's non-nullable CompanyId column, and SQL Server refuses ON DELETE SET NULL on
+        // such a constraint. The database constraint is therefore NO ACTION and the services clear
+        // the link themselves before deleting (CommandeVenteService/CommandeAchatService/
+        // BonLivraisonService.DeleteAsync) — EF then only nulls the nullable code column.
         modelBuilder.Entity<BonLivraison>()
-            .HasOne(b => b.CommandeVente)
-            .WithMany(c => c.BonsLivraison)
-            .HasForeignKey(b => b.NumeroCommandeVente)
-            .OnDelete(DeleteBehavior.SetNull);
+            .HasOne(b => b.CommandeVente).WithMany(c => c.BonsLivraison)
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
         modelBuilder.Entity<BonReception>()
-            .HasOne(b => b.CommandeAchat)
-            .WithMany(c => c.BonsReception)
-            .HasForeignKey(b => b.NumeroCommandeAchat)
-            .OnDelete(DeleteBehavior.SetNull);
+            .HasOne(b => b.CommandeAchat).WithMany(c => c.BonsReception)
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
-        // Same reasoning: FactureClient.NumeroBonLivraisonOrigine is a traceability link (which BL
-        // this facture was generated from via CreateFromBonLivraisonAsync), not a financial
-        // constraint — deleting the source BL should not be blocked by it.
         modelBuilder.Entity<FactureClient>()
-            .HasOne(f => f.BonLivraisonOrigine)
-            .WithMany()
-            .HasForeignKey(f => f.NumeroBonLivraisonOrigine)
-            .OnDelete(DeleteBehavior.SetNull);
+            .HasOne(f => f.BonLivraisonOrigine).WithMany()
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
         // ── Composite PKs ──────────────────────────────────────────────────
         modelBuilder.Entity<UserRole>()
@@ -219,6 +367,11 @@ public class AppDbContext : DbContext
 
         // Business entities: strictly tenant-scoped for non-superadmin request contexts.
         modelBuilder.Entity<Client>()
+            .HasQueryFilter(e =>
+                !ShouldApplyTenantFilter ||
+                (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        modelBuilder.Entity<Entreprise>()
             .HasQueryFilter(e =>
                 !ShouldApplyTenantFilter ||
                 (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
@@ -267,6 +420,18 @@ public class AppDbContext : DbContext
             .HasQueryFilter(e =>
                 !ShouldApplyTenantFilter ||
                 (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+
+        // Lignes et règlements : même cloisonnement que leur document parent (défense en profondeur —
+        // ils n'étaient auparavant atteignables que via le parent).
+        modelBuilder.Entity<LigneDevisClient>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+        modelBuilder.Entity<LigneCommandeVente>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+        modelBuilder.Entity<LigneBonLivraison>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+        modelBuilder.Entity<LigneFactureClient>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+        modelBuilder.Entity<ReglementFactureClient>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+        modelBuilder.Entity<LigneCommandeAchat>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+        modelBuilder.Entity<LigneBonReception>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+        modelBuilder.Entity<LigneFactureFournisseur>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
+        modelBuilder.Entity<ReglementFactureFournisseur>().HasQueryFilter(e => !ShouldApplyTenantFilter || (CurrentCompanyId.HasValue && e.CompanyId == CurrentCompanyId));
 
         // Utilisateur: same rule as the business entities above. A non-SuperAdmin session only
         // ever sees users of its own company (SuperAdmin rows have CompanyId == null, so they're

@@ -6,7 +6,7 @@ namespace Web_GestCom.Data.Models;
 [Table("facturefournisseur")]
 public class FactureFournisseur : ITenantOwned
 {
-    [Key]
+    // Clé primaire = (CompanyId, code) — voir AppDbContext.ConfigureTenantKeys.
     [Column("numero_facturefournisseur")]
     [MaxLength(20)]
     public string NumeroFactureFournisseur { get; set; } = string.Empty;
@@ -65,7 +65,6 @@ public class FactureFournisseur : ITenantOwned
     public string? Note { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(CodeFournisseur))]
     public Fournisseur? Fournisseur { get; set; }
 
     [ForeignKey(nameof(CompanyId))]
@@ -76,8 +75,12 @@ public class FactureFournisseur : ITenantOwned
 }
 
 [Table("lignefacturefournisseur")]
-public class LigneFactureFournisseur
+public class LigneFactureFournisseur : ITenantOwned
 {
+    /// <summary>Même entreprise que le document parent — fait partie des liens (CompanyId, code).</summary>
+    [Column("company_id_lignefacturefournisseur")]
+    public int? CompanyId { get; set; }
+
     [Key]
     [Column("id_lignefacturefournisseur")]
     public int Id { get; set; }
@@ -107,16 +110,18 @@ public class LigneFactureFournisseur
     public double MontantHT { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(NumeroFactureFournisseur))]
     public FactureFournisseur? FactureFournisseur { get; set; }
 
-    [ForeignKey(nameof(CodeProduit))]
     public Produit? Produit { get; set; }
 }
 
 [Table("reglementfacturefournisseur")]
-public class ReglementFactureFournisseur
+public class ReglementFactureFournisseur : ITenantOwned
 {
+    /// <summary>Même entreprise que le document parent — fait partie des liens (CompanyId, code).</summary>
+    [Column("company_id_reglementfacturefournisseur")]
+    public int? CompanyId { get; set; }
+
     [Key]
     [Column("id_reglementfacturefournisseur")]
     public int Id { get; set; }
@@ -144,7 +149,6 @@ public class ReglementFactureFournisseur
     public string? Reference { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(NumeroFactureFournisseur))]
     public FactureFournisseur? FactureFournisseur { get; set; }
 
     [ForeignKey(nameof(CodeModePayement))]

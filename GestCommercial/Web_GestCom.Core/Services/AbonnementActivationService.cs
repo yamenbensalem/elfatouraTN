@@ -107,6 +107,7 @@ public class AbonnementActivationService(
 
         Company? entrepriseCreee = null;
         Utilisateur? compteCree = null;
+        Entreprise? ficheCreee = null;
         var companyIdInitial = abonnement.CompanyId;
 
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -117,6 +118,19 @@ public class AbonnementActivationService(
                 entrepriseCreee = new Company { Name = abonnement.NomEntreprise, Plan = abonnement.Plan };
                 await companyService.AddAsync(entrepriseCreee);
                 abonnement.CompanyId = entrepriseCreee.Id;
+
+                // Fiche entreprise (en-tête des documents) pré-remplie : sans elle, les premières
+                // factures du client sortiraient sans nom. Il la complète ensuite dans Paramètres.
+                ficheCreee = new Entreprise
+                {
+                    CodeEntreprise = Entreprise.CodePourCompany(entrepriseCreee.Id),
+                    NomEntreprise = abonnement.NomEntreprise,
+                    Email = abonnement.EmailContact,
+                    Tel = abonnement.TelephoneContact,
+                    CompanyId = entrepriseCreee.Id
+                };
+                db.Entreprises.Add(ficheCreee);
+                await db.SaveChangesGuardedAsync();
             }
 
             if (compteRequis)
@@ -144,6 +158,7 @@ public class AbonnementActivationService(
             await tx.RollbackAsync();
             // Le DbContext vit pour tout le circuit Blazor : ne pas y laisser des entités que la base n'a plus.
             if (compteCree is not null) db.Entry(compteCree).State = EntityState.Detached;
+            if (ficheCreee is not null) db.Entry(ficheCreee).State = EntityState.Detached;
             if (entrepriseCreee is not null) db.Entry(entrepriseCreee).State = EntityState.Detached;
             abonnement.CompanyId = companyIdInitial;
             throw;

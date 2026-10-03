@@ -170,6 +170,38 @@ the prospect and `AdminNotificationEmail` on each new request.
   sauvegarde…" / "Une erreur technique est survenue…" + "(réf. XXXXXXXX)". To diagnose a user report,
   grep the logs for that reference. Consequence for services: a message meant for the user must be
   thrown as `InvalidOperationException` from our own code — anything else will be masked.
+- **Business keys are per company: `(CompanyId, code)`, never the code alone** (10 tables: client,
+  fournisseur, produit and the 7 document tables; their 9 line/payment tables carry `CompanyId` too
+  and are `ITenantOwned`). Until 2026-10 the code alone was a database-wide primary key while
+  numbering restarts at `CL00001`/`FC2026...` in every company, so a second company could not create
+  a single client (`PRIMARY KEY` violation on `CL00001`, reproduced). Consequences when writing code:
+  - **Never `FindAsync(code)` on these sets** — it needs both key parts and bypasses the tenant
+    filter. Use `FirstOrDefaultAsync(e => e.CodeX == code)`: the query filter supplies the company.
+  - **`CompanyId` is stamped automatically** when a row enters the context
+    (`AppDbContext.StampCompanyIdOnNewRows`, a `ChangeTracker.Tracking` handler — an EF
+    `ValueGenerator` does not work here, EF ignores it on a property that is also a foreign key).
+    Without an execution context (startup seed, unit tests) rows go to `Company.DefaultId`.
+  - **Every link to these tables is two columns** and is declared in `AppDbContext.ConfigureTenantKeys`
+    (no `[ForeignKey]` attribute). A new document/line type must be added there and to
+    `AppDbContext.TenantKeyedTypes`.
+  - **The three traceability links** (BL→commande vente, BR→commande achat, facture→BL d'origine) are
+    `ClientSetNull`: SQL Server refuses `ON DELETE SET NULL` on a link sharing a `NOT NULL`
+    `CompanyId`, so the services clear the link themselves before deleting the source document.
+  - **Existing databases are upgraded by `TenantKeyMigration.Apply`** (called from `Program.cs`), driven
+    by the EF model, in one transaction, idempotent. Never add or alter a foreign key on these tables
+    with raw SQL in `Program.cs` again — a single-column FK would fail at startup.
+- **Also run `dotnet test ../GestCom_Desktop.Tests`** after touching `Web_GestCom.Core`: the Desktop app
+  shares it (it was broken once by a Core change nobody ran its tests against).
+  `DeleteErrorMessageHelper.Build(ex, friendly)` (2 args) is the Desktop overload and shows the raw
+  error; the 3-arg overload with a log reference is the Web one.
+- **Still open: reference tables are shared by all companies.** `categorieproduit`, `fabriquantproduit`,
+  `uniteproduit`, `tvaproduit`, `modepayement`, `devise` have no `CompanyId`, and any company's Admin
+  can edit or delete them under `/parametres/*` for everyone.
+- **`Entreprise` (company profile printed on every document) is `ITenantOwned` — one row per Company.**
+  The 7 print pages and `/entreprise` all do `Db.Entreprises.FirstOrDefaultAsync()`; that is only
+  correct because of the tenant query filter, so never add `IgnoreQueryFilters()` there. Its primary
+  key `code_entreprise` is global too: new rows use `Entreprise.CodePourCompany(companyId)`
+  (`ENT004`...), and `AbonnementActivationService` pre-creates the row for each new customer.
 - **Email failures are invisible to the user by design.** `AbonnementService` catches and logs
   notification errors, and `BrevoEmailTransport` only logs non-2xx responses — the page still says
   "Demande envoyée !". Always check the logs for `Échec d'envoi email via Brevo`. The Brevo account

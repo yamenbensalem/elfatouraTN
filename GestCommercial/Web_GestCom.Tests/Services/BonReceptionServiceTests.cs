@@ -49,7 +49,7 @@ public class BonReceptionServiceTests
         var result = await svc.CreateAsync(MakeBon(), [MakeLigne("PR00001", 10, 50)]);
 
         Assert.StartsWith("BR", result.NumeroBonReception);
-        Assert.Equal(110, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(110, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
     }
 
     [Fact]
@@ -68,11 +68,11 @@ public class BonReceptionServiceTests
         var (svc, db) = CreateService();
         await SeedBasicData(db);
         var created = await svc.CreateAsync(MakeBon(), [MakeLigne("PR00001", 10, 50)]);
-        Assert.Equal(110, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(110, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
 
         await svc.DeleteAsync(created.NumeroBonReception);
 
-        Assert.Equal(100, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(100, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
         Assert.Equal(0, await db.BonsReception.CountAsync());
     }
 
@@ -91,12 +91,12 @@ public class BonReceptionServiceTests
         await db.SaveChangesAsync();
 
         var created = await svc.CreateAsync(MakeBon(), [MakeLigne("PR00001", 10, 50)]);
-        Assert.Equal(110, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(110, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
 
         await svc.UpdateAsync(created, [MakeLigne("PR00002", 5, 80)]);
 
-        Assert.Equal(100, (await db.Produits.FindAsync("PR00001"))!.Quantite);
-        Assert.Equal(55, (await db.Produits.FindAsync("PR00002"))!.Quantite);
+        Assert.Equal(100, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
+        Assert.Equal(55, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00002"))!.Quantite);
         var lignes = await db.LignesBonReception.Where(l => l.NumeroBonReception == created.NumeroBonReception).ToListAsync();
         Assert.Single(lignes);
         Assert.Equal("PR00002", lignes[0].CodeProduit);
@@ -108,12 +108,12 @@ public class BonReceptionServiceTests
         var (svc, db) = CreateService();
         await SeedBasicData(db);
         var created = await svc.CreateAsync(MakeBon(), [MakeLigne("PR00001", 10, 50)]);
-        Assert.Equal(110, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(110, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
 
         var clone = await svc.CloneAsync(created.NumeroBonReception);
 
         Assert.NotEqual(created.NumeroBonReception, clone.NumeroBonReception);
-        Assert.Equal(120, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(120, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
     }
 
     [Fact]

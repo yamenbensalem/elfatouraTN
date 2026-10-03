@@ -6,7 +6,7 @@ namespace Web_GestCom.Data.Models;
 [Table("fournisseur")]
 public class Fournisseur : ITenantOwned
 {
-    [Key]
+    // Clé primaire = (CompanyId, code) — voir AppDbContext.ConfigureTenantKeys.
     [Column("code_fournisseur")]
     [MaxLength(20)]
     public string CodeFournisseur { get; set; } = string.Empty;

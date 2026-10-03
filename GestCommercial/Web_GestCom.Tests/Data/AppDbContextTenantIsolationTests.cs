@@ -106,6 +106,86 @@ public class AppDbContextTenantIsolationTests
         Assert.Empty(visibleClients);
     }
 
+    // ── Fiche entreprise : une par Company (avant 2026-10, table partagée par tous les clients) ──
+
+    private static async Task SeedDeuxFichesAsync(DbContextOptions<AppDbContext> options)
+    {
+        await using var seed = new AppDbContext(options);
+        seed.Entreprises.AddRange(
+            new Entreprise { CodeEntreprise = "ENT001", NomEntreprise = "Société A", CompanyId = 1 },
+            new Entreprise { CodeEntreprise = "ENT002", NomEntreprise = "Société B", CompanyId = 2 });
+        await seed.SaveChangesAsync();
+    }
+
+    [Theory]
+    [InlineData(1, "Société A")]
+    [InlineData(2, "Société B")]
+    public async Task Entreprise_FirstOrDefault_ShouldReturnCurrentTenantOwnFiche(int companyId, string nomAttendu)
+    {
+        // Arrange — c'est exactement la requête des 7 pages d'impression et de l'écran /entreprise.
+        var options = CreateOptions();
+        await SeedDeuxFichesAsync(options);
+        await using var context = CreateTenantContext(options, companyId);
+
+        // Act
+        var fiche = await context.Entreprises.FirstOrDefaultAsync();
+
+        // Assert
+        Assert.NotNull(fiche);
+        Assert.Equal(nomAttendu, fiche.NomEntreprise);
+    }
+
+    [Fact]
+    public async Task Entreprise_WhenTenantHasNoFicheYet_ShouldNotSeeAnotherTenantFiche()
+    {
+        // Arrange
+        var options = CreateOptions();
+        await SeedDeuxFichesAsync(options);
+        await using var context = CreateTenantContext(options, companyId: 3);
+
+        // Act
+        var fiche = await context.Entreprises.FirstOrDefaultAsync();
+
+        // Assert
+        Assert.Null(fiche);
+    }
+
+    [Fact]
+    public async Task Entreprise_WhenTenantCreatesFiche_ShouldBeStampedWithItsCompanyAndLeaveOthersUntouched()
+    {
+        // Arrange
+        var options = CreateOptions();
+        await SeedDeuxFichesAsync(options);
+        await using var context = CreateTenantContext(options, companyId: 3);
+
+        // Act
+        var fiche = new Entreprise { CodeEntreprise = Entreprise.CodePourCompany(3), NomEntreprise = "Société C" };
+        context.Entreprises.Add(fiche);
+        await context.SaveChangesAsync();
+
+        // Assert
+        Assert.Equal("ENT003", fiche.CodeEntreprise);
+        Assert.Equal(3, fiche.CompanyId);
+        await using var verif = new AppDbContext(options);
+        Assert.Equal(3, await verif.Entreprises.CountAsync());
+        Assert.Equal("Société A", (await verif.Entreprises.SingleAsync(e => e.CompanyId == 1)).NomEntreprise);
+    }
+
+    [Fact]
+    public async Task Entreprise_WhenTenantModifiesAnotherTenantFiche_ShouldThrow()
+    {
+        // Arrange
+        var options = CreateOptions();
+        await SeedDeuxFichesAsync(options);
+        await using var context = CreateTenantContext(options, companyId: 1);
+
+        // Act
+        context.Entreprises.Update(new Entreprise { CodeEntreprise = "ENT002", NomEntreprise = "Piraté", CompanyId = 2 });
+
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => context.SaveChangesAsync());
+    }
+
     private static DbContextOptions<AppDbContext> CreateOptions()
         => new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())

@@ -6,7 +6,7 @@ namespace Web_GestCom.Data.Models;
 [Table("bonreception")]
 public class BonReception : ITenantOwned
 {
-    [Key]
+    // Clé primaire = (CompanyId, code) — voir AppDbContext.ConfigureTenantKeys.
     [Column("numero_bonreception")]
     [MaxLength(20)]
     public string NumeroBonReception { get; set; } = string.Empty;
@@ -62,21 +62,23 @@ public class BonReception : ITenantOwned
     public string? Note { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(CodeFournisseur))]
     public Fournisseur? Fournisseur { get; set; }
 
     [ForeignKey(nameof(CompanyId))]
     public Company? Company { get; set; }
 
-    [ForeignKey(nameof(NumeroCommandeAchat))]
     public CommandeAchat? CommandeAchat { get; set; }
 
     public ICollection<LigneBonReception> Lignes { get; set; } = [];
 }
 
 [Table("lignebonreception")]
-public class LigneBonReception
+public class LigneBonReception : ITenantOwned
 {
+    /// <summary>Même entreprise que le document parent — fait partie des liens (CompanyId, code).</summary>
+    [Column("company_id_lignebonreception")]
+    public int? CompanyId { get; set; }
+
     [Key]
     [Column("id_lignebonreception")]
     public int Id { get; set; }
@@ -106,9 +108,7 @@ public class LigneBonReception
     public double MontantHT { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(NumeroBonReception))]
     public BonReception? BonReception { get; set; }
 
-    [ForeignKey(nameof(CodeProduit))]
     public Produit? Produit { get; set; }
 }

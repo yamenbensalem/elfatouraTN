@@ -59,7 +59,7 @@ public class FactureFournisseurServiceTests
         var result = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 50)]);
 
         Assert.StartsWith("FF", result.NumeroFactureFournisseur);
-        Assert.Equal(110, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(110, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
     }
 
     [Fact]
@@ -93,11 +93,11 @@ public class FactureFournisseurServiceTests
         var (svc, db) = CreateService();
         await SeedBasicData(db);
         var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 50)]);
-        Assert.Equal(110, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(110, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
 
         await svc.DeleteAsync(created.NumeroFactureFournisseur);
 
-        Assert.Equal(100, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(100, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
         Assert.Equal(0, await db.FacturesFournisseur.CountAsync());
     }
 
@@ -137,12 +137,12 @@ public class FactureFournisseurServiceTests
         await db.SaveChangesAsync();
 
         var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 50)]);
-        Assert.Equal(110, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(110, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
 
         await svc.UpdateAsync(created, [MakeLigne("PR00002", 5, 80)]);
 
-        Assert.Equal(100, (await db.Produits.FindAsync("PR00001"))!.Quantite);
-        Assert.Equal(55, (await db.Produits.FindAsync("PR00002"))!.Quantite);
+        Assert.Equal(100, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
+        Assert.Equal(55, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00002"))!.Quantite);
     }
 
     // ── Reglement / Solde ────────────────────────────────────────────────────
@@ -162,7 +162,7 @@ public class FactureFournisseurServiceTests
             CodeModePayement = 1
         });
 
-        Assert.Equal("Partiellement Réglé", (await db.FacturesFournisseur.FindAsync(created.NumeroFactureFournisseur))!.EtatReglement);
+        Assert.Equal("Partiellement Réglé", (await db.FacturesFournisseur.FirstOrDefaultAsync(e => e.NumeroFactureFournisseur == created.NumeroFactureFournisseur))!.EtatReglement);
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public class FactureFournisseurServiceTests
             CodeModePayement = 1
         });
 
-        Assert.Equal("Réglé", (await db.FacturesFournisseur.FindAsync(created.NumeroFactureFournisseur))!.EtatReglement);
+        Assert.Equal("Réglé", (await db.FacturesFournisseur.FirstOrDefaultAsync(e => e.NumeroFactureFournisseur == created.NumeroFactureFournisseur))!.EtatReglement);
     }
 
     [Fact]
@@ -217,12 +217,12 @@ public class FactureFournisseurServiceTests
         var (svc, db) = CreateService();
         await SeedBasicData(db);
         var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 50)]);
-        Assert.Equal(110, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(110, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
 
         var clone = await svc.CloneAsync(created.NumeroFactureFournisseur);
 
         Assert.NotEqual(created.NumeroFactureFournisseur, clone.NumeroFactureFournisseur);
-        Assert.Equal(120, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(120, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
         Assert.Equal("Non Réglé", clone.EtatReglement);
     }
 

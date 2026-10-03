@@ -6,15 +6,16 @@ using Xunit;
 namespace Web_GestCom.Tests.Data;
 
 /// <summary>
-/// EF Core's InMemory provider has no real foreign key engine, so it can't reproduce what SQL
-/// Server does with ON DELETE SET NULL — these tests instead assert on the model metadata itself,
-/// which is what both EnsureCreated() (fresh installs) and the matching raw-SQL ALTER TABLE in
-/// Program.cs (existing databases) are driven by. See AppDbContext.OnModelCreating.
+/// EF Core's InMemory provider has no real foreign key engine — these tests assert on the model
+/// metadata itself, which is what both EnsureCreated() (fresh installs) and TenantKeyMigration
+/// (existing databases) are driven by. See AppDbContext.OnModelCreating. The traceability links
+/// are ClientSetNull (cleared by the services before deleting), no longer SetNull: SQL Server
+/// refuses ON DELETE SET NULL on a (CompanyId, numéro) link whose CompanyId is NOT NULL.
 /// </summary>
 public class AppDbContextDeleteBehaviorTests
 {
     [Fact]
-    public void BonLivraisonToCommandeVente_UsesSetNull_NotGlobalRestrict()
+    public void BonLivraisonToCommandeVente_UsesClientSetNull_NotGlobalRestrict()
     {
         using var db = DbContextFactory.Create();
 
@@ -22,11 +23,11 @@ public class AppDbContextDeleteBehaviorTests
             .GetForeignKeys()
             .Single(f => f.PrincipalEntityType.ClrType == typeof(CommandeVente));
 
-        Assert.Equal(DeleteBehavior.SetNull, fk.DeleteBehavior);
+        Assert.Equal(DeleteBehavior.ClientSetNull, fk.DeleteBehavior);
     }
 
     [Fact]
-    public void BonReceptionToCommandeAchat_UsesSetNull_NotGlobalRestrict()
+    public void BonReceptionToCommandeAchat_UsesClientSetNull_NotGlobalRestrict()
     {
         using var db = DbContextFactory.Create();
 
@@ -34,7 +35,7 @@ public class AppDbContextDeleteBehaviorTests
             .GetForeignKeys()
             .Single(f => f.PrincipalEntityType.ClrType == typeof(CommandeAchat));
 
-        Assert.Equal(DeleteBehavior.SetNull, fk.DeleteBehavior);
+        Assert.Equal(DeleteBehavior.ClientSetNull, fk.DeleteBehavior);
     }
 
     [Fact]

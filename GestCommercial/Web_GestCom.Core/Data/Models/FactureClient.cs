@@ -6,7 +6,7 @@ namespace Web_GestCom.Data.Models;
 [Table("factureclient")]
 public class FactureClient : ITenantOwned
 {
-    [Key]
+    // Clé primaire = (CompanyId, code) — voir AppDbContext.ConfigureTenantKeys.
     [Column("numero_factureclient")]
     [MaxLength(20)]
     public string NumeroFactureClient { get; set; } = string.Empty;
@@ -90,13 +90,11 @@ public class FactureClient : ITenantOwned
     public string? NumeroBonLivraisonOrigine { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(CodeClient))]
     public Client? Client { get; set; }
 
     [ForeignKey(nameof(CompanyId))]
     public Company? Company { get; set; }
 
-    [ForeignKey(nameof(NumeroBonLivraisonOrigine))]
     public BonLivraison? BonLivraisonOrigine { get; set; }
 
     public ICollection<LigneFactureClient> Lignes { get; set; } = [];
@@ -104,8 +102,12 @@ public class FactureClient : ITenantOwned
 }
 
 [Table("lignefactureclient")]
-public class LigneFactureClient
+public class LigneFactureClient : ITenantOwned
 {
+    /// <summary>Même entreprise que le document parent — fait partie des liens (CompanyId, code).</summary>
+    [Column("company_id_lignefactureclient")]
+    public int? CompanyId { get; set; }
+
     [Key]
     [Column("id_lignefactureclient")]
     public int Id { get; set; }
@@ -143,16 +145,18 @@ public class LigneFactureClient
     public double MontantHT { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(NumeroFactureClient))]
     public FactureClient? FactureClient { get; set; }
 
-    [ForeignKey(nameof(CodeProduit))]
     public Produit? Produit { get; set; }
 }
 
 [Table("reglementfactureclient")]
-public class ReglementFactureClient
+public class ReglementFactureClient : ITenantOwned
 {
+    /// <summary>Même entreprise que le document parent — fait partie des liens (CompanyId, code).</summary>
+    [Column("company_id_reglementfactureclient")]
+    public int? CompanyId { get; set; }
+
     [Key]
     [Column("id_reglementfactureclient")]
     public int Id { get; set; }
@@ -185,7 +189,6 @@ public class ReglementFactureClient
     public string? Note { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(NumeroFactureClient))]
     public FactureClient? FactureClient { get; set; }
 
     [ForeignKey(nameof(CodeModePayement))]

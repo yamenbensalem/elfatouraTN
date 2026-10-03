@@ -49,7 +49,7 @@ public class ProduitServiceTests
         var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(produit));
 
         Assert.Null(ex);
-        Assert.Equal("Clavier USB Sans Fil", (await db.Produits.FindAsync("PR00001"))!.DesignationProduit);
+        Assert.Equal("Clavier USB Sans Fil", (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.DesignationProduit);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class ProduitServiceTests
         var ex = await Record.ExceptionAsync(() => svc.UpdateAsync(produit));
 
         Assert.Null(ex);
-        Assert.Equal("Clavier USB Sans Fil", (await db.Produits.FindAsync("PR00001"))!.DesignationProduit);
+        Assert.Equal("Clavier USB Sans Fil", (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.DesignationProduit);
     }
 
     // ── Add ─────────────────────────────────────────────────────────────────
@@ -220,11 +220,11 @@ public class ProduitServiceTests
         var svc = CreateService(out var db);
         await svc.AddAsync(MakeProduit("PR00001", "Old Name"));
 
-        var p = await db.Produits.FindAsync("PR00001");
+        var p = await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001");
         p!.DesignationProduit = "New Name";
         await svc.UpdateAsync(p);
 
-        Assert.Equal("New Name", (await db.Produits.FindAsync("PR00001"))!.DesignationProduit);
+        Assert.Equal("New Name", (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.DesignationProduit);
     }
 
     // ── Delete ───────────────────────────────────────────────────────────────
@@ -260,7 +260,7 @@ public class ProduitServiceTests
 
         await svc.UpdateStockAsync("PR00001", 20);
 
-        Assert.Equal(70, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(70, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
     }
 
     [Fact]
@@ -271,7 +271,7 @@ public class ProduitServiceTests
 
         await svc.UpdateStockAsync("PR00001", -15);
 
-        Assert.Equal(35, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(35, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
     }
 
     [Fact]

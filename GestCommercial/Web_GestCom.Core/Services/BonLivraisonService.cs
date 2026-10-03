@@ -152,6 +152,12 @@ public class BonLivraisonService(
         {
             foreach (var ligne in bon.Lignes)
                 await produitService.ApplyStockDeltaAsync(ligne.CodeProduit, ligne.Quantite);
+            // Lien de traçabilité : la base ne le vide plus elle-même (ON DELETE SET NULL est impossible
+            // sur un lien (CompanyId, numéro) dont CompanyId est obligatoire — voir AppDbContext), on le
+            // fait donc ici avant de supprimer, pour le même résultat qu'avant.
+            foreach (var facture in await db.FacturesClient.Where(f => f.NumeroBonLivraisonOrigine == numero).ToListAsync())
+                facture.NumeroBonLivraisonOrigine = null;
+
             db.LignesBonLivraison.RemoveRange(bon.Lignes);
             db.BonsLivraison.Remove(bon);
             await db.SaveChangesGuardedAsync();

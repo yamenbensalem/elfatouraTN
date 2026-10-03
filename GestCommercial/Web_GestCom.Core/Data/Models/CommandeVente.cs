@@ -6,7 +6,7 @@ namespace Web_GestCom.Data.Models;
 [Table("commandevente")]
 public class CommandeVente : ITenantOwned
 {
-    [Key]
+    // Clé primaire = (CompanyId, code) — voir AppDbContext.ConfigureTenantKeys.
     [Column("numero_commandevente")]
     [MaxLength(20)]
     public string NumeroCommandeVente { get; set; } = string.Empty;
@@ -65,7 +65,6 @@ public class CommandeVente : ITenantOwned
     public string? Note { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(CodeClient))]
     public Client? Client { get; set; }
 
     [ForeignKey(nameof(CompanyId))]
@@ -76,8 +75,12 @@ public class CommandeVente : ITenantOwned
 }
 
 [Table("lignecommandevente")]
-public class LigneCommandeVente
+public class LigneCommandeVente : ITenantOwned
 {
+    /// <summary>Même entreprise que le document parent — fait partie des liens (CompanyId, code).</summary>
+    [Column("company_id_lignecommandevente")]
+    public int? CompanyId { get; set; }
+
     [Key]
     [Column("id_lignecommandvente")]
     public int Id { get; set; }
@@ -111,9 +114,7 @@ public class LigneCommandeVente
     public double MontantHT { get; set; }
 
     // Navigation
-    [ForeignKey(nameof(NumeroCommandeVente))]
     public CommandeVente? CommandeVente { get; set; }
 
-    [ForeignKey(nameof(CodeProduit))]
     public Produit? Produit { get; set; }
 }

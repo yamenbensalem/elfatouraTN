@@ -99,7 +99,7 @@ public class ProduitService(
     {
         await ServicePermissionGuard.EnsureAsync(db, currentUser, permissionService, "produits.delete");
 
-        var produit = await db.Produits.FindAsync(code);
+        var produit = await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == code);
         if (produit is not null)
         {
             db.Produits.Remove(produit);
@@ -110,7 +110,7 @@ public class ProduitService(
 
     public async Task UpdateStockAsync(string codeProduit, double delta)
     {
-        var produit = await db.Produits.FindAsync(codeProduit);
+        var produit = await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == codeProduit);
         if (produit is not null)
         {
             produit.Quantite += delta;
@@ -120,7 +120,7 @@ public class ProduitService(
 
     public async Task ApplyStockDeltaAsync(string codeProduit, double delta)
     {
-        var produit = await db.Produits.FindAsync(codeProduit);
+        var produit = await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == codeProduit);
         if (produit is not null)
             produit.Quantite += delta;
     }

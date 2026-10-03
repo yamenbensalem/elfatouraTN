@@ -1,7 +1,9 @@
 @page "/entreprise"
 @rendermode InteractiveServer
-@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@* Admin uniquement : la fiche appartient à une entreprise cliente, le SuperAdmin (sans entreprise) n'en a pas. *@
+@attribute [Authorize(Roles = "Admin")]
 @inject AppDbContext Db
+@inject ITenantService Tenant
 @inject NavigationManager Nav
 
 <PageTitle>Fiche Entreprise – GestCom</PageTitle>
@@ -122,8 +124,19 @@
         if (existing is not null)
             _entreprise = existing;
         else
-            _entreprise = new Entreprise { CodeEntreprise = "ENT001", NomEntreprise = string.Empty };
+            _entreprise = new Entreprise { CodeEntreprise = await NouveauCodeAsync(), NomEntreprise = string.Empty };
         _loading = false;
+    }
+
+    // Le code est la clé primaire, globale à la table : on vérifie donc sa disponibilité toutes
+    // entreprises confondues (IgnoreQueryFilters), pas seulement parmi les fiches visibles.
+    private async Task<string> NouveauCodeAsync()
+    {
+        var racine = Entreprise.CodePourCompany(Tenant.CurrentCompanyId ?? 0);
+        var code = racine;
+        for (var suffixe = 2; await Db.Entreprises.IgnoreQueryFilters().AnyAsync(e => e.CodeEntreprise == code); suffixe++)
+            code = $"{racine}-{suffixe}";
+        return code;
     }
 
     private async Task SaveAsync()

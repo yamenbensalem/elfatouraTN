@@ -92,7 +92,7 @@ public class FactureClientServiceTests
 
         await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 10, 50)], config);
 
-        Assert.Equal(90, (await db.Produits.FindAsync("PR00001"))!.Quantite); // 100 - 10
+        Assert.Equal(90, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite); // 100 - 10
     }
 
     [Fact]
@@ -233,11 +233,11 @@ public class FactureClientServiceTests
         var (svc, db, config) = CreateService();
         await SeedBasicData(db);
         var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 5, 100)], config);
-        Assert.Equal(95, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(95, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
 
         await svc.DeleteAsync(created.NumeroFactureClient);
 
-        Assert.Equal(100, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(100, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
     }
 
     [Fact]
@@ -276,7 +276,7 @@ public class FactureClientServiceTests
         await SeedBasicData(db);
         var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 1, 200, tva: 0)], config);
 
-        Assert.Equal("Non Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
+        Assert.Equal("Non Réglé", (await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient))!.EtatReglement);
     }
 
     [Fact]
@@ -295,7 +295,7 @@ public class FactureClientServiceTests
             CodeModePayement = 1
         });
 
-        Assert.Equal("Partiellement Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
+        Assert.Equal("Partiellement Réglé", (await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient))!.EtatReglement);
     }
 
     [Fact]
@@ -314,7 +314,7 @@ public class FactureClientServiceTests
             CodeModePayement = 1
         });
 
-        Assert.Equal("Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
+        Assert.Equal("Réglé", (await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient))!.EtatReglement);
     }
 
     [Fact]
@@ -332,7 +332,7 @@ public class FactureClientServiceTests
             CodeModePayement = 1
         });
 
-        Assert.Equal("Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
+        Assert.Equal("Réglé", (await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient))!.EtatReglement);
     }
 
     // ── DeleteReglement ──────────────────────────────────────────────────────
@@ -352,12 +352,12 @@ public class FactureClientServiceTests
             CodeModePayement = 1
         });
         var reglementId = (await db.ReglementsFactureClient.FirstAsync()).Id;
-        Assert.Equal("Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
+        Assert.Equal("Réglé", (await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient))!.EtatReglement);
 
         await svc.DeleteReglementAsync(reglementId);
 
         Assert.Equal(0, await db.ReglementsFactureClient.CountAsync());
-        Assert.Equal("Non Réglé", (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.EtatReglement);
+        Assert.Equal("Non Réglé", (await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient))!.EtatReglement);
     }
 
     [Fact]
@@ -437,7 +437,7 @@ public class FactureClientServiceTests
         var lignes = await db.LignesFactureClient.Where(l => l.NumeroFactureClient == facture.NumeroFactureClient).ToListAsync();
         Assert.Single(lignes);
         Assert.Equal(produit.CodeProduit, lignes[0].CodeProduit);
-        Assert.Equal(97, (await db.Produits.FindAsync(produit.CodeProduit))!.Quantite); // unchanged
+        Assert.Equal(97, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == produit.CodeProduit))!.Quantite); // unchanged
     }
 
     [Fact]
@@ -451,7 +451,7 @@ public class FactureClientServiceTests
 
         await svc.CreateFromBonLivraisonAsync(bon.NumeroBonLivraison, config);
 
-        Assert.Equal("Facturé", (await db.BonsLivraison.FindAsync(bon.NumeroBonLivraison))!.EtatFacture);
+        Assert.Equal("Facturé", (await db.BonsLivraison.FirstOrDefaultAsync(e => e.NumeroBonLivraison == bon.NumeroBonLivraison))!.EtatFacture);
     }
 
     [Fact]
@@ -514,7 +514,7 @@ public class FactureClientServiceTests
         var facture = await svc.CreateFromBonLivraisonAsync(bon.NumeroBonLivraison, config);
         await svc.DeleteAsync(facture.NumeroFactureClient);
 
-        Assert.Equal(97, (await db.Produits.FindAsync(produit.CodeProduit))!.Quantite); // still unchanged
+        Assert.Equal(97, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == produit.CodeProduit))!.Quantite); // still unchanged
     }
 
     [Fact]
@@ -530,11 +530,11 @@ public class FactureClientServiceTests
             new() { CodeProduit = produit.CodeProduit, Quantite = 5, PrixUnitaire = 100, Tva = 19, MontantHT = 500 }
         };
         await svc.CreateAsync(facture, lignes, config);
-        var stockAfterCreate = (await db.Produits.FindAsync(produit.CodeProduit))!.Quantite;
+        var stockAfterCreate = (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == produit.CodeProduit))!.Quantite;
 
         await svc.DeleteAsync(facture.NumeroFactureClient);
 
-        Assert.Equal(stockAfterCreate + 5, (await db.Produits.FindAsync(produit.CodeProduit))!.Quantite);
+        Assert.Equal(stockAfterCreate + 5, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == produit.CodeProduit))!.Quantite);
     }
 
     // ── Update ───────────────────────────────────────────────────────────────
@@ -555,13 +555,13 @@ public class FactureClientServiceTests
 
         // Create with PR00001 x5 → stock PR00001 = 95
         var created = await svc.CreateAsync(MakeFacture(), [MakeLigne("PR00001", 5, 100)], config);
-        Assert.Equal(95, (await db.Produits.FindAsync("PR00001"))!.Quantite);
+        Assert.Equal(95, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
 
         // Update to PR00002 x3 → stock PR00001 restored=100, PR00002 decreased=47
         await svc.UpdateAsync(created, [MakeLigne("PR00002", 3, 80)]);
 
-        Assert.Equal(100, (await db.Produits.FindAsync("PR00001"))!.Quantite);
-        Assert.Equal(47,  (await db.Produits.FindAsync("PR00002"))!.Quantite);
+        Assert.Equal(100, (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00001"))!.Quantite);
+        Assert.Equal(47,  (await db.Produits.FirstOrDefaultAsync(e => e.CodeProduit == "PR00002"))!.Quantite);
         // Old line gone, new line saved
         Assert.Equal(1, await db.LignesFactureClient.CountAsync());
         Assert.Equal("PR00002", (await db.LignesFactureClient.FirstAsync()).CodeProduit);
@@ -581,7 +581,7 @@ public class FactureClientServiceTests
 
         await svc.UpdateAsync(created, [MakeLigne("PR00001", 2, 50, tva: 0)]);
 
-        var persisted = await db.FacturesClient.FindAsync(created.NumeroFactureClient);
+        var persisted = await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient);
         Assert.Equal(100, persisted!.MontantHT); // 2 * 50, pas l'ancien 500
         Assert.Equal(100, persisted.MontantTTC);
     }
@@ -596,7 +596,7 @@ public class FactureClientServiceTests
 
         await svc.UpdateAsync(created, [MakeLigne("PR00001", 2, 100)]);
 
-        Assert.Equal(0.6, (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.Timbre);
+        Assert.Equal(0.6, (await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient))!.Timbre);
     }
 
     // ── Retenue à la source ──────────────────────────────────────────────────
@@ -624,7 +624,7 @@ public class FactureClientServiceTests
 
         await svc.UpdateAsync(created, [MakeLigne("PR00001", 4, 100, tva: 0)]); // HT = 400 → retenue = 6
 
-        Assert.Equal(6, (await db.FacturesClient.FindAsync(created.NumeroFactureClient))!.MontantRetenue);
+        Assert.Equal(6, (await db.FacturesClient.FirstOrDefaultAsync(e => e.NumeroFactureClient == created.NumeroFactureClient))!.MontantRetenue);
     }
 
     [Fact]

@@ -35,10 +35,13 @@ public class AppDbContextTenantIsolationTests
     }
 
     [Fact]
-    public async Task SaveChangesAsync_WhenUpdatingWithFreshEntityMissingCompanyId_ThrowsUnauthorizedAccessException()
+    public async Task SaveChangesAsync_WhenUpdatingWithFreshEntityMissingCompanyId_IsRejectedAndLeavesTheRowUntouched()
     {
         // Arrange — this is the exact shape of the bug found in ClientEditForm.SaveAsync before the fix:
         // a brand-new Client built from form fields alone, CompanyId defaulting to null.
+        // Since the key became (CompanyId, code), EF sees such an entity as having no key yet and
+        // treats Update() as an insert: it collides with the existing row (duplicate key) instead
+        // of reaching the cross-tenant check. Still rejected, and the stored row is not modified.
         var dbName = Guid.NewGuid().ToString();
         using (var seed = DbContextFactory.Create(dbName: dbName))
         {
@@ -54,7 +57,9 @@ public class AppDbContextTenantIsolationTests
         context.Clients.Update(freshClient);
 
         // Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => context.SaveChangesAsync());
+        await Assert.ThrowsAnyAsync<Exception>(() => context.SaveChangesAsync());
+        using var verif = DbContextFactory.Create(dbName: dbName);
+        Assert.Equal("Original", (await verif.Clients.SingleAsync(c => c.CodeClient == "CL00001")).NomClient);
     }
 
     [Fact]

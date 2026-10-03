@@ -6,7 +6,7 @@ namespace Web_GestCom.Data.Models;
 [Table("client")]
 public class Client : ITenantOwned
 {
-    [Key]
+    // Clé primaire = (CompanyId, code) — voir AppDbContext.ConfigureTenantKeys.
     [Column("code_client")]
     [MaxLength(20)]
     public string CodeClient { get; set; } = string.Empty;

@@ -88,6 +88,12 @@ public class CommandeAchatService(
             .FirstOrDefaultAsync(c => c.NumeroCommandeAchat == numero)
             ?? throw new InvalidOperationException("Commande introuvable.");
 
+        // Lien de traçabilité : la base ne le vide plus elle-même (ON DELETE SET NULL est impossible
+        // sur un lien (CompanyId, numéro) dont CompanyId est obligatoire — voir AppDbContext), on le
+        // fait donc ici avant de supprimer, pour le même résultat qu'avant.
+        foreach (var bon in await db.BonsReception.Where(b => b.NumeroCommandeAchat == numero).ToListAsync())
+            bon.NumeroCommandeAchat = null;
+
         db.LignesCommandeAchat.RemoveRange(commande.Lignes);
         db.CommandesAchat.Remove(commande);
         await db.SaveChangesGuardedAsync();

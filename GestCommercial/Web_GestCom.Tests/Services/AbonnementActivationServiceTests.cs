@@ -116,6 +116,12 @@ public class AbonnementActivationServiceTests
         Assert.True(compte.Actif);
         Assert.NotEqual("Motdepasse9", compte.PasswordHash);
 
+        // La nouvelle entreprise reçoit sa propre fiche (en-tête des documents), pré-remplie.
+        var fiche = await db.Entreprises.IgnoreQueryFilters().SingleAsync(e => e.CompanyId == entreprise.Id);
+        Assert.Equal("Société Exemple", fiche.NomEntreprise);
+        Assert.Equal("karim@exemple.tn", fiche.Email);
+        Assert.Equal(Entreprise.CodePourCompany(entreprise.Id), fiche.CodeEntreprise);
+
         Assert.True(resultat.EntrepriseCreee);
         Assert.Equal("karim.ben.ali", resultat.LoginCree);
         var email = Assert.Single(emails.Sent);
