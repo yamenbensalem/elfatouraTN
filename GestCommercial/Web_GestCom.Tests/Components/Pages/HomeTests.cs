@@ -19,6 +19,7 @@ public sealed class HomeTests : TestContext
     private readonly Mock<ICurrentUserService>   _currentUser  = new();
     private readonly Mock<IPermissionService>    _permissions  = new();
     private readonly Mock<IAbonnementService>    _abonnements  = new();
+    private readonly Mock<IEntrepriseService>    _entreprise   = new();
 
     public HomeTests()
     {
@@ -30,6 +31,7 @@ public sealed class HomeTests : TestContext
         Services.AddScoped(_ => _currentUser.Object);
         Services.AddSingleton(_permissions.Object);
         Services.AddScoped(_ => _abonnements.Object);
+        Services.AddScoped(_ => _entreprise.Object);
         Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new TarifsOptions()));
 
         // Default: empty collections so each test only sets up what it needs
@@ -332,5 +334,54 @@ public sealed class HomeTests : TestContext
 
         // Assert
         Assert.DoesNotContain("Clients Fondateurs", cut.Markup);
+    }
+
+    // ── Tableau de bord : rappel de fiche entreprise incomplète ───────────
+
+    [Fact]
+    public void Dashboard_WhenAdminAndFicheIncomplete_ShouldShowBannerLinkingToTheFiche()
+    {
+        // Arrange
+        _currentUser.Setup(s => s.IsAdmin).Returns(true);
+        _entreprise.Setup(s => s.IsFicheIncompleteAsync()).ReturnsAsync(true);
+        AuthorizeAdmin();
+
+        // Act
+        var cut = RenderComponent<Home>();
+
+        // Assert
+        cut.WaitForAssertion(() => Assert.Contains("Complétez la fiche de votre entreprise", cut.Markup));
+        Assert.Contains(cut.FindAll("a"), a => a.GetAttribute("href") == "entreprise" && a.TextContent.Contains("Compléter la fiche"));
+    }
+
+    [Fact]
+    public void Dashboard_WhenFicheComplete_ShouldNotShowBanner()
+    {
+        // Arrange
+        _currentUser.Setup(s => s.IsAdmin).Returns(true);
+        _entreprise.Setup(s => s.IsFicheIncompleteAsync()).ReturnsAsync(false);
+        AuthorizeAdmin();
+
+        // Act
+        var cut = RenderComponent<Home>();
+
+        // Assert
+        Assert.DoesNotContain("Complétez la fiche de votre entreprise", cut.Markup);
+    }
+
+    [Fact]
+    public void Dashboard_WhenNotAdmin_ShouldNotShowBannerNorQueryTheFiche()
+    {
+        // Arrange — un employé ne peut pas modifier la fiche : pas d'alerte pour lui.
+        _currentUser.Setup(s => s.IsAdmin).Returns(false);
+        _entreprise.Setup(s => s.IsFicheIncompleteAsync()).ReturnsAsync(true);
+        AuthorizeAdmin();
+
+        // Act
+        var cut = RenderComponent<Home>();
+
+        // Assert
+        Assert.DoesNotContain("Complétez la fiche de votre entreprise", cut.Markup);
+        _entreprise.Verify(s => s.IsFicheIncompleteAsync(), Times.Never);
     }
 }

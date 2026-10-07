@@ -202,6 +202,13 @@ the prospect and `AdminNotificationEmail` on each new request.
   correct because of the tenant query filter, so never add `IgnoreQueryFilters()` there. Its primary
   key `code_entreprise` is global too: new rows use `Entreprise.CodePourCompany(companyId)`
   (`ENT004`...), and `AbonnementActivationService` pre-creates the row for each new customer.
+  `NomEntreprise` and `MatriculeFiscale` are mandatory **in the form** (`EntrepriseForm.SubmitAsync`),
+  deliberately not via `[Required]` on the entity: the row is pre-created before the matricule is
+  known. `IEntrepriseService.IsFicheIncompleteAsync` drives the Admin-only reminder on the dashboard.
+  The logo is uploaded from that form and stored **in the database** as a data URI
+  (`Entreprise.LogoImage`, validated by `Services/LogoImage`: PNG/JPEG/GIF/WebP by magic bytes, 200 KB
+  max, no SVG) — never as a file under `wwwroot`, which is lost on every redeploy. Always render it
+  with `Entreprise.LogoSource` (uploaded logo, else legacy `PathLogo`, else default).
 - **Email failures are invisible to the user by design.** `AbonnementService` catches and logs
   notification errors, and `BrevoEmailTransport` only logs non-2xx responses — the page still says
   "Demande envoyée !". Always check the logs for `Échec d'envoi email via Brevo`. The Brevo account

@@ -9,6 +9,7 @@
 @inject ICurrentUserService CurrentUserService
 @inject IJSRuntime JS
 @inject IAbonnementService AbonnementService
+@inject IEntrepriseService EntrepriseService
 @inject Microsoft.Extensions.Options.IOptions<TarifsOptions> TarifsConfig
 
 @if (!CurrentUserService.IsAuthenticated)
@@ -628,6 +629,18 @@ else
         <p class="text-muted mb-0">Voici un aperçu de votre activité commerciale</p>
     </div>
 
+    @if (_ficheEntrepriseIncomplete)
+    {
+        <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span class="flex-grow-1">
+                <strong>Complétez la fiche de votre entreprise.</strong>
+                Le nom et le matricule fiscal doivent figurer sur vos devis et factures.
+            </span>
+            <a href="entreprise" class="btn btn-sm btn-warning">Compléter la fiche</a>
+        </div>
+    }
+
     <LoadingSpinner Loading="@_loading" />
 
     @if (!_loading)
@@ -892,6 +905,7 @@ else
     private List<Produit> _alerteStock = [];
     private List<(string Label, double Montant)> _caMensuel = [];
 
+    private bool _ficheEntrepriseIncomplete;
     private bool _platformLoading = true;
     private int _nbEntreprises;
     private int _nbUtilisateurs;
@@ -936,6 +950,9 @@ else
             _platformLoading = false;
             return;
         }
+
+        // Seul l'Admin peut modifier la fiche : inutile d'alerter les autres rôles.
+        _ficheEntrepriseIncomplete = CurrentUserService.IsAdmin && await EntrepriseService.IsFicheIncompleteAsync();
 
         var clients      = await ClientService.GetAllAsync();
         var produits     = await ProduitService.GetAllAsync();

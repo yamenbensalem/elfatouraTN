@@ -651,6 +651,12 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE entreprise ADD company_id_entreprise INT NULL REFERENCES company(id_company);
         """);
 
+    // Logo téléversé depuis la fiche Entreprise, stocké en base (data URI) — voir LogoImage.
+    db.Database.ExecuteSqlRaw("""
+        IF COL_LENGTH('entreprise', 'logo_image_entreprise') IS NULL
+            ALTER TABLE entreprise ADD logo_image_entreprise NVARCHAR(MAX) NULL;
+        """);
+
     db.Database.ExecuteSqlRaw("""
         UPDATE t
         SET company_id_entreprise = c.id_company

@@ -61,9 +61,30 @@ public class Entreprise : ITenantOwned
     [Column("logo_entreprise")]
     public string? Logo { get; set; }
 
+    /// <summary>Ancien réglage : chemin ou URL d'un logo. Remplacé par <see cref="LogoImage"/>, conservé pour les fiches existantes.</summary>
     [MaxLength(300)]
     [Column("pathlogo_entreprise")]
     public string? PathLogo { get; set; }
+
+    /// <summary>Logo téléversé, stocké en data URI (voir Web_GestCom.Services.LogoImage) ; prioritaire sur PathLogo.</summary>
+    [Column("logo_image_entreprise")]
+    public string? LogoImage { get; set; }
+
+    /// <summary>Source à mettre dans un &lt;img&gt; : logo téléversé, sinon ancien chemin, sinon logo par défaut de l'application.</summary>
+    [NotMapped]
+    public string LogoSource
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(LogoImage)) return LogoImage;
+            if (string.IsNullOrWhiteSpace(PathLogo)) return "logoApp.png";
+
+            var path = PathLogo.Trim();
+            if (path.StartsWith("~/", StringComparison.Ordinal)) path = path[2..];
+            if (path.StartsWith("./", StringComparison.Ordinal)) path = path[2..];
+            return path;
+        }
+    }
 
     [MaxLength(200)]
     [Column("rib_entreprise")]

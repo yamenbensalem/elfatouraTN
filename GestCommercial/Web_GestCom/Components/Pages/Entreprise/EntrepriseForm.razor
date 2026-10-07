@@ -17,7 +17,7 @@
 
 @if (!_loading)
 {
-    <EditForm Model="_entreprise" OnValidSubmit="SaveAsync">
+    <EditForm EditContext="_editContext" OnSubmit="SubmitAsync">
         <DataAnnotationsValidator />
 
         <div class="card border-0 shadow-sm mb-3">
@@ -30,8 +30,12 @@
                         <ValidationMessage For="() => _entreprise.NomEntreprise" />
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Matricule Fiscale</label>
+                        <label class="form-label">Matricule Fiscale <span class="text-danger">*</span></label>
                         <InputText class="form-control" @bind-Value="_entreprise.MatriculeFiscale" />
+                        <ValidationMessage For="() => _entreprise.MatriculeFiscale" />
+                    </div>
+                    <div class="col-12 form-text mt-1">
+                        Le nom et le matricule fiscal figurent sur tous vos documents (devis, bons, factures).
                     </div>
                 </div>
             </div>
@@ -86,16 +90,31 @@
                         <InputText class="form-control" @bind-Value="_entreprise.Rib" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Chemin du Logo</label>
-                        <InputText class="form-control" @bind-Value="_entreprise.PathLogo"
-                                   placeholder="./logoApp.png" />
-                        <div class="form-text">Exemples: <code>logoApp.png</code>, <code>images/mon-logo.png</code>, <code>https://...</code></div>
-                        <div class="mt-2">
-                            <img src="@GetLogoPreviewPath()"
+                        <label class="form-label" for="logo-fichier">Logo</label>
+                        <InputFile id="logo-fichier" class="form-control" accept="@LogoImage.Accept" OnChange="OnLogoSelectedAsync" />
+                        <div class="form-text">
+                            Image @LogoImage.FormatsAcceptes, @(LogoImage.MaxBytes / 1024) Ko maximum. Il apparaît en en-tête de vos documents.
+                        </div>
+                        @if (_logoErreur is not null)
+                        {
+                            <div class="text-danger small mt-1" role="alert">@_logoErreur</div>
+                        }
+                        <div class="mt-2 d-flex align-items-center gap-2">
+                            <img src="@_entreprise.LogoSource"
                                  alt="Aperçu du logo"
                                  style="max-height:60px;max-width:240px;object-fit:contain;border:1px solid #e5e7eb;border-radius:0.375rem;padding:0.35rem;background:#fff;"
                                  onerror="this.style.display='none';" />
+                            @if (!string.IsNullOrWhiteSpace(_entreprise.LogoImage) || !string.IsNullOrWhiteSpace(_entreprise.PathLogo))
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="RetirerLogo">
+                                    <i class="bi bi-x-lg me-1"></i>Retirer le logo
+                                </button>
+                            }
                         </div>
+                        @if (_logoModifie)
+                        {
+                            <div class="form-text">Cliquez sur « Enregistrer » pour appliquer ce changement.</div>
+                        }
                     </div>
                     <div class="col-12">
                         <label class="form-label">Note</label>
@@ -115,6 +134,10 @@
 
 @code {
     private Entreprise _entreprise = new();
+    private EditContext _editContext = default!;
+    private ValidationMessageStore _messages = default!;
+    private string? _logoErreur;
+    private bool _logoModifie;
     private bool _loading = true;
     private Notification _notif = default!;
 
@@ -125,7 +148,72 @@
             _entreprise = existing;
         else
             _entreprise = new Entreprise { CodeEntreprise = await NouveauCodeAsync(), NomEntreprise = string.Empty };
+        _editContext = new EditContext(_entreprise);
+        _messages = new ValidationMessageStore(_editContext);
         _loading = false;
+    }
+
+    // Nom et matricule fiscal sont exigés ici, à la saisie par le client, et non par [Required] sur
+    // l'entité : la fiche d'une nouvelle entreprise est pré-créée à l'activation de son abonnement,
+    // avant qu'on connaisse son matricule.
+    private async Task SubmitAsync()
+    {
+        _messages.Clear();
+        _entreprise.NomEntreprise = _entreprise.NomEntreprise?.Trim() ?? string.Empty;
+        _entreprise.MatriculeFiscale = _entreprise.MatriculeFiscale?.Trim();
+
+        if (string.IsNullOrWhiteSpace(_entreprise.NomEntreprise))
+            _messages.Add(() => _entreprise.NomEntreprise, "Le nom de l'entreprise est obligatoire.");
+        if (string.IsNullOrWhiteSpace(_entreprise.MatriculeFiscale))
+            _messages.Add(() => _entreprise.MatriculeFiscale!, "Le matricule fiscal est obligatoire.");
+
+        var annotationsValides = _editContext.Validate();
+        _editContext.NotifyValidationStateChanged();
+        if (!annotationsValides || _editContext.GetValidationMessages().Any())
+            return;
+
+        await SaveAsync();
+    }
+
+    private async Task OnLogoSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _logoErreur = null;
+        var fichier = e.File;
+
+        // Refus avant toute lecture : inutile de transférer un fichier qu'on rejettera.
+        if (fichier.Size > LogoImage.MaxBytes)
+        {
+            _logoErreur = $"Le logo dépasse la taille maximale de {LogoImage.MaxBytes / 1024} Ko ({fichier.Size / 1024} Ko). Réduisez l'image puis réessayez.";
+            return;
+        }
+
+        try
+        {
+            using var memoire = new MemoryStream();
+            await using (var flux = fichier.OpenReadStream(LogoImage.MaxBytes))
+                await flux.CopyToAsync(memoire);
+
+            if (!LogoImage.TryBuildDataUri(memoire.ToArray(), out var dataUri, out var erreur))
+            {
+                _logoErreur = erreur;
+                return;
+            }
+
+            _entreprise.LogoImage = dataUri;
+            _logoModifie = true;
+        }
+        catch (IOException)
+        {
+            _logoErreur = "Le fichier n'a pas pu être lu. Réessayez.";
+        }
+    }
+
+    private void RetirerLogo()
+    {
+        _entreprise.LogoImage = null;
+        _entreprise.PathLogo = null;
+        _logoErreur = null;
+        _logoModifie = true;
     }
 
     // Le code est la clé primaire, globale à la table : on vérifie donc sa disponibilité toutes
@@ -149,6 +237,7 @@
             else
                 Db.Entreprises.Add(_entreprise);
             await Db.SaveChangesAsync();
+            _logoModifie = false;
             _notif.ShowSuccess("Fiche entreprise enregistrée.");
         }
         catch (Exception ex)
@@ -157,20 +246,4 @@
         }
     }
 
-    private string GetLogoPreviewPath()
-    {
-        var raw = _entreprise.PathLogo;
-
-        if (string.IsNullOrWhiteSpace(raw))
-            return "logoApp.png";
-
-        var path = raw.Trim();
-
-        if (path.StartsWith("~/", StringComparison.Ordinal))
-            path = path[2..];
-        if (path.StartsWith("./", StringComparison.Ordinal))
-            path = path[2..];
-
-        return path;
-    }
 }
