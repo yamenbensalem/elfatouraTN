@@ -179,10 +179,10 @@ public class AbonnementServiceTests
     }
 
     [Theory]
-    [InlineData("Standard", "Annuel", 390)]
-    [InlineData("Standard", "Mensuel", 45)]
-    [InlineData("Pro", "Annuel", 690)]
-    [InlineData("Pro", "Mensuel", 79)]
+    [InlineData("Standard", "Annuel", 350)]
+    [InlineData("Standard", "Mensuel", 39)]
+    [InlineData("Pro", "Annuel", 590)]
+    [InlineData("Pro", "Mensuel", 69)]
     public async Task CreateDemandeAsync_WhenNoPromo_ShouldStoreCatalogPriceForCycle(string plan, string cycle, double prixAttendu)
     {
         // Arrange
@@ -225,12 +225,12 @@ public class AbonnementServiceTests
         var result = await svc.CreateDemandeAsync(demande);
 
         // Assert
-        Assert.Equal(690, result.PrixApplique);
+        Assert.Equal(590, result.PrixApplique);
     }
 
     [Theory]
-    [InlineData("Standard", "Annuel", 253.5)]
-    [InlineData("Pro", "Mensuel", 51.35)]
+    [InlineData("Standard", "Annuel", 227.5)]
+    [InlineData("Pro", "Mensuel", 44.85)]
     public async Task CreateDemandeAsync_WhenValidPromo_ShouldApplyDiscountAndNormalizeCode(string plan, string cycle, double prixAttendu)
     {
         // Arrange
@@ -310,5 +310,72 @@ public class AbonnementServiceTests
 
         // Assert
         Assert.Null(offre);
+    }
+
+    // ── Application Desktop : trois formules, achat unique ────────────────
+
+    [Theory]
+    [InlineData("DesktopEssentiel", 1000)]
+    [InlineData("DesktopSerenite", 1400)]
+    [InlineData("DesktopEquipe", 2400)]
+    public async Task CreateDemandeAsync_WhenDesktopFormula_ShouldStoreItsOneTimePriceWhateverTheCycle(string plan, double prixAttendu)
+    {
+        // Arrange
+        var svc = CreateService(out _);
+
+        // Act
+        var annuel = await svc.CreateDemandeAsync(NouvelleDemande(plan, "Annuel"));
+        var mensuel = await svc.CreateDemandeAsync(NouvelleDemande(plan, "Mensuel"));
+
+        // Assert
+        Assert.Equal(prixAttendu, annuel.PrixApplique);
+        Assert.Equal(prixAttendu, mensuel.PrixApplique);
+    }
+
+    [Fact]
+    public async Task CreateDemandeAsync_WhenDesktopWithPromoCode_ShouldIgnoreTheCodeAndKeepFullPrice()
+    {
+        // Arrange — les codes promo ne concernent que les abonnements.
+        var svc = CreateService(out var db);
+        AjouterCodeFondateur(db);
+
+        // Act
+        var demande = await svc.CreateDemandeAsync(NouvelleDemande(TarifsOptions.PlanDesktopSerenite, "Annuel", "FONDATEUR2026"));
+
+        // Assert
+        Assert.Null(demande.CodePromo);
+        Assert.Equal(1400, demande.PrixApplique);
+    }
+
+    [Fact]
+    public void TarifsOptions_Defaults_ShouldMatchThePublishedPriceList()
+    {
+        // Act
+        var tarifs = new TarifsOptions();
+
+        // Assert — grille validée le 2026-10-08, tous prix HT.
+        Assert.Equal((350d, 39d), (tarifs.Standard.Annuel, tarifs.Standard.Mensuel));
+        Assert.Equal((590d, 69d), (tarifs.Pro.Annuel, tarifs.Pro.Mensuel));
+        Assert.Equal((1000d, 1, 2, 0), (tarifs.Desktop.Essentiel.Prix, tarifs.Desktop.Essentiel.Postes, tarifs.Desktop.Essentiel.GarantieMois, tarifs.Desktop.Essentiel.MaintenanceIncluseMois));
+        Assert.Null(tarifs.Desktop.Essentiel.MaintenanceAnnuelle);
+        Assert.Equal((1400d, 1, 12, 12, 350d), (tarifs.Desktop.Serenite.Prix, tarifs.Desktop.Serenite.Postes, tarifs.Desktop.Serenite.GarantieMois, tarifs.Desktop.Serenite.MaintenanceIncluseMois, tarifs.Desktop.Serenite.MaintenanceAnnuelle!.Value));
+        Assert.Equal((2400d, 3, 12, 12, 600d), (tarifs.Desktop.Equipe.Prix, tarifs.Desktop.Equipe.Postes, tarifs.Desktop.Equipe.GarantieMois, tarifs.Desktop.Equipe.MaintenanceIncluseMois, tarifs.Desktop.Equipe.MaintenanceAnnuelle!.Value));
+        Assert.Equal(500, tarifs.Desktop.PosteSupplementaire);
+        Assert.Equal(2, tarifs.InitiationHeures);
+        Assert.Empty(tarifs.CodePromoMisEnAvant);
+    }
+
+    [Theory]
+    [InlineData("DesktopEssentiel", true, "Desktop Essentiel")]
+    [InlineData("DesktopSerenite", true, "Desktop Sérénité")]
+    [InlineData("DesktopEquipe", true, "Desktop Équipe")]
+    [InlineData("Pro", false, "Pro")]
+    [InlineData("Enterprise", false, "Enterprise")]
+    public void TarifsOptions_ShouldTellOneTimePurchasesFromSubscriptions(string plan, bool achatUnique, string nom)
+    {
+        // Act + Assert
+        Assert.Equal(achatUnique, TarifsOptions.EstAchatUnique(plan));
+        Assert.Equal(nom, TarifsOptions.NomPlan(plan));
+        Assert.Equal(achatUnique, new TarifsOptions().GetFormuleDesktop(plan) is not null);
     }
 }

@@ -373,27 +373,39 @@
                     <div style="text-align:center; margin-bottom:2.75rem;">
                         <div style="font-size:0.78rem; font-weight:700; color:#2563eb; letter-spacing:0.06em; margin-bottom:0.5rem;">NOS OFFRES</div>
                         <h2 style="font-size:2rem; font-weight:800; color:#111827; letter-spacing:-0.01em; margin:0 0 0.6rem;">Des plans adaptés à votre croissance</h2>
-                        <p style="font-size:1rem; color:#6b7280; margin:0;">Un seul abonnement, toutes les fonctionnalités essentielles. La formule qui vous correspond.</p>
-                        <div role="group" aria-label="Cycle de facturation" style="display:inline-flex; background:#f3f4f8; border:1px solid #e5e7eb; border-radius:2rem; padding:0.25rem; gap:0.25rem; margin-top:1.25rem;">
-                            <button type="button" aria-pressed="@(!_mensuel ? "true" : "false")" @onclick="() => _mensuel = false" style="@StyleBascule(!_mensuel)">Annuel</button>
-                            <button type="button" aria-pressed="@(_mensuel ? "true" : "false")" @onclick="() => _mensuel = true" style="@StyleBascule(_mensuel)">Mensuel</button>
+                        <p style="font-size:1rem; color:#6b7280; margin:0;">@(EstDesktop
+                            ? "Le logiciel installé sur votre ordinateur. Vous payez une fois, la licence reste à vous."
+                            : "Un seul abonnement, toutes les fonctionnalités essentielles. La formule qui vous correspond.")</p>
+                        <div role="group" aria-label="Type d'offre" style="display:inline-flex; flex-wrap:wrap; justify-content:center; background:#f3f4f8; border:1px solid #e5e7eb; border-radius:1.4rem; padding:0.25rem; gap:0.25rem; margin-top:1.25rem;">
+                            <button type="button" aria-pressed="@(_onglet == Onglet.Annuel ? "true" : "false")" @onclick="() => _onglet = Onglet.Annuel" style="@StyleBascule(_onglet == Onglet.Annuel)">Annuel</button>
+                            <button type="button" aria-pressed="@(_onglet == Onglet.Mensuel ? "true" : "false")" @onclick="() => _onglet = Onglet.Mensuel" style="@StyleBascule(_onglet == Onglet.Mensuel)">Mensuel</button>
+                            <button type="button" aria-pressed="@(EstDesktop ? "true" : "false")" @onclick="() => _onglet = Onglet.Desktop" style="@StyleBascule(EstDesktop)">Application Desktop</button>
                         </div>
-                        <div style="font-size:0.78rem; font-weight:700; color:#059669; margin-top:0.5rem;">@(_mensuel ? "Sans engagement" : "Le meilleur prix sur l'année")</div>
+                        <div style="font-size:0.78rem; font-weight:700; color:#059669; margin-top:0.5rem;">@(_onglet switch
+                        {
+                            Onglet.Mensuel => "Sans engagement",
+                            Onglet.Desktop => "Paiement unique, pas d'abonnement",
+                            _ => "Le meilleur prix sur l'année"
+                        })</div>
+                        <div style="font-size:0.78rem; color:#6b7280; margin-top:0.25rem;">Prix hors taxes, TVA en sus</div>
                     </div>
 
+                    @if (!EstDesktop)
+                    {
                     <div class="pricing-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1.25rem; align-items:stretch;">
 
                         <!-- Standard -->
                         <div class="card-hover" style="background:#fff; border:1px solid #f0f0f4; border-radius:1.25rem; padding:1.75rem; display:flex; flex-direction:column;">
                             <h3 style="font-size:1.1rem; font-weight:800; color:#111827; margin:0 0 0.25rem;">Standard</h3>
                             <p style="font-size:0.8rem; color:#6b7280; margin:0 0 1.1rem;">Pour les petites entreprises</p>
-                            <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">@Dt(Prix("Standard"))<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> / @(_mensuel ? "mois" : "an")</span></div>
+                            <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">@Dt(Prix("Standard"))<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> HT / @(_mensuel ? "mois" : "an")</span></div>
                             <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:0.75rem;">@Equivalent("Standard")</div>
                             <div style="align-self:flex-start; font-size:0.78rem; font-weight:700; color:#059669; background:#ecfdf5; border-radius:0.5rem; padding:0.35rem 0.6rem; margin-bottom:1.25rem;">@Tarifs.JoursEssai jours gratuits, sans carte bancaire</div>
                             <ul style="list-style:none; padding:0; margin:0 0 1.25rem; font-size:0.82rem; color:#374151;">
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Ventes, achats, stock</li>
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Devis, commandes, factures, avoirs</li>
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Rapports &amp; retenue à la source</li>
+                                <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Initiation de @Tarifs.InitiationHeures h incluse (au-delà : facturée)</li>
                             </ul>
                             <div style="background:#f9fafb; border-radius:0.6rem; padding:0.7rem 0.85rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; text-align:center;">
                                 <div><div style="font-weight:800; color:#111827;">1</div><div style="font-size:0.68rem; color:#9ca3af;">Admin</div></div>
@@ -408,12 +420,13 @@
                             <span style="position:absolute; top:-0.7rem; left:1.5rem; background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; font-size:0.68rem; font-weight:700; padding:0.3rem 0.75rem; border-radius:1rem;">@(_mensuel ? "Flexible" : "Le plus populaire")</span>
                             <h3 style="font-size:1.1rem; font-weight:800; color:#111827; margin:0.5rem 0 0.25rem;">Pro</h3>
                             <p style="font-size:0.8rem; color:#6b7280; margin:0 0 1.1rem;">Pour les PME en croissance</p>
-                            <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">@Dt(Prix("Pro"))<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> / @(_mensuel ? "mois" : "an")</span></div>
+                            <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">@Dt(Prix("Pro"))<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> HT / @(_mensuel ? "mois" : "an")</span></div>
                             <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:1.25rem;">@Equivalent("Pro")</div>
                             <ul style="list-style:none; padding:0; margin:0 0 1.25rem; font-size:0.82rem; color:#374151;">
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Toutes les fonctionnalités Standard</li>
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Plus de comptes utilisateurs</li>
                                 <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Idéal pour une équipe qui grandit</li>
+                                <li style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>Initiation de @Tarifs.InitiationHeures h incluse (au-delà : facturée)</li>
                             </ul>
                             <div style="background:#eff6ff; border-radius:0.6rem; padding:0.7rem 0.85rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; text-align:center;">
                                 <div><div style="font-weight:800; color:#111827;">2</div><div style="font-size:0.68rem; color:#3b82f6;">Admins</div></div>
@@ -442,15 +455,70 @@
 
                     </div>
 
+                    <div style="text-align:center; margin-top:1.25rem; font-size:0.88rem; color:#6b7280;">
+                        Vous préférez acheter le logiciel une fois pour toutes ?
+                        <button type="button" @onclick="() => _onglet = Onglet.Desktop" style="border:0; background:none; padding:0; font:inherit; font-weight:700; color:#2563eb; cursor:pointer; text-decoration:underline;">Voir l'offre Desktop</button>
+                    </div>
+                    }
+                    else
+                    {
+                    <!-- Application Desktop : licences achetées une fois. Ce qui n'est PAS inclus et ce qui se
+                         passe après la première année sont dits sur chaque carte — c'est ce qui évite les
+                         litiges après la vente. Prix, postes, garantie et maintenance : section Tarifs. -->
+                    <div class="pricing-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1.25rem; align-items:stretch;">
+                        @foreach (var carte in CartesDesktop)
+                        {
+                            <div class="card-hover" @key="carte.Plan" style="@(carte.MiseEnAvant
+                                ? "background:#fff; border:2px solid #2563eb; border-radius:1.25rem; padding:1.75rem; display:flex; flex-direction:column; position:relative; box-shadow:0 10px 30px rgba(37,99,235,0.12);"
+                                : "background:#fff; border:1px solid #f0f0f4; border-radius:1.25rem; padding:1.75rem; display:flex; flex-direction:column;")">
+                                @if (carte.MiseEnAvant)
+                                {
+                                    <span style="position:absolute; top:-0.7rem; left:1.5rem; background:linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; font-size:0.68rem; font-weight:700; padding:0.3rem 0.75rem; border-radius:1rem;">Recommandé</span>
+                                }
+                                <h3 style="font-size:1.1rem; font-weight:800; color:#111827; margin:@(carte.MiseEnAvant ? "0.5rem" : "0") 0 0.25rem;">@carte.Nom</h3>
+                                <p style="font-size:0.8rem; color:#6b7280; margin:0 0 1.1rem;">@carte.SousTitre</p>
+                                <div style="font-size:1.9rem; font-weight:800; color:#111827; line-height:1;">@Dt(carte.Prix)<span style="font-size:0.9rem; font-weight:600; color:#6b7280;"> HT</span></div>
+                                <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:1.25rem;">Paiement unique, licence sans limite de durée</div>
+                                <ul style="list-style:none; padding:0; margin:0 0 1.25rem; font-size:0.82rem; color:#374151;">
+                                    @foreach (var ligne in carte.Inclus)
+                                    {
+                                        <li @key="ligne" style="margin-bottom:0.55rem;"><i class="bi bi-check-circle-fill" style="color:#059669; margin-right:0.4rem;"></i>@ligne</li>
+                                    }
+                                    @foreach (var ligne in carte.NonInclus)
+                                    {
+                                        <li @key="ligne" style="margin-bottom:0.55rem; color:#6b7280;"><i class="bi bi-dash-circle" style="color:#9ca3af; margin-right:0.4rem;"></i>@ligne</li>
+                                    }
+                                </ul>
+                                <div style="background:@(carte.MiseEnAvant ? "#eff6ff" : "#f9fafb"); border-radius:0.6rem; padding:0.7rem 0.85rem; margin-bottom:1.25rem; font-size:0.78rem; color:#6b7280;">
+                                    <strong style="color:#111827;">Ensuite :</strong> @carte.Ensuite
+                                </div>
+                                <a href="/demande-abonnement?plan=@carte.Plan" data-enhance-nav="false" class="btn-hover" style="@(carte.MiseEnAvant
+                                    ? "margin-top:auto; text-align:center; padding:0.75rem; border-radius:0.6rem; background:linear-gradient(135deg,#2563eb,#3b82f6,#6366f1); color:#fff; font-weight:700; font-size:0.88rem; box-shadow:0 4px 15px rgba(59,130,246,0.35);"
+                                    : "margin-top:auto; text-align:center; padding:0.75rem; border-radius:0.6rem; border:1.5px solid #e5e7eb; color:#111827; font-weight:700; font-size:0.88rem;")">Demander la licence</a>
+                            </div>
+                        }
+                    </div>
+                    }
+
                     <!-- Comment ça se passe (honnête : pas de paiement en ligne réel à ce stade, essai accordé manuellement) -->
                     <div style="margin-top:1.75rem; background:#111827; border-radius:1.25rem; padding:1.5rem 1.75rem; color:#fff; display:flex; align-items:center; flex-wrap:wrap; gap:1.5rem;">
                         <i class="bi bi-headset" style="font-size:1.4rem; color:#60a5fa; flex-shrink:0;"></i>
                         <div style="flex:1; min-width:220px; font-size:0.82rem; color:#d1d5db; line-height:1.5;">
                             <strong style="color:#fff; display:block; margin-bottom:0.35rem;">Comment ça marche</strong>
-                            <strong style="color:#fff;">①</strong> Vous choisissez un plan et remplissez le formulaire<br />
-                            <strong style="color:#fff;">②</strong> On vous contacte sous 24-48h pour activer votre compte<br />
-                            <strong style="color:#fff;">③</strong> Standard : @Tarifs.JoursEssai jours gratuits, sans carte bancaire. Pro / Enterprise : paiement par virement avant activation<br />
-                            <strong style="color:#fff;">④</strong> RIB et facture pro forma envoyés par email
+                            @if (EstDesktop)
+                            {
+                                <strong style="color:#fff;">①</strong> @:Vous choisissez une formule et remplissez le formulaire<br />
+                                <strong style="color:#fff;">②</strong> @:On vous contacte sous 24-48h pour convenir de l'installation<br />
+                                <strong style="color:#fff;">③</strong> @:Règlement par virement avant la livraison de la licence (RIB et facture pro forma envoyés par email)<br />
+                                <strong style="color:#fff;">④</strong> @:Installation et initiation de @Tarifs.InitiationHeures h sur votre poste ; la garantie démarre ce jour-là
+                            }
+                            else
+                            {
+                                <strong style="color:#fff;">①</strong> @:Vous choisissez un plan et remplissez le formulaire<br />
+                                <strong style="color:#fff;">②</strong> @:On vous contacte sous 24-48h pour activer votre compte<br />
+                                <strong style="color:#fff;">③</strong> @:Standard : @Tarifs.JoursEssai jours gratuits, sans carte bancaire. Pro / Enterprise : paiement par virement avant activation<br />
+                                <strong style="color:#fff;">④</strong> @:RIB et facture pro forma envoyés par email
+                            }
                         </div>
                         <div style="font-size:0.78rem; color:#9ca3af; flex-shrink:0;">
                             Besoin d'une offre personnalisée ?
@@ -911,18 +979,70 @@ else
     private int _nbUtilisateurs;
 
     // ── Section Tarifs de la page publique ──
-    private bool _mensuel;
+    private enum Onglet { Annuel, Mensuel, Desktop }
+    private Onglet _onglet = Onglet.Annuel;
+    private bool _mensuel => _onglet == Onglet.Mensuel;
+    private bool EstDesktop => _onglet == Onglet.Desktop;
+
+    private sealed record CarteDesktop(
+        string Plan, string Nom, string SousTitre, double Prix, bool MiseEnAvant,
+        string[] Inclus, string[] NonInclus, string Ensuite);
+
+    private static string Duree(int mois) => mois % 12 == 0 ? (mois == 12 ? "1 an" : $"{mois / 12} ans") : $"{mois} mois";
+    private static string Postes(int n) => n == 1 ? "Licence pour 1 poste Windows" : $"Licences pour {n} postes Windows";
+
+    private CarteDesktop[] CartesDesktop
+    {
+        get
+        {
+            var (essentiel, serenite, equipe) = (Tarifs.Desktop.Essentiel, Tarifs.Desktop.Serenite, Tarifs.Desktop.Equipe);
+            return
+            [
+                new(TarifsOptions.PlanDesktopEssentiel, "Essentiel", "Le logiciel, payé une seule fois", essentiel.Prix, false,
+                    [
+                        Postes(essentiel.Postes),
+                        "Ventes, achats, stock, devis et factures",
+                        "Fonctionne sans connexion Internet",
+                        "Vos données restent sur votre ordinateur",
+                        $"Installation et initiation de {Tarifs.InitiationHeures} h incluses",
+                        $"Garantie {Duree(essentiel.GarantieMois)} : anomalies corrigées gratuitement"
+                    ],
+                    ["Mises à jour non incluses", "Assistance et heures d'initiation supplémentaires facturées"],
+                    "toute demande est facturée sur devis."),
+                new(TarifsOptions.PlanDesktopSerenite, "Sérénité", "Le logiciel et un an de tranquillité", serenite.Prix, true,
+                    [
+                        Postes(serenite.Postes),
+                        "Tout le contenu de la formule Essentiel",
+                        $"Garantie {Duree(serenite.GarantieMois)}",
+                        $"Mises à jour incluses pendant {Duree(serenite.MaintenanceIncluseMois)}",
+                        $"Assistance incluse pendant {Duree(serenite.MaintenanceIncluseMois)}"
+                    ],
+                    [],
+                    $"maintenance facultative à {Dt(serenite.MaintenanceAnnuelle ?? 0)} HT / an. Sans elle, votre licence continue de fonctionner."),
+                new(TarifsOptions.PlanDesktopEquipe, "Équipe", "Pour plusieurs postes", equipe.Prix, false,
+                    [
+                        Postes(equipe.Postes),
+                        "Tout le contenu de la formule Sérénité",
+                        $"Garantie {Duree(equipe.GarantieMois)}",
+                        $"Mises à jour et assistance incluses pendant {Duree(equipe.MaintenanceIncluseMois)}",
+                        $"Poste supplémentaire : {Dt(Tarifs.Desktop.PosteSupplementaire)} HT"
+                    ],
+                    [],
+                    $"maintenance facultative à {Dt(equipe.MaintenanceAnnuelle ?? 0)} HT / an pour les {equipe.Postes} postes.")
+            ];
+        }
+    }
     private OffrePromo? _offreFondateur;
     private TarifsOptions Tarifs => TarifsConfig.Value;
     private string Cycle => _mensuel ? CycleFacturation.Mensuel : CycleFacturation.Annuel;
     private static readonly System.Globalization.CultureInfo Fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
 
     private double Prix(string plan) => Tarifs.GetPrix(plan, Cycle) ?? 0;
-    private static string Dt(double montant) => montant.ToString("0.##", Fr) + " DT";
+    private static string Dt(double montant) => montant.ToString("#,0.##", Fr) + " DT";
 
     private string Equivalent(string plan) => _mensuel
-        ? $"soit {Dt(Prix(plan) * 12)} / an"
-        : $"soit {Dt(Prix(plan) / 12)} / mois";
+        ? $"soit {Dt(Prix(plan) * 12)} HT / an"
+        : $"soit {Dt(Prix(plan) / 12)} HT / mois";
 
     private string LienDemande(string plan) => plan == "Enterprise"
         ? "/demande-abonnement?plan=Enterprise"

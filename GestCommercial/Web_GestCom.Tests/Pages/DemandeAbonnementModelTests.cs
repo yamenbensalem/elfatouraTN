@@ -71,40 +71,18 @@ public class DemandeAbonnementModelTests
     }
 
     [Fact]
-    public async Task OnPostAsync_WhenPromoCodeInvalid_ShouldRedisplayFormWithFieldErrorAndNotSave()
+    public async Task OnPostAsync_ShouldPassCycleToService_AndNeverAPromoCode()
     {
-        // Arrange
+        // Arrange — le champ code promo a été retiré du formulaire avec l'offre Fondateurs.
         var model = CreateModel(antiforgeryValid: true, out var abonnementService);
-        abonnementService.Setup(s => s.GetOffrePromoAsync("FAUX")).ReturnsAsync((OffrePromo?)null);
-        model.Input.CodePromo = "FAUX";
-
-        // Act
-        var result = await model.OnPostAsync();
-
-        // Assert
-        Assert.IsType<PageResult>(result);
-        Assert.False(model.DemandeEnvoyee);
-        Assert.Contains(model.ModelState["Input.CodePromo"]!.Errors,
-            e => e.ErrorMessage == AbonnementService.CodePromoInvalideMessage);
-        abonnementService.Verify(s => s.CreateDemandeAsync(It.IsAny<Abonnement>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task OnPostAsync_ShouldPassCycleAndPromoCodeToService()
-    {
-        // Arrange
-        var model = CreateModel(antiforgeryValid: true, out var abonnementService);
-        abonnementService.Setup(s => s.GetOffrePromoAsync("FONDATEUR2026"))
-            .ReturnsAsync(new OffrePromo("FONDATEUR2026", "Client Fondateur", 35, 10, 10));
         model.Input.CycleFacturation = "Mensuel";
-        model.Input.CodePromo = "FONDATEUR2026";
 
         // Act
         await model.OnPostAsync();
 
         // Assert
         abonnementService.Verify(s => s.CreateDemandeAsync(It.Is<Abonnement>(a =>
-            a.CycleFacturation == "Mensuel" && a.CodePromo == "FONDATEUR2026")), Times.Once);
+            a.CycleFacturation == "Mensuel" && a.CodePromo == null)), Times.Once);
     }
 
     [Fact]
@@ -119,5 +97,42 @@ public class DemandeAbonnementModelTests
         // Assert
         Assert.Equal("Standard", model.Input.Plan);
         Assert.Equal("Mensuel", model.Input.CycleFacturation);
+    }
+
+    [Theory]
+    [InlineData("DesktopEssentiel")]
+    [InlineData("DesktopSerenite")]
+    [InlineData("DesktopEquipe")]
+    public async Task DesktopFormula_ShouldBePreselectedFromThePricingPageAndSaved(string plan)
+    {
+        // Arrange
+        var model = CreateModel(antiforgeryValid: true, out var abonnementService);
+
+        // Act
+        model.OnGet(plan, null);
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.Equal(plan, model.Input.Plan);
+        Assert.True(model.DemandeEnvoyee);
+        abonnementService.Verify(s => s.CreateDemandeAsync(It.Is<Abonnement>(a => a.Plan == plan)), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("Desktop")]
+    [InlineData("Gratuit")]
+    public async Task OnPostAsync_WhenUnknownPlan_ShouldRejectWithoutSaving(string plan)
+    {
+        // Arrange — "Desktop" seul n'est pas une formule : il faut l'une des trois.
+        var model = CreateModel(antiforgeryValid: true, out var abonnementService);
+        model.Input.Plan = plan;
+
+        // Act
+        await model.OnPostAsync();
+
+        // Assert
+        Assert.False(model.DemandeEnvoyee);
+        Assert.True(model.ModelState.ContainsKey("Input.Plan"));
+        abonnementService.Verify(s => s.CreateDemandeAsync(It.IsAny<Abonnement>()), Times.Never);
     }
 }

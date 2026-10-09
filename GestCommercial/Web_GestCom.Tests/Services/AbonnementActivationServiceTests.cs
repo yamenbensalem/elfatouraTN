@@ -263,4 +263,30 @@ public class AbonnementActivationServiceTests
         Assert.Contains("existe déjà", ex.Message);
         Assert.Equal(1, await db.Companies.CountAsync(c => c.Name == "Société Exemple"));
     }
+
+    // ── Licence Desktop : rien à créer sur le web ─────────────────────────
+
+    [Fact]
+    public async Task EnregistrerAsync_WhenDesktopLicenceActivated_ShouldCreateNoCompanyNoAccountAndSendNoEmail()
+    {
+        // Arrange — le logiciel tourne chez le client : pas d'entreprise ni de compte sur le web.
+        var svc = CreateService(out var db, out var emails);
+        var demande = AjouterDemande(db);
+        demande.Plan = TarifsOptions.PlanDesktopSerenite;
+        demande.Statut = "Active";
+        demande.NotesAdmin = "Licence livrée le 08/10";
+
+        // Act
+        Assert.False(await svc.CompteRequisAsync(demande));
+        var resultat = await svc.EnregistrerAsync(demande, acces: null, envoyerEmail: true);
+
+        // Assert
+        Assert.False(resultat.EntrepriseCreee);
+        Assert.Null(resultat.LoginCree);
+        Assert.False(resultat.EmailDemande);
+        Assert.Null(demande.CompanyId);
+        Assert.Empty(db.Companies.Where(c => c.Name == "Société Exemple"));
+        Assert.Empty(emails.Sent);
+        Assert.Equal("Active", (await db.Abonnements.AsNoTracking().SingleAsync()).Statut);
+    }
 }

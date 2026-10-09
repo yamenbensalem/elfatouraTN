@@ -105,33 +105,55 @@
                 </svg>
             </div>
             <h1 class="page-title">Demande envoyée !</h1>
-            <p class="page-subtitle">Merci, votre demande d'abonnement au plan <strong>@Model.Input.Plan</strong> a bien été enregistrée.</p>
-            @if (Model.Demande?.PrixApplique is double prixApplique)
-            {
-                var unite = Model.Demande.CycleFacturation == Web_GestCom.Services.CycleFacturation.Mensuel ? "mois" : "an";
-                <p class="page-subtitle">
-                    Tarif retenu : <strong>@prixApplique.ToString("0.##") DT / @unite</strong>
-                    @if (Model.Demande.CodePromo is not null)
-                    {
-                        <span>(code @Model.Demande.CodePromo appliqué, au lieu de @Model.Demande.PrixCatalogue?.ToString("0.##") DT)</span>
-                    }
-                </p>
+            @{
+                var fr = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
+                var nomPlan = Web_GestCom.Services.TarifsOptions.NomPlan(Model.Input.Plan);
+                var formule = Model.Tarifs.GetFormuleDesktop(Model.Input.Plan);
             }
-            @if (Model.Input.Plan == "Standard")
+            @if (formule is not null)
             {
+                <p class="page-subtitle">Merci, votre demande de licence <strong>GestCom @nomPlan</strong> a bien été enregistrée.</p>
+                <p class="page-subtitle">Tarif : <strong>@formule.Prix.ToString("#,0.##", fr) DT HT, paiement unique</strong> (TVA en sus).</p>
                 <ol class="steps">
-                    <li>Notre équipe vous recontacte sous 24 à 48h pour activer votre compte.</li>
-                    <li>Vous disposez de @Model.Tarifs.JoursEssai jours gratuits pour prendre en main l'outil, sans carte bancaire, avec accès immédiat à toutes les fonctionnalités.</li>
-                    <li>À la fin de l'essai, l'abonnement se poursuit par virement bancaire : RIB et facture pro forma vous sont envoyés par email.</li>
+                    <li>Notre équipe vous recontacte sous 24 à 48h pour convenir de l'installation.</li>
+                    <li>Règlement par virement avant la livraison de la licence : RIB et facture pro forma vous sont envoyés par email.</li>
+                    <li>Le logiciel est installé sur @(formule.Postes == 1 ? "votre poste Windows" : $"vos {formule.Postes} postes Windows"), avec @Model.Tarifs.InitiationHeures h d'initiation incluses.</li>
+                    @if (formule.MaintenanceIncluseMois > 0)
+                    {
+                        <li>Pendant @formule.MaintenanceIncluseMois mois, les mises à jour et l'assistance sont incluses, et toute anomalie est corrigée gratuitement. La maintenance peut ensuite être renouvelée (@formule.MaintenanceAnnuelle?.ToString("#,0.##", fr) DT HT / an, facultatif).</li>
+                    }
+                    else
+                    {
+                        <li>Pendant @formule.GarantieMois mois, toute anomalie du logiciel est corrigée gratuitement. Les mises à jour, évolutions et autres demandes sont facturées sur devis.</li>
+                    }
                 </ol>
             }
             else
             {
-                <ol class="steps">
-                    <li>Notre équipe vous recontacte sous 24 à 48h pour finaliser votre abonnement @Model.Input.Plan.</li>
-                    <li>Votre compte administrateur est créé dès l'activation, avec accès immédiat à toutes les fonctionnalités.</li>
-                    <li>Paiement par virement avant activation : RIB et facture pro forma vous sont envoyés par email.</li>
-                </ol>
+                <p class="page-subtitle">Merci, votre demande d'abonnement au plan <strong>@nomPlan</strong> a bien été enregistrée.</p>
+                @if (Model.Demande?.PrixApplique is double prixApplique)
+                {
+                    var unite = Model.Demande.CycleFacturation == Web_GestCom.Services.CycleFacturation.Mensuel ? "mois" : "an";
+                    <p class="page-subtitle">Tarif retenu : <strong>@prixApplique.ToString("#,0.##", fr) DT HT / @unite</strong> (TVA en sus).</p>
+                }
+                @if (Model.Input.Plan == "Standard")
+                {
+                    <ol class="steps">
+                        <li>Notre équipe vous recontacte sous 24 à 48h pour activer votre compte.</li>
+                        <li>Vous disposez de @Model.Tarifs.JoursEssai jours gratuits pour prendre en main l'outil, sans carte bancaire, avec accès immédiat à toutes les fonctionnalités.</li>
+                        <li>Une initiation de @Model.Tarifs.InitiationHeures h est incluse ; au-delà, elle est facturée.</li>
+                        <li>À la fin de l'essai, l'abonnement se poursuit par virement bancaire : RIB et facture pro forma vous sont envoyés par email.</li>
+                    </ol>
+                }
+                else
+                {
+                    <ol class="steps">
+                        <li>Notre équipe vous recontacte sous 24 à 48h pour finaliser votre abonnement @nomPlan.</li>
+                        <li>Votre compte administrateur est créé dès l'activation, avec accès immédiat à toutes les fonctionnalités.</li>
+                        <li>Une initiation de @Model.Tarifs.InitiationHeures h est incluse ; au-delà, elle est facturée.</li>
+                        <li>Paiement par virement avant activation : RIB et facture pro forma vous sont envoyés par email.</li>
+                    </ol>
+                }
             }
         </div>
     }
@@ -168,9 +190,16 @@
                 <div class="col-md-6">
                     <label class="form-label">Plan souhaité *</label>
                     <select asp-for="Input.Plan" class="form-select">
-                        <option value="Standard">Standard</option>
-                        <option value="Pro">Pro</option>
-                        <option value="Enterprise">Enterprise</option>
+                        <optgroup label="Abonnement">
+                            <option value="Standard">Standard</option>
+                            <option value="Pro">Pro</option>
+                            <option value="Enterprise">Enterprise</option>
+                        </optgroup>
+                        <optgroup label="Application Desktop (achat unique)">
+                            <option value="DesktopEssentiel">Desktop Essentiel</option>
+                            <option value="DesktopSerenite">Desktop Sérénité</option>
+                            <option value="DesktopEquipe">Desktop Équipe</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="col-md-6">
@@ -195,15 +224,6 @@
                     </label>
                 </div>
             </div>
-            <div class="mt-3" id="promo-field">
-                <label class="form-label" for="code-promo">Code promotionnel (optionnel)</label>
-                <div class="promo-row">
-                    <input asp-for="Input.CodePromo" id="code-promo" class="form-control" placeholder="Ex. FONDATEUR2026" autocomplete="off" />
-                    <button type="button" class="btn-promo" id="promo-apply">Appliquer</button>
-                </div>
-                <div class="promo-msg" id="promo-msg" aria-live="polite"></div>
-                <span asp-validation-for="Input.CodePromo" class="field-error"></span>
-            </div>
             <div class="mb-3 mt-3">
                 <label class="form-label">Message (optionnel)</label>
                 <textarea asp-for="Input.Message" class="form-control" rows="3" placeholder="Besoin particulier, nombre d'utilisateurs prévu, questions..."></textarea>
@@ -211,11 +231,18 @@
 
             <div class="recap" id="recap" aria-live="polite"></div>
 
-            <div class="info-box">
+            <div class="info-box" id="info-desktop" hidden>
+                <strong>Application Desktop : comment ça se passe ?</strong> Aucun paiement n'est demandé ici. Notre équipe
+                vous recontacte sous 24 à 48h, puis installe le logiciel sur votre poste Windows après règlement par virement.
+                L'installation et @Model.Tarifs.InitiationHeures h d'initiation sont incluses. Prix hors taxes, TVA en sus.
+            </div>
+
+            <div class="info-box" id="info-abonnement">
                 <strong>Comment ça se passe ensuite ?</strong> Aucun paiement n'est demandé ici. Notre équipe vous
                 recontacte sous 24 à 48h pour activer votre compte. <strong>Standard : @Model.Tarifs.JoursEssai jours gratuits</strong>,
                 sans carte bancaire. <strong>Pro et Enterprise : paiement par virement avant activation</strong>
-                (RIB et facture pro forma envoyés par email).
+                (RIB et facture pro forma envoyés par email). Une initiation de @Model.Tarifs.InitiationHeures h est incluse.
+                Prix hors taxes, TVA en sus.
             </div>
 
             <button type="submit" class="btn-submit">Envoyer la demande</button>
@@ -232,58 +259,54 @@
 @if (!Model.DemandeEnvoyee)
 {
     var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var d = Model.Tarifs.Desktop;
     <script>
         (function () {
-            // Affichage uniquement : le prix et la réduction sont recalculés côté serveur à l'envoi.
+            // Affichage uniquement : le prix est recalculé côté serveur à l'envoi.
             var PRIX = {
                 Standard: { Annuel: @Model.Tarifs.Standard.Annuel.ToString(inv), Mensuel: @Model.Tarifs.Standard.Mensuel.ToString(inv) },
                 Pro: { Annuel: @Model.Tarifs.Pro.Annuel.ToString(inv), Mensuel: @Model.Tarifs.Pro.Mensuel.ToString(inv) }
             };
+            var DESKTOP = {
+                DesktopEssentiel: { nom: 'Desktop Essentiel', prix: @d.Essentiel.Prix.ToString(inv), postes: @d.Essentiel.Postes, maintenance: @d.Essentiel.MaintenanceIncluseMois, garantie: @d.Essentiel.GarantieMois },
+                DesktopSerenite: { nom: 'Desktop Sérénité', prix: @d.Serenite.Prix.ToString(inv), postes: @d.Serenite.Postes, maintenance: @d.Serenite.MaintenanceIncluseMois, garantie: @d.Serenite.GarantieMois },
+                DesktopEquipe: { nom: 'Desktop Équipe', prix: @d.Equipe.Prix.ToString(inv), postes: @d.Equipe.Postes, maintenance: @d.Equipe.MaintenanceIncluseMois, garantie: @d.Equipe.GarantieMois }
+            };
             var $ = function (id) { return document.getElementById(id); };
             var plan = document.querySelector('[name="Input.Plan"]');
-            var promo = { pourcentage: 0, libelle: '' };
-            var dt = function (n) { return n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' DT'; };
+            var dt = function (n) { return n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + ' DT HT'; };
             var cycle = function () { return $('cycle-mensuel').checked ? 'Mensuel' : 'Annuel'; };
 
             function render() {
-                var tarif = PRIX[plan.value], recap = $('recap');
+                var tarif = PRIX[plan.value], formule = DESKTOP[plan.value], recap = $('recap');
                 $('cycle-field').hidden = !tarif;
+                $('info-desktop').hidden = !formule;
+                $('info-abonnement').hidden = !!formule;
                 recap.textContent = '';
                 var ligne = function (gauche, droite, classe) {
-                    var d = document.createElement('div'), a = document.createElement('span'), b = document.createElement('span');
-                    a.textContent = gauche; b.textContent = droite; d.className = classe || ''; d.append(a, b); recap.append(d);
+                    var div = document.createElement('div'), a = document.createElement('span'), b = document.createElement('span');
+                    a.textContent = gauche; b.textContent = droite; div.className = classe || ''; div.append(a, b); recap.append(div);
                 };
+                if (formule) {
+                    ligne('GestCom ' + formule.nom + ', ' + (formule.postes === 1 ? '1 poste Windows' : formule.postes + ' postes Windows'), dt(formule.prix));
+                    ligne(formule.maintenance > 0
+                        ? 'Mises à jour et assistance incluses pendant ' + formule.maintenance + ' mois'
+                        : 'Garantie ' + formule.garantie + ' mois, mises à jour non incluses', '');
+                    ligne('Vous payez, une seule fois', dt(formule.prix), 'total');
+                    return;
+                }
                 if (!tarif) { ligne('Tarif', 'Sur devis', 'total'); return; }
                 $('prix-annuel').textContent = dt(tarif.Annuel) + ' / an';
                 $('prix-mensuel').textContent = dt(tarif.Mensuel) + ' / mois';
                 var c = cycle(), base = tarif[c], unite = c === 'Mensuel' ? ' / mois' : ' / an';
-                var remise = base * promo.pourcentage / 100;
                 ligne('Plan ' + plan.value + ', facturation ' + (c === 'Mensuel' ? 'mensuelle' : 'annuelle'), dt(base) + unite);
-                if (promo.pourcentage > 0) ligne((promo.libelle || 'Code promo') + ' (−' + promo.pourcentage + ' %)', '−' + dt(remise), 'disc');
-                ligne('Vous payez', dt(base - remise) + unite, 'total');
-            }
-
-            function verifierPromo() {
-                var code = $('code-promo').value.trim(), msg = $('promo-msg');
-                if (!code) { promo = { pourcentage: 0, libelle: '' }; msg.textContent = ''; msg.className = 'promo-msg'; render(); return; }
-                fetch('?handler=Promo&code=' + encodeURIComponent(code), { headers: { 'Accept': 'application/json' } })
-                    .then(function (r) { return r.json(); })
-                    .then(function (o) {
-                        promo = o.valide ? { pourcentage: o.pourcentage, libelle: o.libelle } : { pourcentage: 0, libelle: '' };
-                        msg.className = 'promo-msg ' + (o.valide ? 'ok' : 'ko');
-                        msg.textContent = o.valide ? 'Code appliqué : −' + o.pourcentage + ' %.' : 'Code promotionnel invalide, expiré ou épuisé.';
-                        render();
-                    })
-                    .catch(function () { msg.className = 'promo-msg ko'; msg.textContent = "Vérification impossible pour le moment. Le code sera vérifié à l'envoi."; });
+                ligne('Vous payez', dt(base) + unite, 'total');
             }
 
             plan.addEventListener('change', render);
             $('cycle-annuel').addEventListener('change', render);
             $('cycle-mensuel').addEventListener('change', render);
-            $('promo-apply').addEventListener('click', verifierPromo);
-            $('code-promo').addEventListener('change', verifierPromo);
             render();
-            if ($('code-promo').value.trim()) verifierPromo();
         })();
     </script>
 }

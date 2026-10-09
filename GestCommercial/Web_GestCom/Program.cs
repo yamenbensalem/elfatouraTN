@@ -378,13 +378,13 @@ using (var scope = app.Services.CreateScope())
         END
         """);
 
-    // Offre de lancement "Clients Fondateurs" : -35 % permanent pour les 10 premières entreprises.
-    // Insérée une seule fois — modifier ensuite la ligne en base pour changer quota ou expiration.
+    // L'offre de lancement "Clients Fondateurs" (-35 %) a été retirée le 2026-10-08 : le code n'est
+    // plus créé, et celui déjà présent dans une base existante est expiré pour qu'il ne puisse plus
+    // être appliqué (la ligne est conservée pour l'historique des demandes qui l'ont utilisé).
     db.Database.ExecuteSqlRaw("""
-        IF NOT EXISTS (SELECT 1 FROM code_promo WHERE code_codepromo = 'FONDATEUR2026')
-            INSERT INTO code_promo (code_codepromo, libelle_codepromo, pourcentage_codepromo,
-                                    max_utilisations_codepromo, date_expiration_codepromo, permanent_codepromo)
-            VALUES ('FONDATEUR2026', N'Client Fondateur — tarif préférentiel permanent', 35, 10, '2026-12-31T23:59:59', 1);
+        UPDATE code_promo SET date_expiration_codepromo = '2026-10-08T00:00:00'
+        WHERE code_codepromo = 'FONDATEUR2026'
+          AND (date_expiration_codepromo IS NULL OR date_expiration_codepromo > '2026-10-08T00:00:00');
         """);
 
     // Add company_id column to utilisateurs if missing

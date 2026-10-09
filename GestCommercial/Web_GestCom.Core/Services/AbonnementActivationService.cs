@@ -54,6 +54,8 @@ public class AbonnementActivationService(
     public async Task<bool> CompteRequisAsync(Abonnement abonnement)
     {
         if (!EstActif(abonnement.Statut)) return false;
+        // Licence Desktop : le logiciel tourne chez le client, il n'a ni entreprise ni compte sur le web.
+        if (TarifsOptions.EstAchatUnique(abonnement.Plan)) return false;
         if (!abonnement.CompanyId.HasValue) return true;
         return !await db.Utilisateurs.AnyAsync(u => u.CompanyId == abonnement.CompanyId && !u.IsSuperAdmin);
     }
@@ -89,7 +91,8 @@ public class AbonnementActivationService(
     {
         var actif = EstActif(abonnement.Statut);
         var compteRequis = await CompteRequisAsync(abonnement);
-        var creerEntreprise = actif && !abonnement.CompanyId.HasValue;
+        var achatUnique = TarifsOptions.EstAchatUnique(abonnement.Plan);
+        var creerEntreprise = actif && !achatUnique && !abonnement.CompanyId.HasValue;
 
         // Toutes les vérifications avant la première écriture.
         if (compteRequis)
@@ -164,7 +167,9 @@ public class AbonnementActivationService(
             throw;
         }
 
-        var emailDemande = envoyerEmail && actif;
+        // L'email de confirmation parle du compte web : sans objet pour une licence Desktop,
+        // dont la livraison (fichier de licence) se fait à la main.
+        var emailDemande = envoyerEmail && actif && !achatUnique;
         if (emailDemande)
             await NotifierClientAsync(abonnement, compteCree is null ? null : acces);
 

@@ -62,6 +62,8 @@ public class AbonnementService(
         demande.PrixCatalogue = tarifsOptions.Value.GetPrix(demande.Plan, demande.CycleFacturation);
         demande.PrixApplique = demande.PrixCatalogue;
         demande.CodePromo = string.IsNullOrWhiteSpace(demande.CodePromo) ? null : demande.CodePromo.Trim().ToUpperInvariant();
+        if (TarifsOptions.EstAchatUnique(demande.Plan))
+            demande.CodePromo = null; // les codes promo ne concernent que les abonnements
         if (demande.CodePromo is not null)
         {
             var offre = await GetOffrePromoAsync(demande.CodePromo)
@@ -97,9 +99,10 @@ public class AbonnementService(
     private static string DecrireTarif(Abonnement demande)
     {
         if (demande.PrixApplique is not double prix) return "sur devis";
+        if (TarifsOptions.EstAchatUnique(demande.Plan)) return $"{prix:0.###} DT HT, paiement unique";
         var unite = demande.CycleFacturation == CycleFacturation.Mensuel ? "mois" : "an";
         var promo = demande.CodePromo is null ? "" : $" (code {demande.CodePromo}, prix catalogue {demande.PrixCatalogue:0.###} DT)";
-        return $"{prix:0.###} DT / {unite}{promo}";
+        return $"{prix:0.###} DT HT / {unite}{promo}";
     }
 
     private async Task NotifyNewDemandeAsync(Abonnement demande)
@@ -111,7 +114,7 @@ public class AbonnementService(
                 "Votre demande d'abonnement GestCom a bien été reçue",
                 $"""
                 <p>Bonjour {demande.NomContact},</p>
-                <p>Nous avons bien reçu votre demande d'abonnement au plan <strong>{demande.Plan}</strong>
+                <p>Nous avons bien reçu votre demande d'abonnement au plan <strong>{TarifsOptions.NomPlan(demande.Plan)}</strong>
                 pour <strong>{demande.NomEntreprise}</strong>.</p>
                 <p>Tarif retenu : <strong>{DecrireTarif(demande)}</strong>.</p>
                 <p>Notre équipe vous recontactera sous 24 à 48h pour finaliser l'activation.</p>
@@ -126,7 +129,7 @@ public class AbonnementService(
                 <ul>
                   <li><strong>Entreprise :</strong> {demande.NomEntreprise}</li>
                   <li><strong>Contact :</strong> {demande.NomContact} ({demande.EmailContact})</li>
-                  <li><strong>Plan :</strong> {demande.Plan}</li>
+                  <li><strong>Plan :</strong> {TarifsOptions.NomPlan(demande.Plan)}</li>
                   <li><strong>Tarif :</strong> {DecrireTarif(demande)}</li>
                   <li><strong>Téléphone :</strong> {demande.TelephoneContact}</li>
                 </ul>

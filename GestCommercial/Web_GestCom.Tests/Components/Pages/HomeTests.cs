@@ -283,59 +283,6 @@ public sealed class HomeTests : TestContext
         return RenderComponent<Home>();
     }
 
-    [Fact]
-    public void Tarifs_WhenAnonymous_ShouldShowAnnualPricesTrialAndFounderBanner()
-    {
-        // Arrange
-        _abonnements.Setup(s => s.GetOffrePromoAsync("FONDATEUR2026"))
-            .ReturnsAsync(new OffrePromo("FONDATEUR2026", "Client Fondateur", 35, 10, 7));
-
-        // Act
-        var cut = RenderAnonymous();
-
-        // Assert
-        var tarifs = cut.Find("#tarifs").TextContent;
-        Assert.Contains("390 DT", tarifs);
-        Assert.Contains("690 DT", tarifs);
-        Assert.Contains("Le plus populaire", tarifs);
-        Assert.Contains("30 jours gratuits", tarifs);
-        Assert.Contains("FONDATEUR2026", tarifs);
-        Assert.Contains("7 / 10 places restantes", tarifs);
-        Assert.DoesNotContain("14 jours", cut.Markup);
-    }
-
-    [Fact]
-    public void Tarifs_WhenSwitchingToMonthly_ShouldShowMonthlyPricesAndCarryCycleInLinks()
-    {
-        // Arrange
-        var cut = RenderAnonymous();
-
-        // Act
-        cut.FindAll("#tarifs button").Single(b => b.TextContent == "Mensuel").Click();
-
-        // Assert
-        var tarifs = cut.Find("#tarifs");
-        Assert.Contains("45 DT", tarifs.TextContent);
-        Assert.Contains("79 DT", tarifs.TextContent);
-        Assert.Contains("Flexible", tarifs.TextContent);
-        Assert.Contains("Sans engagement", tarifs.TextContent);
-        Assert.DoesNotContain("Le plus populaire", tarifs.TextContent);
-        Assert.Contains(tarifs.QuerySelectorAll("a"), a => a.GetAttribute("href") == "/demande-abonnement?plan=Pro&cycle=Mensuel");
-    }
-
-    [Fact]
-    public void Tarifs_WhenPromoExhausted_ShouldHideFounderBanner()
-    {
-        // Arrange
-        _abonnements.Setup(s => s.GetOffrePromoAsync(It.IsAny<string?>())).ReturnsAsync((OffrePromo?)null);
-
-        // Act
-        var cut = RenderAnonymous();
-
-        // Assert
-        Assert.DoesNotContain("Clients Fondateurs", cut.Markup);
-    }
-
     // ── Tableau de bord : rappel de fiche entreprise incomplète ───────────
 
     [Fact]
@@ -383,5 +330,104 @@ public sealed class HomeTests : TestContext
         // Assert
         Assert.DoesNotContain("Complétez la fiche de votre entreprise", cut.Markup);
         _entreprise.Verify(s => s.IsFicheIncompleteAsync(), Times.Never);
+    }
+
+    // ── Page publique : trois onglets, prix HT ────────────────────────────
+
+    private static void Cliquer(IRenderedComponent<Home> cut, string onglet)
+        => cut.FindAll("#tarifs button").Single(b => b.TextContent == onglet).Click();
+
+    [Fact]
+    public void Tarifs_OnAnnualTab_ShouldShowNewPricesExcludingTaxTrialAndInitiation()
+    {
+        // Act
+        var cut = RenderAnonymous();
+
+        // Assert
+        var tarifs = cut.Find("#tarifs").TextContent;
+        Assert.Contains("350 DT HT / an", tarifs);
+        Assert.Contains("590 DT HT / an", tarifs);
+        Assert.Contains("Prix hors taxes, TVA en sus", tarifs);
+        Assert.Contains("Le plus populaire", tarifs);
+        Assert.Contains("30 jours gratuits", tarifs);
+        Assert.Contains("Initiation de 2 h incluse", tarifs);
+        Assert.DoesNotContain("390", tarifs);
+        Assert.DoesNotContain("690", tarifs);
+    }
+
+    [Fact]
+    public void Tarifs_WhenSwitchingToMonthly_ShouldShowMonthlyPricesAndCarryCycleInLinks()
+    {
+        // Arrange
+        var cut = RenderAnonymous();
+
+        // Act
+        Cliquer(cut, "Mensuel");
+
+        // Assert
+        var tarifs = cut.Find("#tarifs");
+        Assert.Contains("39 DT HT / mois", tarifs.TextContent);
+        Assert.Contains("69 DT HT / mois", tarifs.TextContent);
+        Assert.Contains("Flexible", tarifs.TextContent);
+        Assert.Contains("Sans engagement", tarifs.TextContent);
+        Assert.DoesNotContain("Le plus populaire", tarifs.TextContent);
+        Assert.Contains(tarifs.QuerySelectorAll("a"), a => a.GetAttribute("href") == "/demande-abonnement?plan=Pro&cycle=Mensuel");
+    }
+
+    [Fact]
+    public void Tarifs_OnDesktopTab_ShouldShowThreeFormulasWithWhatHappensAfterTheFirstYear()
+    {
+        // Arrange
+        var cut = RenderAnonymous();
+
+        // Act
+        Cliquer(cut, "Application Desktop");
+
+        // Assert
+        var tarifs = cut.Find("#tarifs");
+        var texte = tarifs.TextContent.Replace('\u202f', ' ').Replace('\u00a0', ' ');
+        Assert.Contains("1 000 DT HT", texte);
+        Assert.Contains("1 400 DT HT", texte);
+        Assert.Contains("2 400 DT HT", texte);
+        Assert.Contains("Recommandé", texte);
+        Assert.Contains("Paiement unique, pas d'abonnement", texte);
+        Assert.Contains("Garantie 2 mois", texte);
+        Assert.Contains("Mises à jour non incluses", texte);
+        Assert.Contains("Installation et initiation de 2 h incluses", texte);
+        Assert.Contains("maintenance facultative à 350 DT HT / an", texte);
+        Assert.Contains("Licences pour 3 postes Windows", texte);
+        Assert.Contains("Poste supplémentaire : 500 DT HT", texte);
+        // Les abonnements ne sont plus affichés sur cet onglet.
+        Assert.DoesNotContain("30 jours gratuits, sans carte bancaire", cut.FindAll("#tarifs .pricing-grid").Single().TextContent);
+        var liens = tarifs.QuerySelectorAll(".pricing-grid a").Select(a => a.GetAttribute("href")).ToList();
+        Assert.Equal(["/demande-abonnement?plan=DesktopEssentiel", "/demande-abonnement?plan=DesktopSerenite", "/demande-abonnement?plan=DesktopEquipe"], liens);
+    }
+
+    [Fact]
+    public void Tarifs_LinkUnderSubscriptions_ShouldOpenTheDesktopTab()
+    {
+        // Arrange
+        var cut = RenderAnonymous();
+
+        // Act
+        Cliquer(cut, "Voir l'offre Desktop");
+
+        // Assert
+        Assert.Contains("Sérénité", cut.Find("#tarifs").TextContent);
+    }
+
+    [Fact]
+    public void Tarifs_ShouldNoLongerShowTheFounderDiscount()
+    {
+        // Arrange — même si un code existait encore en base, la bannière n'est plus demandée.
+        _abonnements.Setup(s => s.GetOffrePromoAsync(It.IsAny<string?>()))
+            .ReturnsAsync((string? code) => string.IsNullOrEmpty(code) ? null : new OffrePromo(code, "Client Fondateur", 35, 10, 7));
+
+        // Act
+        var cut = RenderAnonymous();
+
+        // Assert
+        Assert.DoesNotContain("Fondateur", cut.Markup);
+        Assert.DoesNotContain("places restantes", cut.Markup);
     }
 }

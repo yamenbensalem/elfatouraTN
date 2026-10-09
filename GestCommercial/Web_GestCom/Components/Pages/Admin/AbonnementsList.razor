@@ -61,7 +61,7 @@
                                 }
                             </td>
                             <td>
-                                <span class="badge bg-secondary">@a.Plan</span>
+                                <span class="badge bg-secondary">@TarifsOptions.NomPlan(a.Plan)</span>
                                 <div class="small text-muted">@DecrireTarif(a)</div>
                                 @if (a.CodePromo is not null)
                                 {
@@ -105,7 +105,7 @@
                                 <strong>Contact :</strong> @_editing.NomContact — @_editing.EmailContact
                                 @(string.IsNullOrWhiteSpace(_editing.TelephoneContact) ? "" : $" — {_editing.TelephoneContact}")
                             </div>
-                            <div class="col-md-6"><strong>Plan demandé :</strong> @_editing.Plan — @DecrireTarif(_editing)@(_editing.CodePromo is null ? "" : $" (code {_editing.CodePromo}, catalogue {_editing.PrixCatalogue:0.##} DT)")</div>
+                            <div class="col-md-6"><strong>Plan demandé :</strong> @TarifsOptions.NomPlan(_editing.Plan) — @DecrireTarif(_editing)@(_editing.CodePromo is null ? "" : $" (code {_editing.CodePromo}, catalogue {_editing.PrixCatalogue:0.##} DT)")</div>
                             @if (!string.IsNullOrWhiteSpace(_editing.Message))
                             {
                                 <div class="col-12"><strong>Message :</strong> @_editing.Message</div>
@@ -157,7 +157,19 @@
                                 <label class="form-label">Notes internes</label>
                                 <InputTextArea class="form-control" rows="3" @bind-Value="_editing.NotesAdmin" />
                             </div>
-                            @if (EstActif)
+                            @if (TarifsOptions.EstAchatUnique(_editing.Plan))
+                            {
+                                <div class="col-12">
+                                    <div class="alert alert-secondary small mb-0">
+                                        <i class="bi bi-pc-display me-1"></i>
+                                        <strong>Licence @TarifsOptions.NomPlan(_editing.Plan).</strong> Aucune entreprise ni compte web
+                                        n'est créé, et aucun email automatique n'est envoyé : installez le logiciel chez le client,
+                                        générez son fichier de licence, puis renseignez la date de début (elle fait courir la
+                                        garantie et la maintenance incluse) et la date d'échéance de la maintenance.
+                                    </div>
+                                </div>
+                            }
+                            else if (EstActif)
                             {
                                 <div class="col-12">
                                     <div class="border rounded p-3 bg-light">
@@ -311,7 +323,9 @@
     private int JoursEssai => TarifsConfig.Value.JoursEssai;
 
     private static string DecrireTarif(Abonnement a) => a.PrixApplique is double prix
-        ? $"{prix:0.##} DT / {(a.CycleFacturation == CycleFacturation.Mensuel ? "mois" : "an")}"
+        ? TarifsOptions.EstAchatUnique(a.Plan)
+            ? $"{prix:0.##} DT HT, paiement unique"
+            : $"{prix:0.##} DT HT / {(a.CycleFacturation == CycleFacturation.Mensuel ? "mois" : "an")}"
         : a.Plan == "Enterprise" ? "Sur devis" : "Prix non enregistré"; // demandes antérieures aux prix figés
 
     private string GetStatutLabel(string statut) => statut switch

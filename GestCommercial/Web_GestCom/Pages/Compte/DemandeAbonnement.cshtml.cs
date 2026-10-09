@@ -22,7 +22,11 @@ public class DemandeAbonnementModel(
     IAntiforgery antiforgery,
     IOptions<TarifsOptions> tarifsOptions) : PageModel
 {
-    private static readonly string[] PlansValides = ["Standard", "Pro", "Enterprise"];
+    private static readonly string[] PlansValides =
+    [
+        "Standard", "Pro", "Enterprise",
+        TarifsOptions.PlanDesktopEssentiel, TarifsOptions.PlanDesktopSerenite, TarifsOptions.PlanDesktopEquipe
+    ];
 
     public const string SessionChangeeMessage =
         "Votre session a changé depuis l'ouverture de cette page. Vérifiez vos informations puis renvoyez le formulaire.";
@@ -44,18 +48,6 @@ public class DemandeAbonnementModel(
         Input.CycleFacturation = CycleFacturation.Normaliser(cycle);
     }
 
-    /// <summary>
-    /// Vérification du code promo pendant la saisie (appelée par le script de la page). Purement
-    /// indicative : le code est revalidé et le prix recalculé côté serveur à la soumission.
-    /// </summary>
-    public async Task<IActionResult> OnGetPromoAsync(string? code)
-    {
-        var offre = await abonnementService.GetOffrePromoAsync(code);
-        return new JsonResult(offre is null
-            ? new { valide = false, pourcentage = 0d, libelle = (string?)null }
-            : new { valide = true, pourcentage = offre.PourcentageReduction, libelle = (string?)offre.Libelle });
-    }
-
     public async Task<IActionResult> OnPostAsync()
     {
         // Jeton invalide → on réaffiche le formulaire (saisie conservée, nouveau jeton émis pour
@@ -70,10 +62,6 @@ public class DemandeAbonnementModel(
         if (!PlansValides.Contains(Input.Plan))
             ModelState.AddModelError("Input.Plan", "Plan inconnu.");
 
-        if (!string.IsNullOrWhiteSpace(Input.CodePromo)
-            && await abonnementService.GetOffrePromoAsync(Input.CodePromo) is null)
-            ModelState.AddModelError("Input.CodePromo", AbonnementService.CodePromoInvalideMessage);
-
         if (!ModelState.IsValid) return Page();
 
         Demande = await abonnementService.CreateDemandeAsync(new Abonnement
@@ -84,7 +72,6 @@ public class DemandeAbonnementModel(
             TelephoneContact = string.IsNullOrWhiteSpace(Input.TelephoneContact) ? null : Input.TelephoneContact.Trim(),
             Plan = Input.Plan,
             CycleFacturation = CycleFacturation.Normaliser(Input.CycleFacturation),
-            CodePromo = string.IsNullOrWhiteSpace(Input.CodePromo) ? null : Input.CodePromo.Trim(),
             ModePaiementSouhaite = Input.ModePaiementSouhaite,
             Message = string.IsNullOrWhiteSpace(Input.Message) ? null : Input.Message.Trim()
         });
@@ -119,10 +106,6 @@ public class DemandeAbonnementModel(
         public string Plan { get; set; } = "Standard";
 
         public string CycleFacturation { get; set; } = "Annuel";
-
-        [MaxLength(50)]
-        [Display(Name = "Code promotionnel")]
-        public string? CodePromo { get; set; }
 
         [Display(Name = "Mode de paiement souhaité")]
         public string? ModePaiementSouhaite { get; set; }
