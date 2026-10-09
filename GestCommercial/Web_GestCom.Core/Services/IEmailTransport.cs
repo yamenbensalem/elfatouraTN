@@ -8,7 +8,12 @@ namespace Web_GestCom.Services;
 /// </summary>
 public interface IEmailTransport
 {
-    Task SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken ct = default);
+    /// <returns>
+    /// true si le fournisseur a accepté l'email ; false s'il l'a refusé ou si aucun fournisseur
+    /// n'est configuré. Les envois "au passage" (confirmation de demande) ignorent ce résultat ;
+    /// la relance manuelle s'en sert pour ne jamais annoncer au SuperAdmin un envoi qui n'a pas eu lieu.
+    /// </returns>
+    Task<bool> SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken ct = default);
 }
 
 public sealed class EmailOptions

@@ -662,6 +662,44 @@ else if (CurrentUserService.IsSuperAdmin)
                     </div>
                 </div>
             </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="card kpi-card h-100">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrap" style="background:#dcfce7">
+                            <i class="bi bi-check2-circle" style="color:#059669;font-size:1.4rem"></i>
+                        </div>
+                        <div>
+                            <div class="kpi-value">@_nbClientsActifs</div>
+                            <div class="kpi-label">Clients actifs</div>
+                        </div>
+                    </div>
+                    <div class="kpi-footer">
+                        <a href="admin/demandes-abonnement" class="text-decoration-none text-muted small">
+                            <i class="bi bi-arrow-right me-1"></i>@_nbDemandesATraiter demande(s) à traiter
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="card kpi-card h-100">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrap" style="background:@(_nbASuivre > 0 ? "#fef3c7" : "#f3f4f6")">
+                            <i class="bi bi-bell" style="color:@(_nbASuivre > 0 ? "#b45309" : "#9ca3af");font-size:1.4rem"></i>
+                        </div>
+                        <div>
+                            <div class="kpi-value">@_nbASuivre</div>
+                            <div class="kpi-label">Échéances à suivre</div>
+                        </div>
+                    </div>
+                    <div class="kpi-footer">
+                        <a href="admin/demandes-abonnement" class="text-decoration-none text-muted small">
+                            <i class="bi bi-arrow-right me-1"></i>@_nbARelancer à relancer · @_nbExpires échéance(s) dépassée(s) · @_nbSuspendus suspendu(s) · @_nbDatesManquantes sans dates
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="card border-0 shadow-sm">
@@ -974,6 +1012,8 @@ else
     private List<(string Label, double Montant)> _caMensuel = [];
 
     private bool _ficheEntrepriseIncomplete;
+    private int _nbClientsActifs, _nbDemandesATraiter, _nbARelancer, _nbExpires, _nbSuspendus, _nbDatesManquantes;
+    private int _nbASuivre => _nbARelancer + _nbExpires + _nbSuspendus + _nbDatesManquantes;
     private bool _platformLoading = true;
     private int _nbEntreprises;
     private int _nbUtilisateurs;
@@ -1067,6 +1107,17 @@ else
             var companies = await CompanyService.GetAllAsync();
             _nbEntreprises  = companies.Count;
             _nbUtilisateurs = companies.Sum(c => c.Utilisateurs.Count);
+
+            // Suivi des abonnements : donnée de plateforme (pas une donnée métier d'un client).
+            var suivis = (await AbonnementService.GetAllAsync())
+                .Select(a => (Abonnement: a, SuiviAbonnement.Evaluer(a, DateTime.Today).Etat))
+                .ToList();
+            _nbClientsActifs = suivis.Count(x => AbonnementActivationService.EstActif(x.Abonnement.Statut));
+            _nbDemandesATraiter = suivis.Count(x => x.Abonnement.Statut is "EnAttente" or "Contactee");
+            _nbARelancer = suivis.Count(x => x.Etat == EtatSuivi.ARelancer);
+            _nbExpires = suivis.Count(x => x.Etat == EtatSuivi.Expire);
+            _nbSuspendus = suivis.Count(x => x.Etat == EtatSuivi.Suspendu);
+            _nbDatesManquantes = suivis.Count(x => x.Etat == EtatSuivi.DatesManquantes);
             _platformLoading = false;
             return;
         }

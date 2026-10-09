@@ -84,6 +84,10 @@ public class Abonnement
     [Column("date_traitement_abonnement")]
     public DateTime? DateTraitement { get; set; }
 
+    /// <summary>Dernier email de relance d'échéance réellement accepté par le fournisseur d'email (UTC).</summary>
+    [Column("date_relance_abonnement")]
+    public DateTime? DateDerniereRelance { get; set; }
+
     [MaxLength(1000)]
     [Column("notes_admin_abonnement")]
     public string? NotesAdmin { get; set; }

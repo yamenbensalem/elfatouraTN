@@ -15,10 +15,10 @@ public class AbonnementActivationServiceTests
     {
         public List<(string To, string Subject, string Html)> Sent { get; } = [];
 
-        public Task SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken ct = default)
+        public Task<bool> SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken ct = default)
         {
             Sent.Add((toEmail, subject, htmlBody));
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
     }
 

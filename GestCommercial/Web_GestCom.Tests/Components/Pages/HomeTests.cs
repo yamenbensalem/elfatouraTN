@@ -42,6 +42,7 @@ public sealed class HomeTests : TestContext
         _factures.Setup(s => s.GetAllAsync(false, null)).ReturnsAsync([]);
         _factures.Setup(s => s.GetAllAsync(true, null)).ReturnsAsync([]);
         _companies.Setup(s => s.GetAllAsync()).ReturnsAsync([]);
+        _abonnements.Setup(s => s.GetAllAsync()).ReturnsAsync([]);
         _currentUser.Setup(s => s.Login).Returns("testuser");
         _currentUser.Setup(s => s.IsAuthenticated).Returns(true);
         _currentUser.Setup(s => s.IsSuperAdmin).Returns(false);

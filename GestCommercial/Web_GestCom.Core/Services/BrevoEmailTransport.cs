@@ -13,7 +13,7 @@ public sealed class BrevoEmailTransport(HttpClient http, IOptions<EmailOptions> 
 {
     private readonly EmailOptions _options = options.Value;
 
-    public async Task SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken ct = default)
+    public async Task<bool> SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken ct = default)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email");
         request.Headers.Add("api-key", _options.BrevoApiKey);
@@ -31,6 +31,9 @@ public sealed class BrevoEmailTransport(HttpClient http, IOptions<EmailOptions> 
         {
             var body = await response.Content.ReadAsStringAsync(ct);
             logger.LogError("Échec d'envoi email via Brevo ({Status}) à {ToEmail} : {Body}", response.StatusCode, toEmail, body);
+            return false;
         }
+
+        return true;
     }
 }

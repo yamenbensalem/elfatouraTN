@@ -25,6 +25,12 @@ public interface IAbonnementService
     /// la bannière de la page tarifs.
     /// </summary>
     Task<OffrePromo?> GetOffrePromoAsync(string? code);
+
+    /// <summary>
+    /// Envoie au client un email de rappel d'échéance. Retourne false, sans rien enregistrer, si
+    /// l'email n'a pas pu partir ; sinon enregistre la date de relance.
+    /// </summary>
+    Task<bool> RelancerAsync(int abonnementId);
     Task UpdateAsync(Abonnement abonnement);
     Task DeleteAsync(Abonnement abonnement);
 }
@@ -94,6 +100,76 @@ public class AbonnementService(
         if (placesRestantes <= 0) return null;
 
         return new OffrePromo(promo.Code, promo.Libelle, promo.PourcentageReduction, promo.MaxUtilisations, placesRestantes);
+    }
+
+    public async Task<bool> RelancerAsync(int abonnementId)
+    {
+        var abonnement = await db.Abonnements.FirstOrDefaultAsync(a => a.Id == abonnementId)
+            ?? throw new InvalidOperationException("Demande introuvable.");
+        if (abonnement.DateEcheance is not DateTime echeance || !AbonnementActivationService.EstActif(abonnement.Statut))
+            throw new InvalidOperationException("Ce client n'a pas d'échéance à rappeler : activez la demande et renseignez ses dates.");
+
+        static string html(string? valeur) => System.Net.WebUtility.HtmlEncode(valeur) ?? "";
+        var expire = echeance.Date < DateTime.Today;
+        var desktop = TarifsOptions.EstAchatUnique(abonnement.Plan);
+        var nomPlan = TarifsOptions.NomPlan(abonnement.Plan);
+        var contact = emailOptions.Value.AdminNotificationEmail;
+
+        // Abonnement : dire au client quand son accès sera coupé (ou qu'il l'est déjà).
+        var dernierJour = echeance.Date.AddDays(AccesEntreprise.JoursGracePour(abonnement));
+        var suspension = desktop ? ""
+            : dernierJour < DateTime.Today
+                ? "<p><strong>L'accès à votre espace est suspendu.</strong> Il est rétabli dès réception du règlement, vos données sont conservées.</p>"
+                : $"<p>Sans règlement, l'accès à votre espace sera suspendu après le <strong>{dernierJour:dd/MM/yyyy}</strong>. Vos données sont conservées.</p>";
+
+        string sujet, corps;
+        if (desktop)
+        {
+            var maintenance = tarifsOptions.Value.GetFormuleDesktop(abonnement.Plan)?.MaintenanceAnnuelle;
+            sujet = "GestCom : fin de votre période de maintenance";
+            corps = $"""
+                <p>La période de garantie et de maintenance de votre licence <strong>GestCom {html(nomPlan)}</strong>
+                {(expire ? "s'est terminée" : "se termine")} le <strong>{echeance:dd/MM/yyyy}</strong>.</p>
+                <p>Votre licence continue de fonctionner. Sans maintenance, les mises à jour et les interventions
+                sont facturées sur devis.</p>
+                {(maintenance is double prix ? $"<p>Vous pouvez la prolonger d'un an pour <strong>{prix:0.###} DT HT</strong>.</p>" : "")}
+                """;
+        }
+        else if (abonnement.Statut == "Essai")
+        {
+            sujet = "GestCom : votre essai gratuit arrive à son terme";
+            corps = $"""
+                <p>Votre essai gratuit de GestCom {(expire ? "s'est terminé" : "se termine")} le <strong>{echeance:dd/MM/yyyy}</strong>.</p>
+                <p>Pour continuer à utiliser votre espace <strong>{html(abonnement.NomEntreprise)}</strong> sans interruption,
+                il suffit de confirmer votre abonnement {html(nomPlan)} ({DecrireTarif(abonnement)}).</p>
+                {suspension}
+                """;
+        }
+        else
+        {
+            sujet = "GestCom : votre abonnement arrive à échéance";
+            corps = $"""
+                <p>Votre abonnement <strong>GestCom {html(nomPlan)}</strong> pour <strong>{html(abonnement.NomEntreprise)}</strong>
+                {(expire ? "est arrivé" : "arrive")} à échéance le <strong>{echeance:dd/MM/yyyy}</strong>.</p>
+                <p>Montant du renouvellement : <strong>{DecrireTarif(abonnement)}</strong>, TVA en sus.</p>
+                {suspension}
+                """;
+        }
+
+        var envoye = await emailTransport.SendAsync(
+            abonnement.EmailContact, abonnement.NomContact, sujet,
+            $"""
+            <p>Bonjour {html(abonnement.NomContact)},</p>
+            {corps}
+            <p>Pour le règlement par virement, écrivez-nous à <a href="mailto:{contact}">{contact}</a> :
+            nous vous envoyons le RIB et la facture pro forma.</p>
+            <p>— L'équipe GestCom</p>
+            """);
+        if (!envoye) return false;
+
+        abonnement.DateDerniereRelance = DateTime.UtcNow;
+        await db.SaveChangesGuardedAsync();
+        return true;
     }
 
     private static string DecrireTarif(Abonnement demande)

@@ -146,6 +146,32 @@ customer (credentials on first activation, a plain "mis à jour" email afterward
 untick it). Never call `AbonnementService.UpdateAsync` directly from that screen again — it would skip
 all of this. Links in customer emails use `Email:AppUrl`.
 
+**Access suspension** (`Services/AccesEntreprise.cs` — the single place holding the rule, decided
+2026-10-09): past the due date a paying customer keeps access for `AccesEntreprise.JoursGrace` (14)
+days, then the whole company is blocked — no read-only mode — until the SuperAdmin records the payment
+by moving `DateEcheance` forward (access comes back immediately, nothing else to do). A free trial has
+no grace: blocked the day after it ends. Never blocked: a company with no active subscription, an
+active customer **with no due date** (otherwise every pre-existing customer would have been cut at
+deployment), Desktop licences, SuperAdmin. Enforced in three places, all through `AccesEntreprise`:
+`Auth/SuspensionAccesMiddleware` (every HTTP request → `/compte/acces-suspendu`, 403 on `/_blazor` and
+non-GET), `ServicePermissionGuard` (every write, even for the company Admin and from a still-open
+Blazor circuit), and the warning banner in `MainLayout` during the grace period.
+`AccesEntrepriseService` deliberately uses `IDbContextFactory`, not the scoped `AppDbContext`: the
+layout and the page initialise in parallel, and a query from the layout on the shared context gave
+"A second operation was started on this context instance" (HTTP 500 on every page). **Never query the
+scoped `AppDbContext` from `MainLayout`/`NavMenu`.**
+
+**Due-date follow-up** (`Services/SuiviAbonnement.cs`, screen `Admin/AbonnementsList.razor`, SuperAdmin
+dashboard cards in `Home.razor`): no scheduled job and no reminder sent on its own (the access cut-off
+above is the only automatic part). `SuiviAbonnement.Evaluer` classifies each active customer from
+`DateDebut`/`DateEcheance` (en cours, à relancer 30 days before — 7 for a trial or monthly plan —,
+expiré, or *dates à renseigner* when an active customer has no due date); the list sorts what needs
+action first. `DatesProposees` pre-fills the dates when a request is activated. The « Relancer » button
+calls `AbonnementService.RelancerAsync`, which stamps `DateDerniereRelance` **only if the email was
+actually accepted**: `IEmailTransport.SendAsync` returns `bool` for that reason — never show "email
+envoyé" for a send whose result you did not check. Any new `Abonnement` column must also be copied in
+`AbonnementsList.AskProcess`, or saving the dialog wipes it.
+
 **Email** (`Email` section, `EmailOptions` in `Web_GestCom.Core/Services/IEmailTransport.cs`):
 `Program.cs` registers `BrevoEmailTransport` only when `Email:Provider` is `Brevo` **and**
 `Email:BrevoApiKey` is set (user-secrets in dev, `Email__BrevoApiKey` env var in prod via

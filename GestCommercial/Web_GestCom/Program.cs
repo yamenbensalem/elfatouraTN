@@ -361,6 +361,8 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE abonnement ADD prix_catalogue_abonnement FLOAT NULL;
         IF COL_LENGTH('abonnement', 'prix_applique_abonnement') IS NULL
             ALTER TABLE abonnement ADD prix_applique_abonnement FLOAT NULL;
+        IF COL_LENGTH('abonnement', 'date_relance_abonnement') IS NULL
+            ALTER TABLE abonnement ADD date_relance_abonnement DATETIME2 NULL;
         """);
 
     db.Database.ExecuteSqlRaw("""
@@ -1017,6 +1019,9 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAuthentication();
+// Entreprise suspendue (abonnement échu au-delà du délai de grâce) : tout est redirigé vers la
+// page « Accès suspendu ». Après l'authentification, qui fournit l'entreprise de l'utilisateur.
+app.UseMiddleware<Web_GestCom.Auth.SuspensionAccesMiddleware>();
 app.UseAuthorization();
 app.UseAntiforgery();
 

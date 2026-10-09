@@ -6,86 +6,108 @@
 @inject ICompanyService CompanyService
 @inject Microsoft.Extensions.Options.IOptions<TarifsOptions> TarifsConfig
 
-<PageTitle>Demandes d'Abonnement – GestCom</PageTitle>
+<PageTitle>Abonnements et licences – GestCom</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3><i class="bi bi-credit-card me-2"></i>Demandes d'Abonnement</h3>
+    <h3><i class="bi bi-credit-card me-2"></i>Abonnements et licences</h3>
 </div>
 
 <div class="alert alert-info small">
     <i class="bi bi-info-circle me-1"></i>
-    Aucun paiement en ligne n'est traité automatiquement (pas de passerelle de paiement branchée —
-    voir TODO.md). Chaque demande est à traiter manuellement : contacter le prospect, puis marquer « Essai »
-    (l'entreprise et le compte du client sont alors créés automatiquement, et un email de confirmation lui est envoyé) pour démarrer les @JoursEssai jours d'accès gratuit annoncés sur la page
-    d'accueil, puis « Active » une fois le règlement reçu. Rien ne désactive automatiquement un essai
-    à son échéance pour l'instant — à surveiller manuellement.
+    Aucun paiement en ligne et aucun email de rappel envoyé tout seul : c'est vous qui activez, relancez et
+    renouvelez. En revanche <strong>l'accès se coupe automatiquement</strong> : @AccesEntreprise.JoursGrace jours après
+    l'échéance d'un abonnement, et dès la fin d'un essai gratuit. Pour le rétablir après règlement, ouvrez
+    « Traiter » et repoussez la date d'échéance. Un client actif sans date d'échéance n'est jamais bloqué, et
+    les licences Desktop ne sont pas concernées.
 </div>
 
 <Notification @ref="_notif" />
+
+@if (!_loading)
+{
+    <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Filtrer les clients">
+        @foreach (var filtre in Filtres)
+        {
+            var nombre = _items.Count(filtre.Critere);
+            <button type="button" @key="filtre.Libelle"
+                    class="btn btn-sm @(_filtre == filtre.Libelle ? filtre.ClasseActive : "btn-outline-secondary")"
+                    aria-pressed="@(_filtre == filtre.Libelle ? "true" : "false")"
+                    @onclick="() => _filtre = filtre.Libelle">
+                @filtre.Libelle <span class="badge @(_filtre == filtre.Libelle ? "bg-light text-dark" : "bg-secondary") ms-1">@nombre</span>
+            </button>
+        }
+    </div>
+}
 
 <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
         <LoadingSpinner Loading="@_loading" />
         @if (!_loading)
         {
+            <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th>Date</th>
-                        <th>Entreprise demandée</th>
-                        <th>Contact</th>
-                        <th>Plan</th>
-                        <th>Paiement souhaité</th>
+                        <th>Client</th>
+                        <th>Offre</th>
                         <th>Statut</th>
+                        <th>Début</th>
+                        <th>Échéance</th>
+                        <th>Suivi</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var a in _items)
+                    @foreach (var a in Visibles)
                     {
-                        <tr>
-                            <td class="small text-muted">@a.DateDemande.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        var suivi = Suivi(a);
+                        <tr @key="a.Id" class="@(suivi.Etat == EtatSuivi.Suspendu ? "table-danger" : null)">
                             <td>
-                                @a.NomEntreprise
-                                @if (a.Company is not null)
-                                {
-                                    <div class="small text-muted"><i class="bi bi-link-45deg"></i> Liée à « @a.Company.Name »</div>
-                                }
-                            </td>
-                            <td class="small">
-                                @a.NomContact<br />
-                                <span class="text-muted">@a.EmailContact</span>
-                                @if (!string.IsNullOrWhiteSpace(a.TelephoneContact))
-                                {
-                                    <br /><span class="text-muted">@a.TelephoneContact</span>
-                                }
+                                <div class="fw-semibold">@a.NomEntreprise</div>
+                                <div class="small text-muted">@a.NomContact · @a.EmailContact@(string.IsNullOrWhiteSpace(a.TelephoneContact) ? "" : $" · {a.TelephoneContact}")</div>
+                                <div class="small text-muted">Demande du @a.DateDemande.ToLocalTime().ToString("dd/MM/yyyy")</div>
                             </td>
                             <td>
                                 <span class="badge bg-secondary">@TarifsOptions.NomPlan(a.Plan)</span>
                                 <div class="small text-muted">@DecrireTarif(a)</div>
-                                @if (a.CodePromo is not null)
+                            </td>
+                            <td><span class="badge @GetStatutBadge(a.Statut)">@GetStatutLabel(a.Statut)</span></td>
+                            <td class="text-nowrap">@(a.DateDebut?.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td class="text-nowrap">@(a.DateEcheance?.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td>
+                                <span class="badge @ClasseSuivi(suivi.Etat)">@LibelleSuivi(a, suivi)</span>
+                                @if (a.DateDerniereRelance is DateTime relance)
                                 {
-                                    <span class="badge bg-warning text-dark">@a.CodePromo</span>
+                                    <div class="small text-muted">Relancé le @relance.ToLocalTime().ToString("dd/MM/yyyy")</div>
                                 }
                             </td>
-                            <td class="small">@(a.ModePaiementSouhaite ?? "À discuter")</td>
-                            <td><span class="badge @GetStatutBadge(a.Statut)">@GetStatutLabel(a.Statut)</span></td>
-                            <td class="text-end">
+                            <td class="text-end text-nowrap">
+                                @if (suivi.Etat is EtatSuivi.ARelancer or EtatSuivi.Expire or EtatSuivi.Suspendu)
+                                {
+                                    <button class="btn btn-sm btn-warning me-1" disabled="@(_relanceEnCours == a.Id)" @onclick="() => RelancerAsync(a)">
+                                        <i class="bi bi-envelope me-1"></i>@(a.DateDerniereRelance.HasValue ? "Relancer encore" : "Relancer")
+                                    </button>
+                                }
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => AskProcess(a)">
                                     <i class="bi bi-pencil me-1"></i>Traiter
                                 </button>
                             </td>
                         </tr>
                     }
-                    @if (!_items.Any())
+                    @if (!Visibles.Any())
                     {
-                        <tr><td colspan="7" class="text-center text-muted py-4">Aucune demande d'abonnement.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted py-4">@(_items.Count == 0 ? "Aucune demande pour l'instant." : "Aucun client dans ce filtre.")</td></tr>
                     }
                 </tbody>
             </table>
+            </div>
         }
     </div>
-    <div class="card-footer text-muted small">@_items.Count demande(s)</div>
+    <div class="card-footer text-muted small">
+        @Visibles.Count sur @_items.Count ·
+        « À relancer » : échéance dans 30 jours ou moins (7 jours pour un essai ou un abonnement mensuel).
+        Accès suspendu @AccesEntreprise.JoursGrace jours après l'échéance (aussitôt pour un essai).
+    </div>
 </div>
 
 @if (_editVisible && _editing is not null)
@@ -122,17 +144,6 @@
                                     <option value="Active">Active</option>
                                     <option value="Refusee">Refusée</option>
                                 </InputSelect>
-                                @if (_editing.Statut == "Essai")
-                                {
-                                    <div class="form-text">
-                                        Pensez à fixer une date de début et une date d'échéance (+@JoursEssai jours) ci-dessous —
-                                        rien ne bascule automatiquement en « Refusée » à l'échéance, la désactivation
-                                        reste manuelle pour l'instant (voir TODO.md).
-                                        <button type="button" class="btn btn-sm btn-outline-secondary mt-1" @onclick="ApplyTrialDates">
-                                            Remplir @JoursEssai jours à partir d'aujourd'hui
-                                        </button>
-                                    </div>
-                                }
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Entreprise liée</label>
@@ -153,6 +164,19 @@
                                 <label class="form-label">Date d'échéance</label>
                                 <InputDate class="form-control" @bind-Value="_editing.DateEcheance" />
                             </div>
+                            @if (EstActif)
+                            {
+                                <div class="col-12 form-text mt-1">
+                                    @if (_datesProposees)
+                                    {
+                                        <span>Dates proposées d'après l'offre : vérifiez-les avant d'enregistrer. </span>
+                                    }
+                                    Ces dates servent au suivi : sans échéance, ce client ne remontera jamais « à relancer ».
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-1" @onclick="ProposerDates">
+                                        Recalculer à partir d'aujourd'hui
+                                    </button>
+                                </div>
+                            }
                             <div class="col-12">
                                 <label class="form-label">Notes internes</label>
                                 <InputTextArea class="form-control" rows="3" @bind-Value="_editing.NotesAdmin" />
@@ -243,6 +267,101 @@
     private string _accesMotDePasse = "";
     private bool _envoyerEmail = true;
     private bool EstActif => _editing is not null && AbonnementActivationService.EstActif(_editing.Statut);
+    private bool _datesProposees;
+
+    // ── Suivi des échéances ──
+    private sealed record Filtre(string Libelle, string ClasseActive, Func<Abonnement, bool> Critere);
+
+    private string _filtre = "Tous";
+    private int? _relanceEnCours;
+
+    private static SuiviAbonnement Suivi(Abonnement a) => SuiviAbonnement.Evaluer(a, DateTime.Today);
+
+    private static readonly Filtre[] Filtres =
+    [
+        new("Tous", "btn-secondary", _ => true),
+        new("À relancer", "btn-warning", a => Suivi(a).Etat == EtatSuivi.ARelancer),
+        new("Accès suspendu", "btn-danger", a => Suivi(a).Etat == EtatSuivi.Suspendu),
+        new("Échéance dépassée", "btn-danger", a => Suivi(a).Etat == EtatSuivi.Expire),
+        new("Dates à renseigner", "btn-dark", a => Suivi(a).Etat == EtatSuivi.DatesManquantes),
+        new("En cours", "btn-success", a => Suivi(a).Etat == EtatSuivi.EnCours),
+        new("Demandes à traiter", "btn-primary", a => a.Statut is "EnAttente" or "Contactee")
+    ];
+
+    // Ce qui demande une action remonte en tête : expirés, à relancer, dates manquantes, demandes
+    // en attente ; puis les clients en cours, par échéance la plus proche.
+    private List<Abonnement> Visibles => _items
+        .Where(Filtres.Single(f => f.Libelle == _filtre).Critere)
+        .OrderBy(a => Suivi(a).Etat switch
+        {
+            EtatSuivi.Suspendu => -1,
+            EtatSuivi.Expire => 0,
+            EtatSuivi.ARelancer => 1,
+            EtatSuivi.DatesManquantes => 2,
+            EtatSuivi.EnCours => 4,
+            _ => a.Statut is "EnAttente" or "Contactee" ? 3 : 5
+        })
+        .ThenBy(a => a.DateEcheance ?? DateTime.MaxValue)
+        .ThenByDescending(a => a.DateDemande)
+        .ToList();
+
+    private static string ClasseSuivi(EtatSuivi etat) => etat switch
+    {
+        EtatSuivi.Suspendu => "bg-danger",
+        EtatSuivi.Expire => "bg-danger-subtle text-danger-emphasis border border-danger-subtle",
+        EtatSuivi.ARelancer => "bg-warning text-dark",
+        EtatSuivi.DatesManquantes => "bg-dark",
+        EtatSuivi.EnCours => "bg-success",
+        _ => "bg-light text-muted border"
+    };
+
+    private static string Jours(int n) => n == 1 ? "1 jour" : $"{n} jours";
+
+    private static string LibelleSuivi(Abonnement a, SuiviAbonnement suivi) => suivi.Etat switch
+    {
+        EtatSuivi.Suspendu => $"Accès suspendu depuis {Jours(-suivi.JoursRestants!.Value - AccesEntreprise.JoursGracePour(a))}",
+        // Licence Desktop : la maintenance est finie, rien n'est coupé.
+        EtatSuivi.Expire when TarifsOptions.EstAchatUnique(a.Plan) => $"Maintenance terminée depuis {Jours(-suivi.JoursRestants!.Value)}",
+        EtatSuivi.Expire => AccesEntreprise.JoursGracePour(a) + suivi.JoursRestants!.Value is var reste and > 0
+            ? $"Échéance dépassée : suspension dans {Jours(reste)}"
+            : "Échéance dépassée : suspension demain",
+        EtatSuivi.ARelancer => suivi.JoursRestants switch
+        {
+            0 => "À relancer : se termine aujourd'hui",
+            1 => "À relancer : 1 jour restant",
+            _ => $"À relancer : {suivi.JoursRestants} jours restants"
+        },
+        EtatSuivi.DatesManquantes => "Dates à renseigner",
+        EtatSuivi.EnCours => $"En cours : {suivi.JoursRestants} jours restants",
+        _ => "—"
+    };
+
+    private async Task RelancerAsync(Abonnement a)
+    {
+        _relanceEnCours = a.Id;
+        try
+        {
+            if (await AbonnementService.RelancerAsync(a.Id))
+            {
+                await LoadAsync();
+                _notif.ShowSuccess($"Email de relance envoyé à {a.EmailContact}.");
+            }
+            else
+            {
+                _notif.ShowError($"L'email de relance n'a pas pu être envoyé à {a.EmailContact} : le service d'envoi l'a refusé ou n'est pas configuré. Le détail est dans les logs.");
+            }
+        }
+        catch (Exception ex) { _notif.ShowError(ex); }
+        finally { _relanceEnCours = null; }
+    }
+
+    private void ProposerDates()
+    {
+        (var debut, var echeance) = SuiviAbonnement.DatesProposees(_editing!, TarifsConfig.Value, DateTime.Today);
+        _editing!.DateDebut = debut;
+        _editing.DateEcheance = echeance;
+        _datesProposees = true;
+    }
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -274,18 +393,26 @@
             DateDemande = a.DateDemande,
             DateDebut = a.DateDebut,
             DateEcheance = a.DateEcheance,
+            DateDerniereRelance = a.DateDerniereRelance,
             NotesAdmin = a.NotesAdmin,
             CompanyId = a.CompanyId
         };
         _accesLogin = await ActivationService.SuggererLoginAsync(a.NomContact);
         _accesMotDePasse = ActivationService.GenererMotDePasse();
         _envoyerEmail = true;
+        _datesProposees = false;
         await RefreshCompteAsync();
         _editVisible = true;
     }
 
     private async Task RefreshCompteAsync()
-        => _compteRequis = _editing is not null && await ActivationService.CompteRequisAsync(_editing);
+    {
+        _compteRequis = _editing is not null && await ActivationService.CompteRequisAsync(_editing);
+
+        // Activation sans dates : on les propose d'après l'offre plutôt que de laisser le client hors suivi.
+        if (EstActif && _editing!.DateDebut is null && _editing.DateEcheance is null)
+            ProposerDates();
+    }
 
     private async Task SaveAsync()
     {
@@ -303,12 +430,6 @@
             _notif.ShowSuccess(message);
         }
         catch (Exception ex) { (_modalNotif ?? _notif).ShowError(ex); }
-    }
-
-    private void ApplyTrialDates()
-    {
-        _editing!.DateDebut = DateTime.Today;
-        _editing.DateEcheance = DateTime.Today.AddDays(JoursEssai);
     }
 
     private static string GetStatutBadge(string statut) => statut switch
