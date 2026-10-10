@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject ICurrentUserService CurrentUserService
+@inject IAccesEntrepriseService AccesService
 @inject AuthenticationStateProvider AuthStateProvider
 
 @if (!CurrentUserService.IsAuthenticated)
@@ -102,6 +103,20 @@ else
 
     <!-- ── Main Content ────────────────────────── -->
     <main class="main-content">
+        @if (_acces.Etat == EtatAcces.EnGrace)
+        {
+            var jours = _acces.JoursAvantSuspension(DateTime.Today);
+            <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
+                <i class="bi bi-exclamation-octagon-fill mt-1"></i>
+                <div>
+                    <strong>Votre abonnement est arrivé à échéance le @_acces.DateEcheance?.ToString("dd/MM/yyyy").</strong>
+                    @(jours == 0
+                        ? "C'est le dernier jour d'accès : sans règlement, votre espace sera suspendu dès demain."
+                        : $"Sans règlement, l'accès à votre espace sera suspendu dans {jours} jour{(jours > 1 ? "s" : "")}, après le {_acces.DernierJourAcces:dd/MM/yyyy}.")
+                    Vos données sont conservées.
+                </div>
+            </div>
+        }
         @Body
     </main>
 
@@ -120,7 +135,14 @@ else
         AuthStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
         SyncCurrentUser(state);
+
+        // Avertissement pendant le délai de grâce (voir AccesEntreprise). Une entreprise déjà
+        // suspendue n'arrive jamais jusqu'ici : SuspensionAccesMiddleware l'a redirigée avant.
+        if (state.User.Identity?.IsAuthenticated == true)
+            _acces = await AccesService.GetCourantAsync();
     }
+
+    private AccesEntreprise _acces = AccesEntreprise.SansSuivi;
 
     private void OnAuthenticationStateChanged(Task<AuthenticationState> authStateTask)
     {

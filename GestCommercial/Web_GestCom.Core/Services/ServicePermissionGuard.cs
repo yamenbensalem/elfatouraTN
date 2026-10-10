@@ -17,6 +17,16 @@ internal static class ServicePermissionGuard
 
         await currentUser.EnsureInitializedAsync();
 
+        // Abonnement échu au-delà du délai de grâce : plus aucune écriture, même pour l'Admin de
+        // l'entreprise et même depuis un écran resté ouvert (le middleware HTTP ne voit pas les
+        // actions d'un circuit Blazor déjà établi). Voir AccesEntreprise.
+        if (db.TenantCompanyId is int companyId)
+        {
+            var acces = await AccesEntreprise.ChargerAsync(db, companyId, DateTime.Today);
+            if (acces.EstSuspendu)
+                throw new InvalidOperationException(acces.MessageSuspension);
+        }
+
         // Admin bypasses business-permission checks within their own company. SuperAdmin does
         // NOT — it's a platform-management role with no business-data write access by design
         // (see PermissionAuthorizationHandler for the matching read-side boundary). A SuperAdmin

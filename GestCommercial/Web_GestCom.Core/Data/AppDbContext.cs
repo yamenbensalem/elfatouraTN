@@ -52,6 +52,10 @@ public class AppDbContext : DbContext
     /// tests unitaires) : l'entreprise par défaut, celle à laquelle Program.cs rattache déjà toute
     /// ligne historique sans entreprise.
     /// </summary>
+    /// <summary>Entreprise de l'utilisateur courant ; null hors contexte, pour un SuperAdmin ou un visiteur.</summary>
+    internal int? TenantCompanyId
+        => _executionContext?.HasActiveContext == true && !CurrentIsSuperAdmin ? CurrentCompanyId : null;
+
     internal int? CompanyIdForNewRows
         => _executionContext?.HasActiveContext == true ? CurrentCompanyId : Company.DefaultId;
 
