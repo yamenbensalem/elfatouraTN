@@ -913,3 +913,31 @@ Fonctionnalités restantes à implémenter, classées par priorité.
       parasite sur une simple édition mono-utilisateur) ; flux complet BL → Générer Facture →
       Suppression de la facture confirmant que le stock (décrémenté une seule fois par le BL) n'est
       plus restitué en double à la suppression. Suite complète : 322/322 tests verts, build 0 erreur.
+
+- [x] **Formulaire public `/demande-abonnement` — protection anti-robot** (incident 2026-11-04)
+      Constat : ~800 fausses demandes en une journée (noms aléatoires, téléphones `+1-...`, emails
+      `shaw.ca`/`att.net`/`gmail.com` récurrents) dans `/admin/demandes-abonnement`. La page n'avait que
+      l'antiforgery, que n'importe quel robot passe (il charge la page puis poste avec le jeton). Pire :
+      chaque demande envoyait 2 emails depuis `noreply@tijaraflow.fr`, dont un à l'adresse saisie par le
+      visiteur (spam de tiers + risque pour la réputation / le quota Brevo), et les valeurs saisies étaient
+      insérées **sans encodage HTML** dans ces emails (injection de liens de phishing envoyés depuis le domaine).
+      Correctifs : (1) champ piège invisible `Input.Commentaire` — rempli = fausse réussite, rien
+      enregistré ni envoyé ; (2) jeton signé `Input.FormToken` (Data Protection) portant l'heure d'affichage :
+      refusé s'il est absent/falsifié/expiré (> 24 h) ou si l'envoi a lieu en moins de 3 s ; (3) plafond de
+      8 envois / heure / IP (`IPublicFormRateLimiter`, en mémoire) sur le **dernier** saut de
+      `X-Forwarded-For` (le premier est falsifiable) ; (4) refus d'un doublon même email + même plan sur
+      24 h (`IAbonnementService.ExisteDemandeRecenteAsync`) ; (5) `NotifyNewDemandeAsync` encode toutes les
+      valeurs saisies et n'envoie plus aucun email au-delà de 20 demandes sur la dernière heure
+      (`AbonnementService.MaxEmailsAutomatiquesParHeure`) — la demande reste enregistrée.
+      **Limites assumées** : un robot qui exécute du JavaScript, attend 3 s et change d'IP passe encore ;
+      l'étape suivante serait Cloudflare Turnstile (clés à créer). Le jeton de temps est invalidé par un
+      redéploiement si les clés Data Protection ne sont pas persistées (même comportement qu'aujourd'hui pour
+      l'antiforgery) : le visiteur voit « Le formulaire a expiré » et renvoie.
+      **Non corrigé, à vérifier d'abord** : `Connexion.cshtml.cs` (`ResolveClientIpAddress`) prend le
+      **premier** saut de `X-Forwarded-For`, falsifiable : la protection anti-bruteforce par IP du login se
+      contourne en changeant l'en-tête (la protection par login, elle, tient). Le corriger sans connaître la
+      chaîne de proxys réelle (nginx-proxy seul ? Cloudflare devant ?) pourrait verrouiller tout le monde
+      derrière une seule IP.
+      Tests : 14 nouveaux (page, limiteur, service). Web 537/537, Desktop 56/56. Vérifié dans le navigateur :
+      envoi instantané refusé, champ piège → fausse réussite sans enregistrement, visiteur normal enregistré,
+      second envoi identique refusé.

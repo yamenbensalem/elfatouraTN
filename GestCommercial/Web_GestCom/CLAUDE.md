@@ -262,6 +262,14 @@ the prospect and `AdminNotificationEmail` on each new request.
   with a model error (the re-render issues a fresh token for the current user) instead of a 400.
   To find these in prod, grep nginx-proxy logs for the path — the app itself logs nothing (antiforgery
   failures log below the configured `Microsoft.AspNetCore` level).
+- **`/demande-abonnement` is open to the Internet and gets bot-flooded** (~800 fake requests on
+  2026-11-04, each triggering 2 emails from our domain). `DemandeAbonnementModel` therefore rejects, in
+  order: antiforgery failure, a filled honeypot (`Input.Commentaire`, fake success), a missing/forged/
+  expired or < 3 s time token (`Input.FormToken`), more than 8 posts/hour per IP, then a same
+  email + plan request within 24 h. `AbonnementService.NotifyNewDemandeAsync` HTML-encodes every visitor
+  value and sends no automatic email beyond 20 requests/hour. Keep all of it when editing the form; any
+  new anonymous form needs the same. The client IP is the **last** `X-Forwarded-For` hop — never the
+  first, which the caller controls.
 - **A `<script>` tag written inside a `.razor` component's markup never executes** — Blazor Server
   inserts DOM via its own diffing, not `innerHTML`/`appendChild`, and browsers don't run scripts
   inserted that way. Put JS in a real `wwwroot/js/*.js` file referenced by `<script src="...">` in

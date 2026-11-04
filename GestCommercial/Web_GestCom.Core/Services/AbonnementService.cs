@@ -20,6 +20,12 @@ public interface IAbonnementService
     Task<Abonnement> CreateDemandeAsync(Abonnement demande);
 
     /// <summary>
+    /// Vrai si une demande du même email pour le même plan existe déjà depuis moins de 24 h — évite
+    /// les doublons (double clic, renvoi) et le bombardement d'une même adresse par la page publique.
+    /// </summary>
+    Task<bool> ExisteDemandeRecenteAsync(string email, string plan);
+
+    /// <summary>
     /// Retourne l'offre si le code existe, n'est pas expiré et qu'il reste au moins une place ;
     /// null sinon (y compris pour un code vide). Sert à la fois à la validation du formulaire et à
     /// la bannière de la page tarifs.
@@ -47,6 +53,15 @@ public class AbonnementService(
     // Une place n'est consommée que par un abonnement réellement démarré — une simple demande
     // (EnAttente/Contactee) ou une demande refusée ne bloque pas le code pour les suivants.
     private static readonly string[] StatutsConsommantUnePlace = ["Essai", "Active"];
+
+    /// <summary>
+    /// Au-delà de ce nombre de demandes reçues sur la dernière heure, les emails automatiques
+    /// (confirmation au demandeur + alerte admin) ne partent plus : la demande reste enregistrée et
+    /// visible dans /admin/demandes-abonnement, mais un robot ne peut plus faire envoyer des centaines
+    /// d'emails depuis le domaine (réputation Brevo, adresses tierces spammées). Le trafic légitime de
+    /// cette page se compte en quelques demandes par jour.
+    /// </summary>
+    public const int MaxEmailsAutomatiquesParHeure = 20;
 
     public async Task<List<Abonnement>> GetAllAsync()
         => await db.Abonnements.AsNoTracking()
@@ -83,6 +98,14 @@ public class AbonnementService(
 
         await NotifyNewDemandeAsync(demande);
         return demande;
+    }
+
+    public async Task<bool> ExisteDemandeRecenteAsync(string email, string plan)
+    {
+        var emailNormalise = email.Trim().ToLowerInvariant();
+        var depuis = DateTime.UtcNow.AddHours(-24);
+        return await db.Abonnements.AsNoTracking()
+            .AnyAsync(a => a.EmailContact == emailNormalise && a.Plan == plan && a.DateDemande >= depuis);
     }
 
     public async Task<OffrePromo?> GetOffrePromoAsync(string? code)
@@ -185,13 +208,27 @@ public class AbonnementService(
     {
         try
         {
+            var depuis = DateTime.UtcNow.AddHours(-1);
+            var recentes = await db.Abonnements.CountAsync(a => a.DateDemande >= depuis);
+            if (recentes > MaxEmailsAutomatiquesParHeure)
+            {
+                logger.LogWarning(
+                    "Emails automatiques suspendus pour la demande d'abonnement {Id} : {Count} demandes en 1 h (plafond {Max}). Possible abus du formulaire public.",
+                    demande.Id, recentes, MaxEmailsAutomatiquesParHeure);
+                return;
+            }
+
+            // Toute valeur saisie par un visiteur anonyme est encodée : sans cela, un robot pourrait
+            // faire envoyer du HTML arbitraire (liens de phishing) depuis noreply@ vers n'importe quelle adresse.
+            static string h(string? valeur) => System.Net.WebUtility.HtmlEncode(valeur) ?? "";
+
             await emailTransport.SendAsync(
                 demande.EmailContact, demande.NomContact,
                 "Votre demande d'abonnement GestCom a bien été reçue",
                 $"""
-                <p>Bonjour {demande.NomContact},</p>
+                <p>Bonjour {h(demande.NomContact)},</p>
                 <p>Nous avons bien reçu votre demande d'abonnement au plan <strong>{TarifsOptions.NomPlan(demande.Plan)}</strong>
-                pour <strong>{demande.NomEntreprise}</strong>.</p>
+                pour <strong>{h(demande.NomEntreprise)}</strong>.</p>
                 <p>Tarif retenu : <strong>{DecrireTarif(demande)}</strong>.</p>
                 <p>Notre équipe vous recontactera sous 24 à 48h pour finaliser l'activation.</p>
                 <p>— L'équipe GestCom</p>
@@ -203,11 +240,11 @@ public class AbonnementService(
                 $"""
                 <p>Nouvelle demande d'abonnement reçue :</p>
                 <ul>
-                  <li><strong>Entreprise :</strong> {demande.NomEntreprise}</li>
-                  <li><strong>Contact :</strong> {demande.NomContact} ({demande.EmailContact})</li>
+                  <li><strong>Entreprise :</strong> {h(demande.NomEntreprise)}</li>
+                  <li><strong>Contact :</strong> {h(demande.NomContact)} ({h(demande.EmailContact)})</li>
                   <li><strong>Plan :</strong> {TarifsOptions.NomPlan(demande.Plan)}</li>
                   <li><strong>Tarif :</strong> {DecrireTarif(demande)}</li>
-                  <li><strong>Téléphone :</strong> {demande.TelephoneContact}</li>
+                  <li><strong>Téléphone :</strong> {h(demande.TelephoneContact)}</li>
                 </ul>
                 <p>À traiter depuis /admin/demandes-abonnement.</p>
                 """);

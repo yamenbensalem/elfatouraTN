@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
             ServiceLifetime.Scoped);
 
         services.AddSingleton<ILoginProtectionService, LoginProtectionService>();
+        services.AddSingleton<IPublicFormRateLimiter, InMemoryPublicFormRateLimiter>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IFeatureFlagService, FeatureFlagService>();
 

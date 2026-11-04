@@ -164,6 +164,11 @@
 
         <form method="post">
             @Html.AntiForgeryToken()
+            <input asp-for="Input.FormToken" type="hidden" />
+            @* Champ piège anti-robot : hors écran, ignoré par les humains et les lecteurs d'écran. *@
+            <div style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+                <label>Commentaire <input asp-for="Input.Commentaire" type="text" tabindex="-1" autocomplete="off" /></label>
+            </div>
             <div asp-validation-summary="ModelOnly" class="field-error mb-3"></div>
             <div class="mb-3">
                 <label class="form-label">Nom de l'entreprise *</label>

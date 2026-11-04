@@ -378,4 +378,99 @@ public class AbonnementServiceTests
         Assert.Equal(nom, TarifsOptions.NomPlan(plan));
         Assert.Equal(achatUnique, new TarifsOptions().GetFormuleDesktop(plan) is not null);
     }
+
+    // ── Protection contre l'abus de la page publique (envoi en masse, 2026-11-04) ──
+
+    private sealed class RecordingEmailTransport : IEmailTransport
+    {
+        public List<(string To, string Subject, string Html)> Sent { get; } = [];
+
+        public Task<bool> SendAsync(string toEmail, string toName, string subject, string htmlBody, CancellationToken ct = default)
+        {
+            Sent.Add((toEmail, subject, htmlBody));
+            return Task.FromResult(true);
+        }
+    }
+
+    private static Abonnement Demande(string email = "karim@test.com", string plan = "Pro") => new()
+    {
+        NomEntreprise = "Société Test",
+        NomContact = "Karim",
+        EmailContact = email,
+        Plan = plan
+    };
+
+    [Fact]
+    public async Task CreateDemandeAsync_ShouldHtmlEncodeVisitorInputInEmails()
+    {
+        // Arrange — un robot peut mettre du HTML (lien de phishing) dans les champs de la page publique.
+        var emails = new RecordingEmailTransport();
+        var svc = CreateService(out _, emails);
+        var demande = Demande();
+        demande.NomContact = "<a href=\"http://evil.test\">Cliquez ici</a>";
+        demande.NomEntreprise = "<script>alert(1)</script>";
+
+        // Act
+        await svc.CreateDemandeAsync(demande);
+
+        // Assert
+        Assert.Equal(2, emails.Sent.Count);
+        Assert.All(emails.Sent, mail =>
+        {
+            Assert.DoesNotContain("<a href=\"http://evil.test\">", mail.Html);
+            Assert.DoesNotContain("<script>", mail.Html);
+        });
+        Assert.Contains("&lt;a href=", emails.Sent[0].Html);
+    }
+
+    [Fact]
+    public async Task CreateDemandeAsync_WhenTooManyRequestsInLastHour_ShouldStoreRequestButSendNoEmail()
+    {
+        // Arrange — plafond atteint : la demande reste visible dans /admin/demandes-abonnement,
+        // mais plus aucun email automatique ne part (ni vers le demandeur, ni vers l'admin).
+        var emails = new RecordingEmailTransport();
+        var svc = CreateService(out var db, emails);
+        for (var i = 0; i < AbonnementService.MaxEmailsAutomatiquesParHeure; i++)
+            db.Abonnements.Add(new Abonnement { NomEntreprise = $"Spam {i}", NomContact = "x", EmailContact = $"s{i}@test.com", Plan = "Standard", DateDemande = DateTime.UtcNow });
+        await db.SaveChangesAsync();
+
+        // Act
+        await svc.CreateDemandeAsync(Demande("victime@test.com"));
+
+        // Assert
+        Assert.Empty(emails.Sent);
+        Assert.Equal(AbonnementService.MaxEmailsAutomatiquesParHeure + 1, await db.Abonnements.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateDemandeAsync_WhenBelowHourlyCap_ShouldSendBothEmails()
+    {
+        // Arrange
+        var emails = new RecordingEmailTransport();
+        var svc = CreateService(out _, emails);
+
+        // Act
+        await svc.CreateDemandeAsync(Demande());
+
+        // Assert
+        Assert.Equal(["karim@test.com", "admin@test.com"], emails.Sent.Select(m => m.To));
+    }
+
+    [Fact]
+    public async Task ExisteDemandeRecenteAsync_ShouldMatchSameEmailAndPlanWithinTwentyFourHours()
+    {
+        // Arrange
+        var svc = CreateService(out var db);
+        db.Abonnements.AddRange(
+            new Abonnement { NomEntreprise = "A", NomContact = "a", EmailContact = "karim@test.com", Plan = "Pro", DateDemande = DateTime.UtcNow.AddHours(-2) },
+            new Abonnement { NomEntreprise = "B", NomContact = "b", EmailContact = "ancien@test.com", Plan = "Pro", DateDemande = DateTime.UtcNow.AddHours(-30) });
+        await db.SaveChangesAsync();
+
+        // Act + Assert
+        Assert.True(await svc.ExisteDemandeRecenteAsync("karim@test.com", "Pro"));
+        Assert.True(await svc.ExisteDemandeRecenteAsync("  Karim@Test.com ", "Pro"));
+        Assert.False(await svc.ExisteDemandeRecenteAsync("karim@test.com", "Standard"));
+        Assert.False(await svc.ExisteDemandeRecenteAsync("autre@test.com", "Pro"));
+        Assert.False(await svc.ExisteDemandeRecenteAsync("ancien@test.com", "Pro"));
+    }
 }
