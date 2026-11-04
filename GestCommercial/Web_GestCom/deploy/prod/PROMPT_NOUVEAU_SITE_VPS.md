@@ -67,17 +67,22 @@ networks:
 ```
 
 ### vhost.d/<mon-domaine>
-Si le site utilise WebSocket (Blazor Server, Socket.io, etc.), le fichier vhost DOIT utiliser
-`$http_upgrade` et NON `$connection_upgrade` (cette variable n'est pas disponible sur notre nginx-proxy) :
+Si le site utilise WebSocket (Blazor Server, Socket.io, etc.), le fichier vhost DOIT envoyer
+`Connection "upgrade"` (chaîne littérale), JAMAIS `$connection_upgrade` (non disponible sur notre
+nginx-proxy) ni `$http_upgrade` (envoie "websocket" → Kestrel répond 200 au lieu de 101) :
 
 ```nginx
 # CORRECT ✅
 proxy_http_version 1.1;
 proxy_set_header Upgrade $http_upgrade;
-proxy_set_header Connection $http_upgrade;
+proxy_set_header Connection "upgrade";
+proxy_buffering off;
 
 # INTERDIT ❌ — crashe nginx
 proxy_set_header Connection $connection_upgrade;
+
+# INTERDIT ❌ — SignalR bascule silencieusement en long-polling (bug 2026-09-06)
+proxy_set_header Connection $http_upgrade;
 ```
 
 ### deploy_to_vps.ps1
@@ -85,7 +90,7 @@ Le script DOIT :
 1. Dans `Setup-Network` : créer le réseau, puis connecter nginx-proxy et nginx-letsencrypt au nouveau réseau via `docker network connect`
 2. Dans `Sync-ConfigFiles` / `Inject-VhostOverride` : utiliser `docker cp` pour injecter le vhost override (bind mount, pas de volume nommé)
 3. Après injection vhost : envoyer `docker kill --signal=HUP nginx-proxy` pour recharger nginx sans redémarrage
-4. Valider le fichier vhost avant injection (refuser si `$connection_upgrade` est présent)
+4. Valider le fichier vhost avant injection (refuser si `$connection_upgrade` ou `Connection $http_upgrade` est présent)
 5. NE PAS démarrer de nouveau nginx-proxy (port 80/443 déjà pris)
 
 ---
@@ -121,7 +126,7 @@ Après avoir reçu les fichiers générés, vérifie AVANT d'exécuter :
 
 - [ ] `docker-compose.infra.yml` ne contient PAS de service `nginx-proxy` ou `acme-companion`
 - [ ] Les réseaux dans tous les compose sont `external: true` (sauf dans `infra.yml`)
-- [ ] Le fichier `vhost.d/<domaine>` utilise `$http_upgrade` et **non** `$connection_upgrade`
+- [ ] Le fichier `vhost.d/<domaine>` utilise `Connection "upgrade"` et **ni** `$connection_upgrade` **ni** `Connection $http_upgrade`
 - [ ] Le `deploy_to_vps.ps1` contient `docker network connect ntw_XXX nginx-proxy`
 - [ ] Le `deploy_to_vps.ps1` contient `docker network connect ntw_XXX nginx-letsencrypt`
 - [ ] Le `.env.example` contient `LETSENCRYPT_EMAIL`
